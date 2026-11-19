@@ -1,0 +1,234 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'style/tablero_resumen.css' %}">
+
+<section class="resumen-ceo cm" aria-label="Centro de mando PAKIVOX">
+
+  <header class="cm-hola">
+    <div>
+      <h2 data-cm-saludo>Hola, {{ request.user.first_name|default:request.user.username }}</h2>
+      {% now "l j \d\e F" as cm_hoy %}<p>{{ cm_hoy|lower }} · {{ finance_scope_label|default:"Todas las bodegas" }} · así va tu negocio hoy</p>
+    </div>
+  </header>
+
+  <div class="cm-bento">
+    <article class="cm-pulso cm-card" aria-label="Salud del negocio">
+      <div class="cm-anillo" data-cm-anillo="{{ business_health.puntaje|default_if_none:'' }}">
+        <div class="cm-anillo-svg" data-cm-anillo-svg aria-hidden="true"></div>
+        <div class="cm-anillo-centro">
+          {% if business_health.puntaje is not None %}<strong>{{ business_health.puntaje }}</strong>{% else %}<strong>—</strong>{% endif %}
+          <span>de 100 · salud del negocio</span>
+        </div>
+      </div>
+      <div class="cm-pulso-copy">
+        <h3>Pulso del negocio</h3>
+        <p class="cm-frase">{{ business_health_sentence }}</p>
+        {% if business_health.factores %}
+        <ul class="cm-factores">
+          {% for factor in business_health.factores %}
+          <li class="is-{{ factor.nivel }}" title="{{ factor.detalle }} · pesa {{ factor.peso }}% del puntaje">
+            <span>{{ factor.nombre }}</span><i><b data-cm-barra="{{ factor.valor }}"></b></i><em>{{ factor.valor }}</em>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% if alert_critical_count > 0 or month_gross_profit_total < 0 %}
+        <section class="px-pulse is-critical" id="executivePulseAF10A" aria-label="Pulso general: Crítico">
+          <div class="px-pulse-signal"><i class="bi bi-activity"></i></div>
+          <div class="px-pulse-copy"><strong>La operación necesita intervención inmediata.</strong><small>{{ alert_critical_count|default:0 }} situación crítica{% if alert_critical_count != 1 %}s{% endif %} en el alcance actual.</small></div>
+          <a class="px-pulse-state" href="#executivePrioritiesAF10C"><i class="bi bi-exclamation-octagon-fill"></i> Crítico</a>
+        </section>
+        {% elif alert_attention_count > 0 or low_stock_count > 0 or pending_payments > 0 or supplier_payment_pending_count > 0 or pending_pickings > 0 or pending_packings > 0 or pending_shippings > 0 %}
+        <section class="px-pulse is-attention" id="executivePulseAF10A" aria-label="Pulso general: Requiere atención">
+          <div class="px-pulse-signal"><i class="bi bi-activity"></i></div>
+          <div class="px-pulse-copy"><strong>La operación avanza, con pendientes por resolver.</strong><small>Revisa abajo lo que requiere tu decisión.</small></div>
+          <a class="px-pulse-state" href="#executivePrioritiesAF10C"><i class="bi bi-exclamation-triangle-fill"></i> Requiere atención</a>
+        </section>
+        {% elif alert_info_count > 0 %}
+        <section class="px-pulse is-stable" id="executivePulseAF10A" aria-label="Pulso general: Estable">
+          <div class="px-pulse-signal"><i class="bi bi-activity"></i></div>
+          <div class="px-pulse-copy"><strong>La operación se mantiene estable.</strong><small>Sin bloqueos; {{ alert_info_count|default:0 }} aviso{% if alert_info_count != 1 %}s{% endif %} informativo{% if alert_info_count != 1 %}s{% endif %}.</small></div>
+          <span class="px-pulse-state"><i class="bi bi-shield-check"></i> Estable</span>
+        </section>
+        {% else %}
+        <section class="px-pulse" id="executivePulseAF10A" aria-label="Pulso general: Saludable">
+          <div class="px-pulse-signal"><i class="bi bi-activity"></i></div>
+          <div class="px-pulse-copy"><strong>La operación está saludable.</strong><small>Sin alertas ni pendientes abiertos en el alcance actual.</small></div>
+          <span class="px-pulse-state"><i class="bi bi-check-circle-fill"></i> Saludable</span>
+        </section>
+        {% endif %}
+      </div>
+    </article>
+
+    <section class="px-kpis" aria-label="Indicadores principales">
+      <div class="cm-utilidad {% if month_gross_profit_total < 0 %}is-bad{% endif %}">
+        <span class="cm-label"><i class="bi bi-graph-up-arrow"></i>Utilidad del mes</span>
+        <strong>${{ month_gross_profit_total|default:0|floatformat:"2g" }}</strong>
+        <small>margen <b class="cm-good">{{ month_gross_margin_percent|default:0|floatformat:1 }}%</b> · {{ month_orders|default:0 }} pedido{% if month_orders != 1 %}s{% endif %} este mes</small>
+      </div>
+      <div class="cm-spark" data-cm-spark="finance_trend_profit" data-cm-acumulado data-cm-color="#8EB69B" aria-hidden="true"></div>
+      <div class="cm-mini">
+        <a href="{% url 'sales:lista_pedidos' %}"><span>Ventas del mes</span><b>${{ month_sales_total|default:0|floatformat:"0g" }}</b></a>
+        <div class="{% if balance_due_total > 0 %}is-warn{% endif %}"><span>Saldo por cobrar</span><b>${{ balance_due_total|default:0|floatformat:"0g" }}</b></div>
+        <a class="{% if pending_orders > 0 %}is-warn{% endif %}" href="{% url 'sales:lista_pedidos' %}"><span>Pedidos pendientes</span><b>{{ pending_orders|default:0 }}</b></a>
+      </div>
+    </section>
+
+    <section class="cm-rio cm-card" aria-labelledby="cmRioTitulo">
+      <header class="cm-card-head">
+        <div><h3 id="cmRioTitulo">De la compra al cobro</h3><p>El grosor del río es el dinero que pasa por cada etapa. Toca una etapa para ver sus pedidos.</p></div>
+        {% if business_river.atoron %}<span class="cm-rio-alerta"><i class="bi bi-exclamation-triangle"></i>Se están juntando pedidos</span>{% endif %}
+      </header>
+      <div class="cm-rio-cuerpo">
+        <div class="cm-rio-cauce" data-cm-cauce aria-hidden="true"></div>
+        <ol class="cm-etapas">
+          {% for etapa in business_river.etapas %}
+          <li class="cm-etapa{% if etapa.atoron %} is-hot{% endif %}{% if etapa.clave == 'cobrado' %} is-final{% endif %}" data-cm-dinero="{{ etapa.dinero|default_if_none:'' }}">
+            <a href="{% url etapa.url %}">
+              {% if etapa.atoron %}<span class="cm-flag">Se está atorando</span>{% endif %}
+              <span class="cm-nodo"><i class="bi {{ etapa.icono }}"></i></span>
+              <strong>{% if etapa.unidad == "%" %}{{ etapa.cantidad }}%{% else %}{{ etapa.cantidad|floatformat:"0g" }}{% endif %}</strong>
+              <span class="cm-etapa-nombre">{{ etapa.nombre }}</span>
+              {% if etapa.dinero is not None %}<em>${{ etapa.dinero|floatformat:"0g" }}</em>{% else %}<em>{{ etapa.detalle }}</em>{% endif %}
+              <small>{{ etapa.alcance }}{% if etapa.dinero is not None and etapa.detalle %} · {{ etapa.detalle }}{% endif %}</small>
+            </a>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+
+    <article class="cm-puerta cm-card">
+      <header><h3><i class="bi bi-diagram-3"></i>Operación</h3><button type="button" data-cm-ir="operation" aria-label="Abrir Operación"><i class="bi bi-arrow-up-right"></i></button></header>
+      <p class="cm-puerta-num">{{ business_river.en_proceso }} <span>pedido{% if business_river.en_proceso != 1 %}s{% endif %} en proceso</span></p>
+      <div class="cm-barras">
+        {% for etapa in business_river.etapas %}{% if etapa.en_proceso %}<div><i data-cm-alto="{{ etapa.cantidad }}"></i><span>{{ etapa.nombre }}</span><b>{{ etapa.cantidad }}</b></div>{% endif %}{% endfor %}
+      </div>
+    </article>
+
+    <article class="cm-puerta cm-card">
+      <header><h3><i class="bi bi-cash-coin"></i>Finanzas</h3><button type="button" data-cm-ir="finance" aria-label="Abrir Finanzas"><i class="bi bi-arrow-up-right"></i></button></header>
+      <p class="cm-puerta-num">${{ month_sales_total|default:0|floatformat:"0g" }} <span>vendido</span></p>
+      <div class="cm-spark cm-spark--puerta" data-cm-spark="finance_trend_sales" data-cm-acumulado data-cm-color="#7DA0CA" aria-hidden="true"></div>
+      <small class="cm-puerta-pie">Cobranza 30 días {{ executive_collection_rate|default:0|floatformat:0 }}% · Margen {{ month_gross_margin_percent|default:0|floatformat:1 }}%</small>
+    </article>
+
+    <article class="cm-puerta cm-card">
+      <header><h3><i class="bi bi-lightning-charge"></i>Actividad</h3><button type="button" data-cm-ir="activity" aria-label="Abrir Actividad"><i class="bi bi-arrow-up-right"></i></button></header>
+      <ul class="cm-eventos" data-cm-eventos>
+        {% for order in recent_orders|slice:":4" %}<li data-cm-ts="{{ order.created_at|date:'U' }}"><i class="bi bi-receipt"></i><span>{{ order.folio }} · {{ order.get_status_display }}</span><small>{{ order.created_at|timesince }}</small></li>{% endfor %}
+        {% for movement in recent_stock_movements|slice:":4" %}<li data-cm-ts="{{ movement.created_at|date:'U' }}"><i class="bi bi-boxes"></i><span>{{ movement.get_movement_type_display }} · {{ movement.variant.sku }}</span><small>{{ movement.created_at|timesince }}</small></li>{% endfor %}
+        {% for log in warehouse_logs|slice:":4" %}<li data-cm-ts="{{ log.created_at|date:'U' }}"><i class="bi bi-building-gear"></i><span>{{ log.get_action_display }}</span><small>{{ log.created_at|timesince }}</small></li>{% endfor %}
+        {% if not recent_orders and not recent_stock_movements and not warehouse_logs %}<li class="is-empty">Todavía no hay actividad.</li>{% endif %}
+      </ul>
+    </article>
+
+    <article class="cm-puerta cm-card">
+      <header><h3><i class="bi bi-trophy"></i>Clientes</h3><a href="{% url 'crm_home' %}" aria-label="Abrir clientes"><i class="bi bi-arrow-up-right"></i></a></header>
+      <ol class="cm-clientes">
+        {% for customer in top_customers|slice:":4" %}<li><i>{{ forloop.counter }}</i><span>{{ customer.business_name|default:customer.full_name }}</span><small>${{ customer.estimated_monthly_purchase|default:0|floatformat:"0g" }}</small></li>
+        {% empty %}<li class="is-empty">Aún no hay clientes registrados.</li>{% endfor %}
+      </ol>
+    </article>
+
+      <section class="rs-decisions" id="executivePrioritiesAF10C" aria-labelledby="rsDecisionsTitle">
+        <header class="rs-decisions-head">
+          <h2 id="rsDecisionsTitle">Requiere tu atención</h2>
+          <p>Lo que hoy necesita una decisión tuya. Lo demás sigue su curso.</p>
+        </header>
+        <div class="rs-decision-list">
+          {% if low_stock_count > 0 %}
+          <a class="rs-decision" href="{% url 'inventory:lista_stock' %}?status=low">
+            <i class="bi bi-box-seam"></i>
+            <span class="rs-decision-copy"><strong>Stock bajo</strong><small>{{ low_stock_count }} producto{% if low_stock_count != 1 %}s{% endif %} por agotarse. Compra antes de que frenen ventas.</small></span>
+            <span class="rs-decision-go">Revisar</span>
+          </a>
+          {% endif %}
+          {% if pending_payments > 0 %}
+          <a class="rs-decision" href="{% url 'sales:pedidos_en_revision_pago' %}">
+            <i class="bi bi-credit-card"></i>
+            <span class="rs-decision-copy"><strong>Pagos de clientes por revisar</strong><small>{{ pending_payments }} pago{% if pending_payments != 1 %}s{% endif %} pendiente{% if pending_payments != 1 %}s{% endif %} o en revisión.</small></span>
+            <span class="rs-decision-go">Revisar pagos</span>
+          </a>
+          {% endif %}
+          {% if supplier_payment_pending_count > 0 %}
+          <a class="rs-decision" href="{% url 'purchases:lista_compras' %}">
+            <i class="bi bi-receipt"></i>
+            <span class="rs-decision-copy"><strong>Pagos a proveedores</strong><small>{{ supplier_payment_pending_count }} por aprobar o dar seguimiento.</small></span>
+            <span class="rs-decision-go">Ver compras</span>
+          </a>
+          {% endif %}
+          {% if pending_pickings > 0 %}
+          <a class="rs-decision" href="{% url 'warehouse:lista_picking' %}">
+            <i class="bi bi-list-check"></i>
+            <span class="rs-decision-copy"><strong>Pedidos por surtir</strong><small>{{ pending_pickings }} esperando picking.</small></span>
+            <span class="rs-decision-go">Ver picking</span>
+          </a>
+          {% endif %}
+          {% if pending_packings > 0 %}
+          <a class="rs-decision" href="{% url 'warehouse:lista_packing' %}">
+            <i class="bi bi-box2"></i>
+            <span class="rs-decision-copy"><strong>Pedidos por empacar</strong><small>{{ pending_packings }} esperando packing.</small></span>
+            <span class="rs-decision-go">Ver packing</span>
+          </a>
+          {% endif %}
+          {% if pending_shippings > 0 %}
+          <a class="rs-decision" href="{% url 'warehouse:lista_shipping' %}">
+            <i class="bi bi-truck"></i>
+            <span class="rs-decision-copy"><strong>Envíos por despachar</strong><small>{{ pending_shippings }} listo{% if pending_shippings != 1 %}s{% endif %} o pendiente{% if pending_shippings != 1 %}s{% endif %} de procesar.</small></span>
+            <span class="rs-decision-go">Ver envíos</span>
+          </a>
+          {% endif %}
+          {% if low_stock_count == 0 and pending_payments == 0 and supplier_payment_pending_count == 0 and pending_pickings == 0 and pending_packings == 0 and pending_shippings == 0 %}
+          <div class="rs-decision is-clear">
+            <i class="bi bi-check-circle"></i>
+            <span class="rs-decision-copy"><strong>Nada pendiente por ahora</strong><small>No hay stock bajo, pagos por revisar ni pedidos detenidos.</small></span>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+  </div>
+
+  <details class="rs-analysis" id="executiveAnalysisDetails">
+    <summary>
+      <span><strong>Análisis de los últimos 30 días</strong><small>Cobranza, cumplimiento de pedidos, carga detenida y compromisos con proveedores.</small></span>
+      <i class="bi bi-chevron-down" aria-hidden="true"></i>
+    </summary>
+
+    <section class="px-intelligence" id="executiveIntelligenceAF10B" aria-label="Indicadores cruzados del negocio">
+      <div class="px-cross-kpis">
+        <article class="px-cross-kpi is-green"><span><i class="bi bi-arrow-repeat"></i> Cobranza</span><strong>{{ executive_collection_rate|default:0|floatformat:1 }}%</strong><small>${{ executive_rolling_collected|default:0|floatformat:2 }} cobrados de ${{ executive_rolling_sales|default:0|floatformat:2 }} vendidos.</small></article>
+        <article class="px-cross-kpi"><span><i class="bi bi-check2-circle"></i> Pedidos entregados</span><strong>{{ executive_fulfillment_rate|default:0|floatformat:1 }}%</strong><small>{{ executive_cohort_delivered|default:0 }} de {{ executive_cohort_total|default:0 }} pedidos confirmados.</small></article>
+        <article class="px-cross-kpi is-amber"><span><i class="bi bi-hourglass-split"></i> Carga detenida</span><strong>{{ executive_stalled_total|default:0 }}</strong><small>Picking {{ pending_pickings|default:0 }} · Packing {{ pending_packings|default:0 }} · Despacho {{ pending_shippings|default:0 }}</small></article>
+        <article class="px-cross-kpi is-violet"><span><i class="bi bi-layers"></i> Capital comprometido</span><strong>${{ executive_capital_committed|default:0|floatformat:2 }}</strong><small>Saldo pendiente de órdenes de compra.</small></article>
+      </div>
+
+      <div class="px-chart-grid">
+        <article class="px-chart-card">
+          <header class="px-chart-card-head"><div><h3>Ventas y cobros por día</h3></div><small>30 días · MXN · {{ finance_scope_label }}</small></header>
+          <div class="px-chart-legend"><span><i class="is-sales"></i>Ventas</span><span><i class="is-collected"></i>Cobros</span></div>
+          <div class="px-chart-area"><canvas id="executiveCollectionChartAF10B" role="img" aria-label="Tendencia de ventas y cobros de los últimos treinta días"></canvas>{% if not executive_collection_has_data %}<div class="px-chart-empty">Aún no hay movimientos en estos 30 días.</div>{% endif %}</div>
+        </article>
+
+        <div class="px-side-visuals">
+          <article class="px-chart-card px-mini-visual">
+            <div class="px-mini-canvas"><canvas id="executiveFulfillmentChartAF10B" role="img" aria-label="Cumplimiento de pedidos confirmados en treinta días"></canvas></div>
+            <div class="px-mini-copy"><strong>{{ executive_fulfillment_rate|default:0|floatformat:1 }}%</strong><span>de los pedidos confirmados ya se entregó</span></div>
+          </article>
+
+          <article class="px-chart-card">
+            <header class="px-chart-card-head"><div><h3>Por cobrar vs. por pagar a proveedores</h3></div><small>MXN</small></header>
+            <div class="px-capital-visual"><div class="px-capital-chart"><canvas id="executiveCapitalChartAF10B" role="img" aria-label="Comparación de cuentas por cobrar y compromisos con proveedores"></canvas></div><p class="px-capital-note">Diferencia: ${{ executive_operating_position|default:0|floatformat:2 }}. No representa saldo bancario ni dinero disponible.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </details>
+</section>
+
+{{ executive_collection_labels_data|json_script:"executiveCollectionLabelsAF10B" }}
+{{ executive_collection_sales_data|json_script:"executiveCollectionSalesAF10B" }}
+{{ executive_collection_collected_data|json_script:"executiveCollectionCollectedAF10B" }}
+{{ executive_fulfillment_counts|json_script:"executiveFulfillmentCountsAF10B" }}
+{{ executive_capital_counts|json_script:"executiveCapitalCountsAF10B" }}
+
+<script id="pakivox-executive-af10b-script" src="{% static 'js/tablero_resumen.js' %}" defer></script>

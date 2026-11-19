@@ -1,0 +1,915 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Nuevo producto | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Nuevo producto
+{% endblock %}
+
+{% block page_subtitle %}
+Crea un producto y su primer SKU dentro de {{ company.name }}
+{% endblock %}
+
+{% block content %}
+<section class="product-create-page">
+  <header class="product-create-hero">
+    <div>
+      <span class="product-eyebrow">Inventario / Catálogo</span>
+
+      <h2>Alta profesional de producto</h2>
+
+      <p>
+        Registra la información comercial, la unidad de control y el primer
+        SKU del producto. Todo quedará vinculado exclusivamente a
+        <strong>{{ company.name }}</strong>.
+      </p>
+    </div>
+
+    <div class="product-capacity-badge">
+      {% if product_limit %}
+        {% if product_limit_reached %}
+          <i class="bi bi-lock-fill"></i>
+
+          <div>
+            <small>Capacidad agotada</small>
+            <strong>{{ products_used }}/{{ product_limit }}</strong>
+          </div>
+        {% else %}
+          <i class="bi bi-box-seam"></i>
+
+          <div>
+            <small>Espacios disponibles</small>
+            <strong>{{ product_spaces_remaining }} de {{ product_limit }}</strong>
+          </div>
+        {% endif %}
+      {% else %}
+        <i class="bi bi-infinity"></i>
+
+        <div>
+          <small>Capacidad</small>
+          <strong>Sin límite</strong>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if product_limit_reached %}
+    <div class="product-limit-alert">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+
+      <div>
+        <strong>No puedes crear otro producto.</strong>
+
+        <p>
+          Tu plan permite un máximo de {{ product_limit }} productos.
+          Tus datos actuales permanecen disponibles, pero necesitas ampliar
+          tu plan para continuar agregando productos o combos.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="product-create-form"
+    novalidate
+  >
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="product-form-errors">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+
+        <div>
+          <strong>Revisa la información</strong>
+
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <section class="product-form-card">
+      <header>
+        <div class="section-icon">
+          <i class="bi bi-box-seam"></i>
+        </div>
+
+        <div>
+          <span>Paso 1</span>
+          <h3>Identidad del producto</h3>
+          <p>Nombre, clasificación e imagen principal del catálogo.</p>
+        </div>
+      </header>
+
+      <div class="product-form-grid">
+        <div class="product-field">
+          <label for="{{ form.name.id_for_label }}">
+            Nombre del producto
+          </label>
+
+          {{ form.name }}
+
+          {% for error in form.name.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.base_sku.id_for_label }}">
+            SKU base
+          </label>
+
+          {{ form.base_sku }}
+
+          <small class="product-field-help">
+            Identificador general del producto.
+          </small>
+
+          {% for error in form.base_sku.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.category.id_for_label }}">
+            Categoría
+          </label>
+
+          {{ form.category }}
+
+          {% for error in form.category.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.brand.id_for_label }}">
+            Marca
+          </label>
+
+          {{ form.brand }}
+
+          {% for error in form.brand.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.barcode.id_for_label }}">
+            Código de barras general
+          </label>
+
+          {{ form.barcode }}
+
+          {% for error in form.barcode.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.image.id_for_label }}">
+            Imagen del producto
+          </label>
+
+          {{ form.image }}
+
+          {% for error in form.image.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field product-field-full">
+          <label for="{{ form.description.id_for_label }}">
+            Descripción
+          </label>
+
+          {{ form.description }}
+
+          {% for error in form.description.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form-card">
+      <header>
+        <div class="section-icon orange">
+          <i class="bi bi-rulers"></i>
+        </div>
+
+        <div>
+          <span>Paso 2</span>
+          <h3>Control y conversión de inventario</h3>
+          <p>
+            Define si se controla por pieza o mediante una presentación
+            comercial con varias unidades internas.
+          </p>
+        </div>
+      </header>
+
+      <div class="product-form-grid">
+        <div class="product-field">
+          <label for="{{ form.stock_mode.id_for_label }}">
+            Modo de manejo
+          </label>
+
+          {{ form.stock_mode }}
+
+          {% for error in form.stock_mode.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field conversion-summary-field">
+          <span>Conversión configurada</span>
+
+          <strong id="conversionSummary">
+            1 pieza = 1 pieza
+          </strong>
+        </div>
+
+        <div class="product-field bulk-control-field">
+          <label for="{{ form.base_unit.id_for_label }}">
+            Unidad base de control
+          </label>
+
+          {{ form.base_unit }}
+
+          {% for error in form.base_unit.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field bulk-control-field">
+          <label for="{{ form.commercial_unit.id_for_label }}">
+            Unidad comercial
+          </label>
+
+          {{ form.commercial_unit }}
+
+          {% for error in form.commercial_unit.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field bulk-control-field product-field-full">
+          <label for="{{ form.conversion_factor.id_for_label }}">
+            Contenido por unidad comercial
+          </label>
+
+          {{ form.conversion_factor }}
+
+          <small class="product-field-help">
+            Ejemplo: si vendes un paquete con 12 piezas, escribe 12.
+          </small>
+
+          {% for error in form.conversion_factor.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form-card">
+      <header>
+        <div class="section-icon purple">
+          <i class="bi bi-upc-scan"></i>
+        </div>
+
+        <div>
+          <span>Paso 3</span>
+          <h3>Primer SKU o variante</h3>
+          <p>
+            Crea la primera presentación vendible asociada al producto.
+          </p>
+        </div>
+      </header>
+
+      <div class="product-form-grid">
+        <div class="product-field">
+          <label for="{{ form.variant_sku.id_for_label }}">
+            SKU de venta
+          </label>
+
+          {{ form.variant_sku }}
+
+          {% for error in form.variant_sku.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.variant_barcode.id_for_label }}">
+            Código de barras del SKU
+          </label>
+
+          {{ form.variant_barcode }}
+
+          {% for error in form.variant_barcode.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.color.id_for_label }}">
+            Color
+          </label>
+
+          {{ form.color }}
+
+          {% for error in form.color.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.size.id_for_label }}">
+            Talla o medida
+          </label>
+
+          {{ form.size }}
+
+          {% for error in form.size.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field product-field-full">
+          <label for="{{ form.presentation.id_for_label }}">
+            Presentación
+          </label>
+
+          {{ form.presentation }}
+
+          {% for error in form.presentation.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field product-field-full">
+          <label for="{{ form.specifications.id_for_label }}">
+            Especificaciones adicionales
+          </label>
+
+          {{ form.specifications }}
+
+          <small class="product-field-help">
+            Campo opcional en formato JSON. Ejemplo:
+            {"material": "Algodón", "modelo": "Clásico"}
+          </small>
+
+          {% for error in form.specifications.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form-card">
+      <header>
+        <div class="section-icon green">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
+
+        <div>
+          <span>Paso 4</span>
+          <h3>Precios, alertas y estado</h3>
+          <p>Configura costos, precios comerciales y stock mínimo.</p>
+        </div>
+      </header>
+
+      <div class="product-form-grid product-price-grid">
+        <div class="product-field">
+          <label for="{{ form.cost_price.id_for_label }}">
+            Costo
+          </label>
+
+          {{ form.cost_price }}
+
+          {% for error in form.cost_price.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.sale_price.id_for_label }}">
+            Precio de venta
+          </label>
+
+          {{ form.sale_price }}
+
+          {% for error in form.sale_price.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.wholesale_price.id_for_label }}">
+            Precio de mayoreo
+          </label>
+
+          {{ form.wholesale_price }}
+
+          {% for error in form.wholesale_price.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-field">
+          <label for="{{ form.min_stock.id_for_label }}">
+            Stock mínimo
+          </label>
+
+          {{ form.min_stock }}
+
+          {% for error in form.min_stock.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="product-active-field product-field-full">
+          {{ form.is_active }}
+
+          <label for="{{ form.is_active.id_for_label }}">
+            Producto activo y disponible para operar
+          </label>
+
+          {% for error in form.is_active.errors %}
+            <small class="product-field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <footer class="product-form-actions">
+      <a href="{% url 'inventory:lista_productos' %}" class="product-cancel-button">
+        <i class="bi bi-arrow-left"></i>
+        Cancelar
+      </a>
+
+      <button
+        type="submit"
+        class="product-submit-button"
+        {% if product_limit_reached %}disabled{% endif %}
+      >
+        {% if product_limit_reached %}
+          <i class="bi bi-lock-fill"></i>
+          Límite alcanzado
+        {% else %}
+          <i class="bi bi-check-circle-fill"></i>
+          Crear producto y SKU
+        {% endif %}
+      </button>
+    </footer>
+  </form>
+</section>
+
+<style>
+  .product-create-page {
+    display: grid;
+    gap: 20px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .product-create-hero,
+  .product-form-card,
+  .product-create-form {
+    border: 1px solid rgba(148, 163, 184, 0.17);
+    background: #0f172a;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18);
+  }
+
+  .product-create-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 22px;
+    padding: 24px;
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(14, 165, 233, 0.14),
+        transparent 36%
+      ),
+      #0f172a;
+  }
+
+  .product-eyebrow,
+  .product-form-card > header span {
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .product-create-hero h2 {
+    margin: 7px 0;
+    color: #f8fafc;
+    font-size: 27px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .product-create-hero p {
+    max-width: 760px;
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .product-create-hero p strong {
+    color: #e2e8f0;
+  }
+
+  .product-capacity-badge {
+    min-width: 190px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 14px;
+    background: rgba(34, 197, 94, 0.09);
+    color: #86efac;
+  }
+
+  .product-capacity-badge i {
+    font-size: 22px;
+  }
+
+  .product-capacity-badge div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .product-capacity-badge small {
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .product-capacity-badge strong {
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .product-limit-alert,
+  .product-form-errors {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .product-limit-alert {
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    background: rgba(120, 53, 15, 0.22);
+    color: #fde68a;
+  }
+
+  .product-form-errors {
+    border: 1px solid rgba(239, 68, 68, 0.38);
+    background: rgba(127, 29, 29, 0.22);
+    color: #fecaca;
+  }
+
+  .product-limit-alert p,
+  .product-form-errors p {
+    margin: 4px 0 0;
+    line-height: 1.5;
+  }
+
+  .product-create-form {
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .product-form-card {
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .product-form-card > header {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 17px 19px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  }
+
+  .product-form-card > header h3 {
+    margin: 3px 0;
+    color: #f8fafc;
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .product-form-card > header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .section-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
+    color: #38bdf8;
+  }
+
+  .section-icon.orange {
+    background: rgba(245, 158, 11, 0.13);
+    color: #fbbf24;
+  }
+
+  .section-icon.purple {
+    background: rgba(139, 92, 246, 0.13);
+    color: #c4b5fd;
+  }
+
+  .section-icon.green {
+    background: rgba(34, 197, 94, 0.13);
+    color: #86efac;
+  }
+
+  .product-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+    padding: 20px;
+  }
+
+  .product-price-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .product-field {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .product-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .product-field label {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .product-form-control {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    outline: none;
+    background: #020617;
+    color: #f8fafc;
+    font: inherit;
+  }
+
+  textarea.product-form-control {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  input[type="file"].product-form-control {
+    padding: 8px;
+  }
+
+  .product-form-control:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.11);
+  }
+
+  .product-field-help {
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .product-field-error {
+    color: #fca5a5;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .conversion-summary-field {
+    padding: 12px 14px;
+    border: 1px solid rgba(245, 158, 11, 0.24);
+    border-radius: 11px;
+    background: rgba(120, 53, 15, 0.15);
+  }
+
+  .conversion-summary-field span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .conversion-summary-field strong {
+    color: #fde68a;
+  }
+
+  .product-active-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 11px;
+    background: rgba(34, 197, 94, 0.07);
+  }
+
+  .product-active-field input {
+    width: auto;
+  }
+
+  .product-active-field label {
+    color: #d1fae5;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .product-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 11px;
+    flex-wrap: wrap;
+  }
+
+  .product-cancel-button,
+  .product-submit-button {
+    min-height: 45px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 11px;
+    font-weight: 950;
+    text-decoration: none;
+  }
+
+  .product-cancel-button {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+  }
+
+  .product-submit-button {
+    border: 0;
+    cursor: pointer;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    color: #020617;
+  }
+
+  .product-submit-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  @media (max-width: 950px) {
+    .product-price-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .product-create-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .product-capacity-badge {
+      width: fit-content;
+    }
+
+    .product-form-grid,
+    .product-price-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .product-field-full {
+      grid-column: auto;
+    }
+
+    .product-form-actions {
+      display: grid;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const stockMode = document.getElementById("{{ form.stock_mode.id_for_label }}");
+    const baseUnit = document.getElementById("{{ form.base_unit.id_for_label }}");
+    const commercialUnit = document.getElementById("{{ form.commercial_unit.id_for_label }}");
+    const conversionFactor = document.getElementById("{{ form.conversion_factor.id_for_label }}");
+    const bulkFields = document.querySelectorAll(".bulk-control-field");
+    const conversionSummary = document.getElementById("conversionSummary");
+
+    const unitLabels = {
+      pza: "pieza",
+      pqt: "paquete",
+      cja: "caja",
+      kg: "kilogramo",
+      lt: "litro",
+      saco: "saco",
+      tarima: "tarima",
+    };
+
+    function updateStockMode() {
+      if (!stockMode) {
+        return;
+      }
+
+      const isBulk = stockMode.value === "bulk";
+
+      bulkFields.forEach(function (field) {
+        field.style.display = isBulk ? "grid" : "none";
+      });
+
+      if (!isBulk) {
+        if (baseUnit) {
+          baseUnit.value = "pza";
+        }
+
+        if (commercialUnit) {
+          commercialUnit.value = "pza";
+        }
+
+        if (conversionFactor) {
+          conversionFactor.value = "1";
+        }
+      }
+
+      updateConversionSummary();
+    }
+
+    function updateConversionSummary() {
+      if (
+        !baseUnit
+        || !commercialUnit
+        || !conversionFactor
+        || !conversionSummary
+      ) {
+        return;
+      }
+
+      const baseLabel = unitLabels[baseUnit.value] || baseUnit.value;
+      const commercialLabel = unitLabels[commercialUnit.value] || commercialUnit.value;
+      const factor = conversionFactor.value || "1";
+
+      conversionSummary.textContent = (
+        "1 "
+        + commercialLabel
+        + " = "
+        + factor
+        + " "
+        + baseLabel
+      );
+    }
+
+    if (stockMode) {
+      stockMode.addEventListener("change", updateStockMode);
+    }
+
+    if (baseUnit) {
+      baseUnit.addEventListener("change", updateConversionSummary);
+    }
+
+    if (commercialUnit) {
+      commercialUnit.addEventListener("change", updateConversionSummary);
+    }
+
+    if (conversionFactor) {
+      conversionFactor.addEventListener("input", updateConversionSummary);
+    }
+
+    updateStockMode();
+  });
+</script>
+{% endblock %}

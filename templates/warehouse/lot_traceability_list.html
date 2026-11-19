@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Trazabilidad de lotes | PAKIVOX{% endblock %}
+{% block page_title %}Trazabilidad de lotes{% endblock %}
+{% block page_subtitle %}Localiza lotes, pedidos y clientes afectados{% endblock %}
+
+{% block content %}
+<section class="lt1d-page">
+  <div class="lt1d-head">
+    <div>
+      <span class="eyebrow">Trazabilidad de lotes</span>
+      <h2>Centro de lotes</h2>
+      <p>
+        Busca por número de lote, SKU o producto. Los resultados respetan
+        tu empresa y las bodegas a las que tienes acceso.
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'inventory:lot_expiry_alerts' %}" style="color:#7dd3fc;font-weight:900;text-decoration:none;">Caducidad →</a>
+    </div>
+  </div>
+
+  <form method="get" class="lt1d-search">
+    <input
+      type="search"
+      name="q"
+      value="{{ query }}"
+      placeholder="Ej. L-2026-0811, SKU-001 o nombre de producto"
+      autocomplete="off"
+    >
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if is_global_warehouse_view %}
+    <div class="lt1d-note">
+      Vista global: se muestran lotes de todas tus bodegas autorizadas.
+    </div>
+  {% elif active_warehouse %}
+    <div class="lt1d-note">
+      Bodega activa: <strong>{{ active_warehouse.name }}</strong>
+    </div>
+  {% endif %}
+
+  <div class="lt1d-list">
+    {% for lot in lots %}
+      <a
+        class="lt1d-row"
+        href="{% url 'warehouse:lot_traceability_detail' lot.id %}"
+      >
+        <div>
+          <span>Lote</span>
+          <strong>{{ lot.lot_number }}</strong>
+        </div>
+        <div>
+          <span>SKU</span>
+          <strong>{{ lot.variant.sku }}</strong>
+          <small>{{ lot.variant.product.name }}</small>
+        </div>
+        <div>
+          <span>Caducidad</span>
+          <strong>
+            {% if lot.expiration_date %}
+              {{ lot.expiration_date|date:"d/m/Y" }}
+            {% else %}
+              Sin caducidad
+            {% endif %}
+          </strong>
+          {% if lot.expiration_date %}
+            <small class="expiry expiry-{{ lot.expiry_severity|default:'normal' }}">
+              {{ lot.expiry_label }}
+              {% if lot.days_to_expiry is not None %}· {{ lot.days_to_expiry }} días{% endif %}
+            </small>
+          {% endif %}
+        </div>
+        <div>
+          <span>Estado</span>
+          <strong class="status status-{{ lot.status }}">
+            {{ lot.get_status_display }}
+          </strong>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+    {% empty %}
+      <div class="lt1d-empty">
+        <h3>Sin lotes visibles</h3>
+        {% if query %}
+          <p>No encontramos resultados para “{{ query }}”.</p>
+        {% else %}
+          <p>
+            Los lotes aparecerán aquí cuando existan SKU con control LOT
+            o LOT_EXPIRY y tengan inventario o historial operativo.
+          </p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+.lt1d-page{display:grid;gap:18px}.lt1d-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.lt1d-head .eyebrow{color:#38bdf8;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}.lt1d-head h2{margin:5px 0;color:#f8fafc;font-size:30px}.lt1d-head p{margin:0;color:#94a3b8;max-width:760px}.lt1d-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:14px;background:#0f172a;border:1px solid rgba(148,163,184,.16);border-radius:14px}.lt1d-search input{background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:12px 14px}.lt1d-search button{border:0;border-radius:10px;padding:0 18px;background:#38bdf8;color:#082f49;font-weight:900;cursor:pointer}.lt1d-note{padding:11px 13px;border-radius:10px;background:rgba(56,189,248,.08);color:#bae6fd;border:1px solid rgba(56,189,248,.18)}.lt1d-list{display:grid;gap:9px}.lt1d-row{display:grid;grid-template-columns:1fr 1.5fr 1fr 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:#111827;border:1px solid rgba(148,163,184,.14);border-radius:13px;text-decoration:none;transition:.15s}.lt1d-row:hover{border-color:rgba(56,189,248,.45);transform:translateY(-1px)}.lt1d-row span{display:block;color:#64748b;font-size:10px;text-transform:uppercase;font-weight:900}.lt1d-row strong{display:block;color:#f8fafc;margin-top:3px}.lt1d-row small{display:block;color:#94a3b8;margin-top:3px}.lt1d-row .arrow{color:#38bdf8;font-size:22px}.status-recalled{color:#fca5a5!important}.status-blocked{color:#fde68a!important}.status-active{color:#86efac!important}.expiry-expired,.expiry-critical{color:#fca5a5!important}.expiry-warning{color:#fde68a!important}.expiry-notice{color:#93c5fd!important}.expiry-info{color:#cbd5e1!important}.lt1d-empty{padding:35px;text-align:center;background:#0f172a;border:1px dashed rgba(148,163,184,.24);border-radius:14px}.lt1d-empty h3{color:#f8fafc}.lt1d-empty p{color:#94a3b8}@media(max-width:850px){.lt1d-row{grid-template-columns:1fr 1fr}.lt1d-row .arrow{display:none}.lt1d-search{grid-template-columns:1fr}.lt1d-search button{padding:12px}}
+</style>
+{% endblock %}

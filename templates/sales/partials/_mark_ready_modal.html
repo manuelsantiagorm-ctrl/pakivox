@@ -1,0 +1,35 @@
+<div id="markReadyModal" class="ps6-simple-modal" hidden>
+  <div class="ps6-simple-modal-backdrop" onclick="closeMarkReadyModal()"></div>
+  <div class="ps6-simple-modal-card">
+    <button type="button" class="ps6-simple-modal-close" onclick="closeMarkReadyModal()">×</button>
+    <span class="eyebrow">Confirmar envío a cobro</span>
+    <h3>Marcar pedido listo para cobro</h3>
+    <p>Revisa los productos antes de congelar el pedido para finanzas. Una vez confirmado, no podrás editar productos hasta que finanzas lo apruebe o lo regrese a captura.</p>
+
+    <div class="ready-confirm-list">
+      {% for item in order.items.all %}
+        <div class="ready-confirm-row">
+          <div>
+            <strong>{{ item.variant.sku }}</strong>
+            <small>{{ item.variant.product.name }}</small>
+          </div>
+          <div class="ready-confirm-qty">{{ item.quantity }} × ${{ item.unit_price|floatformat:2 }}</div>
+          <div class="ready-confirm-line-total">${{ item.total|floatformat:2 }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="ready-confirm-total">
+      <span>Total del pedido</span>
+      <strong>${{ order.total|floatformat:2 }}</strong>
+    </div>
+
+    <form method="post" action="{% url 'sales:marcar_pedido_listo_para_cobro' order.id %}">
+      {% csrf_token %}
+      <div class="ready-confirm-actions">
+        <button type="button" class="ghost-action" onclick="closeMarkReadyModal()">Cancelar</button>
+        <button type="submit" class="ps6b-action-payment" data-submit-once>Confirmar y enviar a cobro</button>
+      </div>
+    </form>
+  </div>
+</div>

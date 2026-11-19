@@ -1,0 +1,141 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Editar producto | PAKIVOX{% endblock %}
+
+{% block page_title %}Editar producto{% endblock %}
+
+{% block page_subtitle %}
+Actualiza los datos comerciales, categoría, marca, precios e imagen del producto.
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/editar_producto.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="product-edit-page">
+  <div class="edit-header">
+    <div>
+      <span class="eyebrow">Inventario</span>
+      <h1>Editar producto</h1>
+      <p>
+        Cambia nombre, categoría, marca, precios e imagen. El SKU base, las
+        unidades y las existencias no se cambian aquí para no alterar el
+        inventario registrado.
+      </p>
+    </div>
+
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="product-form" novalidate>
+    {% csrf_token %}
+
+    <div class="form-main">
+      <div class="form-section">
+        <div class="section-badge">
+          <i class="bi bi-pencil-square" aria-hidden="true"></i>
+          Datos del producto
+        </div>
+
+        <h2>{{ product.name }}</h2>
+        <p>SKU base <strong>{{ product.base_sku }}</strong></p>
+
+        {% if form.non_field_errors %}
+        <div class="form-alert" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-grid">
+          {% for field in form %}
+            {% if field.name != "description" and field.name != "is_active" and field.name != "image" and field.name != "remove_image" %}
+            <label for="{{ field.id_for_label }}">
+              {{ field.label }}
+              {{ field }}
+              {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </label>
+            {% endif %}
+          {% endfor %}
+
+          <label class="locked-field">
+            SKU base
+            <input type="text" value="{{ product.base_sku }}" disabled>
+            <span class="field-help">El SKU base identifica al producto y no se cambia.</span>
+          </label>
+
+          <label class="check-field" for="{{ form.is_active.id_for_label }}">
+            {{ form.is_active }}
+            {{ form.is_active.label }}
+          </label>
+        </div>
+
+        <label class="description-field" for="{{ form.description.id_for_label }}">
+          {{ form.description.label }}
+          {{ form.description }}
+          {% for error in form.description.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+
+        <label class="description-field" for="{{ form.image.id_for_label }}">
+          Cambiar imagen
+          <input type="file" name="image" id="{{ form.image.id_for_label }}" accept="image/*">
+          <span class="field-help">JPG, PNG o WebP. Si no eliges una, se conserva la actual.</span>
+          {% for error in form.image.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+
+        <div class="form-actions">
+          <a href="{% url 'inventory:detalle_producto' product.id %}" class="btn-secondary">
+            Cancelar
+          </a>
+
+          <button type="submit" class="btn-primary">
+            <i class="bi bi-save-fill" aria-hidden="true"></i>
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+
+      <aside class="preview-card">
+        <div class="preview-top">
+          <span>Vista previa</span>
+          <strong>Producto</strong>
+        </div>
+
+        <div class="product-image-preview">
+          {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+          {% else %}
+            <div class="image-placeholder">
+              <i class="bi bi-image" aria-hidden="true"></i>
+              <span>Sin imagen</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if product.image %}
+          <label class="remove-image-box">
+            {{ form.remove_image }}
+            <span>Eliminar imagen actual</span>
+          </label>
+        {% endif %}
+
+        <div class="preview-info">
+          <span>SKU base</span>
+          <h3>{{ product.base_sku }}</h3>
+          <p>{{ product.name }}</p>
+          <div class="preview-tags">
+            <strong>{{ product.category|default:"Sin categoría" }}</strong>
+            <strong>{{ product.brand|default:"Sin marca" }}</strong>
+          </div>
+        </div>
+
+        <div class="preview-prices">
+          <div><small>Costo</small><strong>${{ product.cost_price|floatformat:"2g" }}</strong></div>
+          <div><small>Venta</small><strong>${{ product.sale_price|floatformat:"2g" }}</strong></div>
+          <div><small>Mayoreo</small><strong>${{ product.wholesale_price|floatformat:"2g" }}</strong></div>
+        </div>
+      </aside>
+    </div>
+  </form>
+</section>
+{% endblock %}

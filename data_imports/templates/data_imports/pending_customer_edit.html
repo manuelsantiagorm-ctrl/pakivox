@@ -1,0 +1,154 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Corregir fila {{ row.row_number }} | PAKIVOX{% endblock %}
+{% block page_title %}Corregir cliente no importado{% endblock %}
+{% block page_subtitle %}
+Edita la fila, vuelve a validarla e importa únicamente este cliente
+{% endblock %}
+
+{% block content %}
+<section class="ce-page">
+  <header class="ce-hero">
+    <div>
+      <span>Fila #{{ row.row_number }} · {{ job.folio }}</span>
+      <h2>
+        {{ row.normalized_data.customer.full_name|default:"Cliente sin nombre válido" }}
+      </h2>
+      <p>Estado actual: <strong>{{ row.get_status_display }}</strong></p>
+    </div>
+
+    <a href="{% url 'data_imports:pending_customers' job.pk %}">
+      ← Volver a pendientes
+    </a>
+  </header>
+
+  {% if row.errors %}
+    <section class="ce-alert error">
+      <strong>Errores detectados</strong>
+      {% for error in row.errors %}<p>{{ error }}</p>{% endfor %}
+    </section>
+  {% endif %}
+
+  {% if row.warnings %}
+    <section class="ce-alert warning">
+      <strong>Advertencias</strong>
+      {% for warning in row.warnings %}<p>{{ warning }}</p>{% endfor %}
+    </section>
+  {% endif %}
+
+  <form method="post" class="ce-card">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <section>
+      <header>
+        <span>Datos del cliente</span>
+        <h3>Identidad, contacto y dirección</h3>
+      </header>
+
+      <div class="ce-grid">
+        {% for field in form %}
+          <label class="{% if field.name == 'notes' or field.name == 'correction_note' %}full{% endif %}">
+            <span>{{ field.label }}</span>
+            {{ field }}
+            {% for error in field.errors %}
+              <small class="field-error">{{ error }}</small>
+            {% endfor %}
+          </label>
+        {% endfor %}
+      </div>
+    </section>
+
+    <footer>
+      <a href="{% url 'data_imports:pending_customers' job.pk %}">
+        Cancelar
+      </a>
+      <button type="submit">Guardar y volver a validar</button>
+    </footer>
+  </form>
+
+  {% if row.status == "valid" or row.status == "warning" %}
+    <section class="ce-ready">
+      <div>
+        <strong>Esta fila ya puede importarse</strong>
+        <p>Solo se procesará esta fila. Los clientes ya creados no se repetirán.</p>
+      </div>
+
+      <form
+        method="post"
+        action="{% url 'data_imports:import_pending_customer' job.pk row.pk %}"
+        onsubmit="return confirm('¿Confirmas la creación de este cliente en CRM?');"
+      >
+        {% csrf_token %}
+        <button type="submit">Importar este cliente</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if row.status == "duplicate" %}
+    <section class="ce-ready duplicate">
+      <div>
+        <strong>La corrección coincide con un cliente existente</strong>
+        <p>Revisa la coincidencia antes de continuar.</p>
+      </div>
+      <a href="{% url 'data_imports:resolve_duplicates' job.pk %}">
+        Resolver duplicado
+      </a>
+    </section>
+  {% endif %}
+</section>
+
+<style>
+  .ce-page{display:grid;gap:16px}
+  .ce-hero,.ce-card,.ce-alert,.ce-ready{
+    border:1px solid rgba(148,163,184,.16);border-radius:18px;background:#0f172a
+  }
+  .ce-hero{padding:22px;display:flex;justify-content:space-between;align-items:center;gap:18px}
+  .ce-hero span,.ce-card section>header span{
+    color:#67e8f9;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase
+  }
+  .ce-hero h2{margin:7px 0 4px;color:#f8fafc}
+  .ce-hero p{margin:0;color:#94a3b8}
+  .ce-hero>a,.ce-card footer>a{
+    min-height:42px;padding:0 14px;border:1px solid rgba(148,163,184,.22);
+    border-radius:11px;display:inline-flex;align-items:center;color:#cbd5e1;text-decoration:none;font-weight:900
+  }
+  .ce-alert{padding:15px}
+  .ce-alert p{margin:4px 0 0}
+  .ce-alert.error{color:#fecaca;background:rgba(127,29,29,.18)}
+  .ce-alert.warning{color:#fde68a;background:rgba(120,53,15,.18)}
+  .ce-card{overflow:hidden}
+  .ce-card section{padding:20px}
+  .ce-card h3{margin:5px 0 0;color:#f8fafc}
+  .ce-grid{margin-top:17px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+  .ce-grid label{display:grid;gap:6px}
+  .ce-grid label.full{grid-column:1/-1}
+  .ce-grid label>span{color:#94a3b8;font-size:11px;font-weight:800}
+  .pending-input{
+    width:100%;min-height:43px;padding:10px 12px;border:1px solid rgba(148,163,184,.18);
+    border-radius:10px;outline:none;color:#f8fafc;background:#020617
+  }
+  textarea.pending-input{min-height:95px;resize:vertical}
+  input[type="checkbox"]{width:18px;height:18px}
+  .field-error{color:#fca5a5}
+  .ce-card footer{
+    padding:17px 20px;display:flex;justify-content:flex-end;gap:9px;
+    border-top:1px solid rgba(148,163,184,.1)
+  }
+  .ce-card footer button,.ce-ready button,.ce-ready>a{
+    min-height:43px;padding:0 15px;border:0;border-radius:11px;
+    color:#052e16;background:#22c55e;font-weight:900;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center
+  }
+  .ce-ready{padding:17px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .ce-ready strong{color:#bbf7d0}
+  .ce-ready p{margin:4px 0 0;color:#94a3b8}
+  .ce-ready.duplicate>a{background:#7c3aed;color:#fff}
+  @media(max-width:980px){.ce-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){
+    .ce-hero,.ce-ready{align-items:stretch;flex-direction:column}
+    .ce-grid{grid-template-columns:1fr}
+    .ce-grid label.full{grid-column:auto}
+  }
+</style>
+{% endblock %}

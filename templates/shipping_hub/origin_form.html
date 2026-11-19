@@ -1,0 +1,361 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Dirección de origen | PAKIVOX{% endblock %}
+
+{% block page_title %}Shipping Hub{% endblock %}
+
+{% block page_subtitle %}
+Configuración logística de la bodega
+{% endblock %}
+
+{% block content %}
+<section class="origin-form-page">
+  <div class="form-header">
+    <div>
+      <span class="eyebrow">
+        <i class="bi bi-geo-alt-fill"></i>
+        {{ company.name }}
+      </span>
+
+      <h2>
+        {% if editing %}
+          Editar dirección de origen
+        {% else %}
+          Nueva dirección de origen
+        {% endif %}
+      </h2>
+
+      <p>
+        Completa los datos exactamente como deben enviarse
+        a la paquetería.
+      </p>
+    </div>
+
+    <a
+      href="{% url 'shipping_hub:origins_list' %}"
+      class="secondary-btn"
+    >
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </a>
+  </div>
+
+  <form method="post" class="origin-form" data-origin-form>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-section">
+      <div class="section-title">
+        <span>1</span>
+
+        <div>
+          <h3>Bodega y contacto</h3>
+          <p>Persona responsable de entregar el paquete.</p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        {% include "shipping_hub/partials/origin_field.html" with field=form.warehouse %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.company_name %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.contact_name %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.phone %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.email %}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">
+        <span>2</span>
+
+        <div>
+          <h3>Dirección</h3>
+          <p>Origen utilizado para cotizaciones y guías.</p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        {% include "shipping_hub/partials/origin_field.html" with field=form.street %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.exterior_number %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.interior_number %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.neighborhood %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.city %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.state %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.zip_code %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.country %}
+        {% include "shipping_hub/partials/origin_field.html" with field=form.country_code %}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">
+        <span>3</span>
+
+        <div>
+          <h3>Referencia y disponibilidad</h3>
+          <p>Información adicional para recolección.</p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field-group full">
+          <label for="{{ form.reference.id_for_label }}">
+            {{ form.reference.label }}
+          </label>
+
+          {{ form.reference }}
+
+          {% for error in form.reference.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <label class="checkbox-card">
+          {{ form.is_active }}
+
+          <span>
+            <strong>Dirección activa</strong>
+            <small>Puede utilizarse para cotizar envíos.</small>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a
+        href="{% url 'shipping_hub:origins_list' %}"
+        class="secondary-btn"
+      >
+        Cancelar
+      </a>
+
+      <button
+        type="submit"
+        class="primary-btn"
+        id="save-origin-btn"
+      >
+        <i class="bi bi-shield-check"></i>
+        Guardar dirección
+      </button>
+    </div>
+  </form>
+</section>
+
+<style>
+  .origin-form-page {
+    max-width: 1050px;
+    margin: 0 auto;
+    display: grid;
+    gap: 18px;
+  }
+
+  .form-header,
+  .form-section,
+  .form-actions {
+    padding: 22px;
+    border-radius: 20px;
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .form-header h2 {
+    color: #f8fafc;
+    margin: 9px 0 5px;
+  }
+
+  .form-header p,
+  .section-title p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .origin-form {
+    display: grid;
+    gap: 18px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .section-title > span {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #38bdf8;
+    color: #082f49;
+    font-weight: 950;
+  }
+
+  .section-title h3 {
+    color: #f8fafc;
+    margin: 0 0 3px;
+    font-size: 17px;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .field-group {
+    display: grid;
+    gap: 7px;
+  }
+
+  .field-group label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  .shipping-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 13px;
+    border-radius: 12px;
+    color: #f8fafc;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .23);
+    outline: none;
+  }
+
+  .shipping-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .1);
+  }
+
+  .field-error {
+    color: #fca5a5;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px;
+    border-radius: 13px;
+    color: #e2e8f0;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .checkbox-card input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .checkbox-card strong,
+  .checkbox-card small {
+    display: block;
+  }
+
+  .checkbox-card small {
+    color: #94a3b8;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border-radius: 11px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .primary-btn {
+    border: 0;
+    color: #082f49;
+    background: #38bdf8;
+    cursor: pointer;
+  }
+
+  .secondary-btn {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, .08);
+    border: 1px solid rgba(148, 163, 184, .2);
+  }
+
+  .form-errors {
+    padding: 14px;
+    color: #fecaca;
+    background: rgba(239, 68, 68, .1);
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-radius: 13px;
+  }
+
+  @media (max-width: 720px) {
+    .form-header,
+    .field-grid,
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .full {
+      grid-column: auto;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("[data-origin-form]");
+    const button = document.getElementById("save-origin-btn");
+
+    if (!form || !button) {
+      return;
+    }
+
+    form.addEventListener("submit", function () {
+      button.disabled = true;
+      button.innerHTML =
+        '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+    });
+  });
+</script>
+{% endblock %}

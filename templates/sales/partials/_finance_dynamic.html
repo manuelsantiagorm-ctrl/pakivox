@@ -1,0 +1,102 @@
+<div class="finance-grid">
+        <div>
+          <span>Total</span>
+          <strong>${{ order.total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Pagado</span>
+          <strong>${{ order.amount_paid|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo</span>
+          <strong>${{ order.balance_due|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Pagos registrados</span>
+          <strong>{% if can_view_payments %}{{ payment_count }}{% else %}—{% endif %}</strong>
+        </div>
+      </div>
+
+      {% if can_view_payments %}
+      {% if customer_credit_available_total > 0 or order_credit_applied_total > 0 %}
+        <section class="cs1c4-credit-card">
+          <div class="cs1c4-credit-head">
+            <div>
+              <strong>Saldo a favor del cliente</strong>
+              <p class="cs1c4-credit-note">El saldo aplicado cubre el pedido, pero no crea un nuevo cobro ni un Payment ficticio.</p>
+            </div>
+            <span>${{ customer_credit_available_total|floatformat:2 }} disponible</span>
+          </div>
+
+          <div class="cs1c4-credit-summary">
+            <div><small>Aplicado a este pedido</small><b>${{ order_credit_applied_total|floatformat:2 }}</b></div>
+            <div><small>Saldo pendiente del pedido</small><b>${{ order.balance_due|floatformat:2 }}</b></div>
+          </div>
+
+          {% if can_apply_customer_credit and order.balance_due > 0 %}
+            {% for credit in available_customer_credits %}
+              {% if credit.max_applicable > 0 %}
+                <form method="post" action="{% url 'payments:aplicar_saldo_favor_pedido' order.id %}" class="cs1c4-credit-row">
+                  {% csrf_token %}
+                  <input type="hidden" name="credit_id" value="{{ credit.id }}">
+                  <input type="hidden" name="idempotency_key" value="{{ credit.apply_token }}">
+                  <input type="hidden" name="reason" value="Aplicación de saldo a favor al pedido {{ order.folio }}">
+                  <label>Crédito #{{ credit.id }} · origen {{ credit.source_order.folio }}
+                    <span>Disponible ${{ credit.remaining_amount|floatformat:2 }}</span>
+                  </label>
+                  <label>Monto a aplicar
+                    <input type="number" name="amount" min="0.01" step="0.01" max="{{ credit.max_applicable }}" value="{{ credit.max_applicable }}" required>
+                  </label>
+                  <button type="submit" data-submit-once>Aplicar saldo</button>
+                </form>
+              {% endif %}
+            {% endfor %}
+          {% elif customer_credit_available_total > 0 and not can_apply_customer_credit %}
+            <p class="cs1c4-credit-note">Hay saldo disponible, pero tu usuario no tiene permiso financiero para aplicarlo.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+      {% endif %}
+
+      {% if can_view_payments %}
+      <div class="finance-actions">
+        
+          href="{% url 'payments:pagos_pedido' order.id %}"
+          class="finance-primary-btn"
+        >
+          <i class="bi bi-credit-card-fill"></i>
+          Ver / registrar pagos
+        </a>
+
+        
+          href="{% url 'payments:lista_pagos' %}?q={{ order.folio }}"
+          class="finance-secondary-btn"
+        >
+          <i class="bi bi-search"></i>
+          Buscar pagos
+        </a>
+      </div>
+      {% else %}
+        <p class="ps6a-readonly-note">El detalle de cobros lo gestiona el equipo autorizado. Tú puedes continuar dando seguimiento comercial desde este pedido.</p>
+      {% endif %}
+
+      {% if order.balance_due <= 0 and order.status == "paid" %}
+        <div class="finance-alert success">
+          <strong>Pedido cubierto</strong>
+          <p>
+            Este pedido ya está completamente pagado y puede avanzar a picking
+            si no tiene picking activo.
+          </p>
+        </div>
+      {% elif order.balance_due > 0 %}
+        <div class="finance-alert warning">
+          <strong>Saldo pendiente</strong>
+          <p>
+            Registra o aprueba pagos por ${{ order.balance_due|floatformat:2 }}
+            para completar el pedido.
+          </p>
+        </div>
+      {% endif %}

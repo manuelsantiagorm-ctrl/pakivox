@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sin permiso | PAKIVOX{% endblock %}
+
+{% block page_title %}Sin permiso{% endblock %}
+
+{% block page_subtitle %}Esta área no está incluida en los permisos de tu usuario.{% endblock %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'style/errores.css' %}">{% endblock %}
+
+{% block content %}
+<section class="error-pagina">
+  <div class="error-tarjeta">
+    <div class="error-icono"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i></div>
+    <span class="error-codigo">Error 403</span>
+    <h2>{% if pide_bodega %}Primero elige una bodega{% else %}No tienes permiso para entrar aquí{% endif %}</h2>
+    {% if pide_bodega %}
+    <p>{{ motivo }}</p>
+    <p>Elige una bodega en el selector <strong>Bodega activa</strong> de la parte superior y vuelve a intentarlo.</p>
+    {% elif motivo %}
+    <p>{{ motivo }}</p>
+    <p>Si crees que necesitas este acceso, pídeselo al administrador de tu empresa desde Equipo.</p>
+    {% else %}
+    <p>
+      Tu cuenta está activa, pero esta función no forma parte de las áreas que
+      te asignó el administrador de tu empresa. Si la necesitas, pídele que te
+      dé acceso desde Equipo.
+    </p>
+    {% endif %}
+    <div class="error-acciones">
+      <button type="button" class="es-secundaria" data-error-regresar="/"><i class="bi bi-arrow-left" aria-hidden="true"></i> Regresar</button>
+      <a class="es-principal" href="/"><i class="bi bi-house-door-fill" aria-hidden="true"></i> Ir al inicio</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/errores.js' %}" defer></script>{% endblock %}

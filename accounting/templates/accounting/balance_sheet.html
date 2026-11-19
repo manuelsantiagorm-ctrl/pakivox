@@ -1,0 +1,209 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Balance General | PAKIVOX{% endblock %}
+{% block page_title %}Balance General{% endblock %}
+{% block page_subtitle %}
+Situación financiera de {{ company.name }} al {{ as_of_date|date:"d/m/Y" }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="financial-page">
+
+  <form method="get" class="financial-toolbar">
+    <div class="financial-filter">
+      <div class="financial-field">
+        <label>Fecha de corte</label>
+        <input type="date" name="as_of_date" value="{{ as_of_date|date:'Y-m-d' }}">
+      </div>
+
+      <button class="financial-button" type="submit">
+        Actualizar balance
+      </button>
+    </div>
+
+    <a
+    class="financial-button success"
+    href="{% url 'accounting:export_financial_excel' %}?as_of_date={{ as_of_date|date:'Y-m-d' }}"
+    >
+    <i class="bi bi-file-earmark-excel-fill"></i>
+    Exportar Excel
+</a>
+    <a class="financial-button"
+       href="{% url 'accounting:financial_dashboard' %}?end_date={{ as_of_date|date:'Y-m-d' }}">
+      Volver a Finanzas
+    </a>
+  </form>
+
+  {% if statement.inventory_is_current_snapshot %}
+    <div class="financial-alert warning">
+      El inventario histórico contiene
+      {{ statement.inventory_history_fallback_count }} registro{{ statement.inventory_history_fallback_count|pluralize }}
+      sin trazabilidad completa. En esos registros se utilizó la existencia
+      actual; revisa los movimientos antiguos antes de usar este corte como
+      cierre contable definitivo.
+    </div>
+  {% elif statement.inventory_is_historical %}
+    <div class="financial-alert success">
+      Existencias reconstruidas al corte con el historial de movimientos
+      de inventario de {{ company.name }}.
+      {% if statement.inventory_uses_current_cost %}
+        La valoración utiliza el costo unitario vigente de cada SKU.
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <section class="financial-grid">
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h2>Activos</h2>
+      </div>
+
+      <table class="statement-table">
+        <tr>
+          <td>Caja</td>
+          <td>${{ statement.assets.cash|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Bancos</td>
+          <td>${{ statement.assets.banks|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Cuentas por cobrar</td>
+          <td>${{ statement.assets.accounts_receivable|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Anticipos a proveedores</td>
+          <td>${{ statement.assets.supplier_advances|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Inventario</td>
+          <td>${{ statement.assets.inventory|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Total activo circulante</td>
+          <td>${{ statement.assets.total_current_assets|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Activo fijo</td>
+          <td>${{ statement.assets.fixed_assets|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="total">
+          <td>TOTAL ACTIVOS</td>
+          <td>${{ statement.assets.total_assets|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </article>
+
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h2>Pasivos y Capital</h2>
+      </div>
+
+      <table class="statement-table">
+        <tr>
+          <td>Cuentas por pagar</td>
+          <td>${{ statement.liabilities.accounts_payable|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Anticipos de clientes</td>
+          <td>${{ statement.liabilities.customer_advances|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Impuestos por pagar estimados</td>
+          <td>${{ statement.liabilities.taxes_payable|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Total pasivo circulante</td>
+          <td>${{ statement.liabilities.total_current_liabilities|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Préstamos por pagar</td>
+          <td>${{ statement.liabilities.loans_payable|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Total pasivos</td>
+          <td>${{ statement.liabilities.total_liabilities|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Capital social</td>
+          <td>${{ statement.equity.capital_social|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Resultados acumulados</td>
+          <td>${{ statement.equity.retained_earnings|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>Resultado operativo acumulado</td>
+          <td>${{ statement.equity.operating_result|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Total capital</td>
+          <td>${{ statement.equity.total_equity|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="total">
+          <td>TOTAL PASIVO + CAPITAL</td>
+          <td>${{ statement.liabilities_and_equity|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </article>
+  </section>
+
+  {% if statement.is_balanced %}
+    <div class="financial-alert success">
+      <strong>Balance cuadrado correctamente.</strong>
+      La diferencia es $0.00.
+    </div>
+  {% else %}
+    <div class="financial-alert danger">
+      <strong>El balance todavía no cuadra.</strong>
+      Diferencia absoluta: ${{ statement.difference_absolute|floatformat:2 }}.
+      Cálculo: activos ${{ statement.reconciliation_formula.total_assets|floatformat:2 }}
+      menos pasivo + capital
+      ${{ statement.reconciliation_formula.liabilities_and_equity|floatformat:2 }}.
+    </div>
+
+    <article class="financial-panel" style="margin-top: 18px;">
+      <div class="financial-panel-header">
+        <h2>Diagnóstico previo a integración contable</h2>
+      </div>
+      <div style="padding: 18px;">
+        <p>
+          La diferencia incluye saldos de inventario, caja, bancos u otros
+          módulos operativos que todavía no cuentan con todas sus pólizas
+          automáticas.
+        </p>
+        <div class="financial-alert warning">
+          <strong>Conciliación bloqueada por seguridad.</strong>
+          No se creará una póliza global contra la cuenta 3999 porque ocultaría
+          el origen de la diferencia. La fase 4 integrará primero las pólizas
+          reales del inventario y después permitirá conciliar únicamente
+          diferencias históricas identificadas y justificadas.
+        </div>
+      </div>
+    </article>
+  {% endif %}
+
+</section>
+{% endblock %}

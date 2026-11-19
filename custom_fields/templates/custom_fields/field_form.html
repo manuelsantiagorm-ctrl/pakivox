@@ -1,0 +1,30 @@
+﻿{% extends "base.html" %}
+{% block title %}{% if editing %}Editar{% else %}Nuevo{% endif %} campo | PAKIVOX{% endblock %}
+{% block page_title %}{% if editing %}Editar campo{% else %}Nuevo campo personalizado{% endif %}{% endblock %}
+{% block content %}
+<section class="cff-page">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <header>
+      <span>Solo para {{ company.name }}</span>
+      <h2>{% if editing %}{{ definition.name }}{% else %}Crear campo para Clientes{% endif %}</h2>
+      <p>Aparecerá en la edición de clientes y, si lo permites, en el mapeo de Excel.</p>
+    </header>
+    {% for field in form %}
+      <label>
+        <b>{{ field.label }}</b>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+      </label>
+    {% endfor %}
+    <footer>
+      <a href="{% url 'custom_fields:field_list' %}">Cancelar</a>
+      <button type="submit">Guardar campo</button>
+    </footer>
+  </form>
+</section>
+<style>
+.cff-page{max-width:760px;margin:auto}.cff-page form{display:grid;gap:15px;background:#0f172a;border:1px solid rgba(148,163,184,.16);border-radius:18px;padding:24px}.cff-page header span{color:#67e8f9;font-size:11px;font-weight:900;text-transform:uppercase}.cff-page h2{color:#f8fafc;margin:7px 0}.cff-page p,.cff-page small{color:#94a3b8}.cff-page label{display:grid;gap:7px;color:#e2e8f0}.custom-field-input{width:100%;box-sizing:border-box;background:#111827;border:1px solid #334155;color:#f8fafc;border-radius:10px;padding:11px}.cff-page em{color:#fca5a5}.cff-page footer{display:flex;justify-content:flex-end;gap:9px}.cff-page footer a,.cff-page button{padding:11px 16px;border-radius:10px;text-decoration:none;border:0;cursor:pointer}.cff-page footer a{color:#cbd5e1;background:#334155}.cff-page button{color:white;background:#0891b2}
+</style>
+{% endblock %}

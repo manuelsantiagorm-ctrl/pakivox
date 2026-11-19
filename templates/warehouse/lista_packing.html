@@ -1,0 +1,111 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Empaque | PAKIVOX{% endblock %}
+
+{% block page_title %}Empaque{% endblock %}
+{% block page_subtitle %}Pedidos surtidos listos para empacar y cerrar{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/lista_empaque.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="emp">
+
+  {% if warehouse_read_only %}
+  <div class="emp-aviso" role="status">
+    <i class="bi bi-eye" aria-hidden="true"></i>
+    <div>
+      <strong>Estás viendo todas las bodegas</strong>
+      <p>Para empacar un pedido o generar su envío, elige una bodega en <b>Bodega activa</b>, arriba.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <header class="emp-head">
+    <div>
+      <span class="emp-eyebrow">Almacén</span>
+      <h2>Pedidos para empacar</h2>
+      <span class="emp-alcance">
+        <i class="bi {% if active_warehouse %}bi-building{% else %}bi-buildings{% endif %}" aria-hidden="true"></i>
+        {% if active_warehouse %}{{ active_warehouse.name }}{% else %}Todas las bodegas{% endif %}
+      </span>
+    </div>
+
+    <form class="emp-buscar" method="get" role="search">
+      {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="emp-oculto" for="empBuscar">Buscar pedido o cliente</label>
+      <input id="empBuscar" type="search" name="q" value="{{ q }}" placeholder="Buscar folio o cliente" autocomplete="off">
+      {% if q %}<a class="emp-limpiar" href="?{% if status %}status={{ status }}{% endif %}" aria-label="Quitar búsqueda"><i class="bi bi-x-lg" aria-hidden="true"></i></a>{% endif %}
+    </form>
+  </header>
+
+  <nav class="emp-filtros" aria-label="Filtrar por estado">
+    <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" class="emp-filtro{% if not status %} is-on{% endif %}"{% if not status %} aria-current="page"{% endif %}>
+      <span>Todos</span><b>{{ packing_counts.total }}</b>
+    </a>
+    <a href="?status=pending{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="emp-filtro is-pendiente{% if status == 'pending' %} is-on{% endif %}"{% if status == 'pending' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-hourglass-split" aria-hidden="true"></i>Por empacar</span><b>{{ packing_counts.pending }}</b>
+    </a>
+    <a href="?status=in_progress{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="emp-filtro is-proceso{% if status == 'in_progress' %} is-on{% endif %}"{% if status == 'in_progress' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-box-seam" aria-hidden="true"></i>Empacando</span><b>{{ packing_counts.in_progress }}</b>
+    </a>
+    <a href="?status=packed{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="emp-filtro is-listo{% if status == 'packed' %} is-on{% endif %}"{% if status == 'packed' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-check2-circle" aria-hidden="true"></i>Empacados</span><b>{{ packing_counts.packed }}</b>
+    </a>
+  </nav>
+
+  <ol class="emp-lista">
+    {% for packing in packing_orders %}
+    <li class="emp-item is-{{ packing.status }}">
+      <div class="emp-pedido">
+        <strong>{{ packing.order.folio }}</strong>
+        <span>{% if packing.order.customer %}{{ packing.order.customer.full_name }}{% else %}Sin cliente{% endif %}</span>
+      </div>
+
+      <div class="emp-origen">
+        <span><i class="bi bi-building" aria-hidden="true"></i>{{ packing.picking_order.warehouse.name }}</span>
+        <small>{% if packing.fulfillment %}{{ packing.fulfillment.code }}{% else %}Flujo histórico{% endif %}</small>
+      </div>
+
+      <dl class="emp-datos">
+        <div><dt>Paquetes</dt><dd>{{ packing.package_count|default:0 }}</dd></div>
+        <div><dt>Peso</dt><dd>{% if packing.weight_kg %}{{ packing.weight_kg|floatformat:"-2" }} kg{% else %}<span class="emp-sin-dato">Sin pesar</span>{% endif %}</dd></div>
+      </dl>
+
+      <div class="emp-estado">
+        <span class="emp-pill is-{{ packing.status }}">{{ packing.get_status_display }}</span>
+        <time datetime="{{ packing.created_at|date:'c' }}" title="{{ packing.created_at|date:'d/m/Y H:i' }}">{{ packing.created_at|date:"j M Y · H:i" }}</time>
+      </div>
+
+      <div class="emp-accion">
+        {% if not warehouse_read_only and packing.status == 'pending' or not warehouse_read_only and packing.status == 'in_progress' %}
+        <a class="emp-btn is-principal" href="{% url 'warehouse:detalle_packing' packing.id %}">Empacar <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        {% else %}
+        <a class="emp-btn" href="{% url 'warehouse:detalle_packing' packing.id %}">Ver detalle</a>
+        {% endif %}
+      </div>
+    </li>
+    {% empty %}
+    <li class="emp-vacio">
+      <i class="bi bi-box2" aria-hidden="true"></i>
+      {% if q %}
+      <strong>No encontramos "{{ q }}"</strong>
+      <p>Revisa el folio o el nombre del cliente, o <a href="?{% if status %}status={{ status }}{% endif %}">quita la búsqueda</a>.</p>
+      {% elif status %}
+      <strong>No hay pedidos en este estado</strong>
+      <p><a href="?">Ver todos los pedidos de empaque</a></p>
+      {% else %}
+      <strong>Todavía no hay pedidos para empacar</strong>
+      <p>Aparecen aquí cuando un pedido termina su surtido (picking).</p>
+      <a class="emp-btn" href="{% url 'warehouse:lista_picking' %}">Ir a surtido</a>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% include "components/paginacion.html" with page_obj=page_obj %}
+</section>
+{% endblock %}

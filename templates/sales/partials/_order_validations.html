@@ -1,0 +1,17 @@
+<div class="ps6b-check {% if order.customer.is_active %}ok{% else %}bad{% endif %}">
+  <i class="bi {% if order.customer.is_active %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %}"></i>
+  {% if order.customer.is_active %}
+    El cliente está activo.
+  {% else %}
+    El cliente no está activo.
+  {% endif %}
+</div>
+
+<div class="ps6b-check {% if order_items_count > 0 %}ok{% else %}bad{% endif %}">
+  <i class="bi {% if order_items_count > 0 %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %}"></i>
+  {% if order_items_count > 0 %}
+    El pedido contiene productos.
+  {% else %}
+    Falta agregar productos.
+  {% endif %}
+</div>

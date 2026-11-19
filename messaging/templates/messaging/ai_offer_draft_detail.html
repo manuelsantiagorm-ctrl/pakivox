@@ -1,0 +1,1547 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Borrador WhatsApp IA | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Revisión de oferta WhatsApp
+{% endblock %}
+
+{% block page_subtitle %}
+Mensaje preparado por el Copiloto CEO y listo para abrirse en el chat interno
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --wa-bg: #0b1120;
+    --wa-panel: #0f172a;
+    --wa-panel-soft: #111c31;
+    --wa-border: rgba(148, 163, 184, 0.16);
+    --wa-border-strong: rgba(148, 163, 184, 0.26);
+    --wa-text: #f8fafc;
+    --wa-muted: #94a3b8;
+    --wa-green: #25d366;
+    --wa-green-dark: #1fb85a;
+    --wa-green-soft: rgba(37, 211, 102, 0.12);
+    --wa-blue: #38bdf8;
+    --wa-blue-soft: rgba(56, 189, 248, 0.1);
+    --wa-purple: #a78bfa;
+    --wa-purple-soft: rgba(139, 92, 246, 0.12);
+  }
+
+  .ai-draft-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 22px;
+    align-items: start;
+  }
+
+  .ai-draft-main,
+  .ai-draft-sidebar {
+    border: 1px solid var(--wa-border);
+    border-radius: 22px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(56, 189, 248, 0.05),
+        transparent 28%
+      ),
+      var(--wa-panel);
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.18);
+  }
+
+  .ai-draft-main {
+    padding: 28px;
+  }
+
+  .ai-draft-sidebar {
+    padding: 22px;
+    position: sticky;
+    top: 18px;
+  }
+
+  .ai-draft-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+  }
+
+  .ai-draft-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #c4b5fd;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .ai-draft-heading h2,
+  .ai-draft-sidebar h3 {
+    color: var(--wa-text);
+    margin: 8px 0 6px;
+  }
+
+  .ai-draft-heading h2 {
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.1;
+  }
+
+  .ai-draft-heading p {
+    color: var(--wa-muted);
+    margin: 0;
+    max-width: 720px;
+    line-height: 1.6;
+  }
+
+  .ai-draft-status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.1);
+    color: #fde68a;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .ai-draft-status.status-sent {
+    border-color: rgba(37, 211, 102, 0.25);
+    background: rgba(37, 211, 102, 0.1);
+    color: #bbf7d0;
+  }
+
+  .ai-draft-status.status-failed {
+    border-color: rgba(248, 113, 113, 0.25);
+    background: rgba(248, 113, 113, 0.1);
+    color: #fecaca;
+  }
+
+  .ai-draft-message-stage {
+    margin-top: 28px;
+    padding: 28px;
+    border: 1px solid var(--wa-border);
+    border-radius: 20px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(15, 23, 42, 0.96),
+        rgba(2, 6, 23, 0.94)
+      );
+    overflow: hidden;
+  }
+
+  .ai-draft-message-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    color: var(--wa-muted);
+    font-size: 11px;
+  }
+
+  .ai-draft-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #ffffff;
+    font-weight: 900;
+    box-shadow: 0 10px 24px rgba(76, 29, 149, 0.32);
+  }
+
+  .ai-draft-message-meta strong {
+    display: block;
+    color: var(--wa-text);
+    font-size: 12px;
+  }
+
+  .ai-draft-preview {
+    position: relative;
+    max-width: min(760px, 92%);
+    padding: 16px 18px;
+    border: 1px solid rgba(37, 211, 102, 0.22);
+    border-radius: 18px 18px 18px 5px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(20, 83, 45, 0.48),
+        rgba(22, 101, 52, 0.26)
+      );
+    color: #ecfdf5;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+  }
+
+  .ai-draft-preview::before {
+    content: "";
+    position: absolute;
+    left: -7px;
+    bottom: 0;
+    width: 15px;
+    height: 15px;
+    background: rgba(20, 83, 45, 0.82);
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  }
+
+  .ai-draft-preview small {
+    display: block;
+    margin-top: 9px;
+    text-align: right;
+    color: rgba(220, 252, 231, 0.68);
+    font-size: 10px;
+  }
+
+  .ai-draft-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .ai-draft-primary,
+  .ai-draft-secondary {
+    min-height: 44px;
+    padding: 0 17px;
+    border-radius: 12px;
+    font-weight: 900;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .ai-draft-primary {
+    border: 1px solid rgba(37, 211, 102, 0.45);
+    background: linear-gradient(135deg, #22c55e, var(--wa-green));
+    color: #052e16;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(37, 211, 102, 0.16);
+  }
+
+  .ai-draft-primary:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #16a34a, var(--wa-green-dark));
+  }
+
+  .ai-draft-secondary {
+    border: 1px solid var(--wa-border-strong);
+    background: transparent;
+    color: #cbd5e1;
+  }
+
+  .ai-draft-secondary:hover {
+    transform: translateY(-1px);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #e0f2fe;
+    background: rgba(56, 189, 248, 0.06);
+  }
+
+  .ai-draft-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .ai-draft-security {
+    margin-top: 24px;
+    padding: 16px 18px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 16px;
+    display: flex;
+    gap: 13px;
+    align-items: flex-start;
+    color: #bae6fd;
+    background:
+      linear-gradient(
+        135deg,
+        rgba(14, 116, 144, 0.1),
+        rgba(2, 132, 199, 0.05)
+      );
+  }
+
+  .ai-draft-security > i {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    color: var(--wa-blue);
+    background: rgba(56, 189, 248, 0.1);
+    flex: 0 0 auto;
+  }
+
+  .ai-draft-security p {
+    margin: 4px 0 0;
+    color: var(--wa-muted);
+    line-height: 1.55;
+  }
+
+  .ai-draft-alert {
+    margin-top: 16px;
+    padding: 13px 15px;
+    border-radius: 13px;
+    line-height: 1.5;
+  }
+
+  .ai-draft-alert.warning {
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #fde68a;
+    background: rgba(120, 53, 15, 0.22);
+  }
+
+  .ai-draft-alert.danger {
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.22);
+  }
+
+  .ai-draft-sidebar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .ai-draft-sidebar-title i {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    color: #c4b5fd;
+    background: var(--wa-purple-soft);
+  }
+
+  .ai-draft-info-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ai-draft-info-card {
+    padding: 15px;
+    border: 1px solid var(--wa-border);
+    border-radius: 15px;
+    background: rgba(2, 6, 23, 0.36);
+  }
+
+  .ai-draft-info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 12px;
+    color: #dbeafe;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ai-draft-info-card-header i {
+    color: var(--wa-blue);
+  }
+
+  .ai-draft-info-row + .ai-draft-info-row {
+    margin-top: 11px;
+  }
+
+  .ai-draft-info-row span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .ai-draft-info-row strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--wa-text);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-draft-credit-value {
+    color: #86efac !important;
+  }
+
+  .ai-chat-widget {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 100000;
+    width: 420px;
+    height: min(760px, calc(100vh - 36px));
+    min-width: 350px;
+    min-height: 470px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 22px;
+    background: #020617;
+    box-shadow:
+      0 30px 100px rgba(0, 0, 0, 0.62),
+      0 0 0 1px rgba(255, 255, 255, 0.02);
+  }
+
+  .ai-chat-widget.is-large {
+    width: min(680px, calc(100vw - 32px));
+    height: min(880px, calc(100vh - 32px));
+  }
+
+  .ai-chat-header {
+    padding: 15px 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--wa-border);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(15, 23, 42, 0.98),
+        rgba(15, 23, 42, 0.94)
+      );
+    cursor: move;
+  }
+
+  .ai-chat-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #bbf7d0;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .ai-chat-online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--wa-green);
+    box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.1);
+    animation: aiChatPulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes aiChatPulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.55;
+      transform: scale(0.86);
+    }
+  }
+
+  .ai-chat-contact h3 {
+    margin: 7px 0 3px;
+    color: var(--wa-text);
+    font-size: 15px;
+  }
+
+  .ai-chat-contact p {
+    margin: 0;
+    color: var(--wa-muted);
+    font-size: 11px;
+  }
+
+  .ai-chat-header-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ai-chat-header-actions a,
+  .ai-chat-header-actions button {
+    height: 31px;
+    min-width: 31px;
+    padding: 0 9px;
+    border-radius: 9px;
+    border: 1px solid var(--wa-border);
+    background: rgba(2, 6, 23, 0.72);
+    color: #e2e8f0;
+    text-decoration: none;
+    display: inline-grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    transition:
+      border-color 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .ai-chat-header-actions a:hover,
+  .ai-chat-header-actions button:hover {
+    border-color: rgba(37, 211, 102, 0.34);
+    background: rgba(37, 211, 102, 0.08);
+  }
+
+  .ai-chat-body {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: #020617;
+  }
+
+  .ai-chat-messages {
+    position: relative;
+    flex: 1;
+    min-height: 180px;
+    overflow: auto;
+    padding: 16px;
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    background:
+      radial-gradient(
+        circle at center,
+        rgba(30, 41, 59, 0.2),
+        transparent 60%
+      ),
+      #030712;
+  }
+
+  .ai-chat-empty {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--wa-muted);
+    padding: 30px;
+  }
+
+  .ai-chat-empty-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 13px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    color: #64748b;
+    background: rgba(30, 41, 59, 0.48);
+    border: 1px solid var(--wa-border);
+    font-size: 24px;
+  }
+
+  .ai-chat-empty strong {
+    display: block;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+  }
+
+  .ai-chat-empty p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .ai-chat-bubble {
+    max-width: 86%;
+    padding: 11px 13px;
+    border-radius: 15px;
+    color: #e5e7eb;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.18);
+  }
+
+  .ai-chat-bubble.inbound {
+    justify-self: start;
+    border-radius: 15px 15px 15px 5px;
+    background: #172554;
+  }
+
+  .ai-chat-bubble.outbound {
+    justify-self: end;
+    border-radius: 15px 15px 5px 15px;
+    background: #14532d;
+  }
+
+  .ai-chat-bubble.system {
+    justify-self: center;
+    text-align: center;
+    background: #0f172a;
+    border: 1px solid var(--wa-border);
+  }
+
+  .ai-chat-bubble small {
+    display: block;
+    margin-top: 6px;
+    color: #94a3b8;
+    font-size: 9px;
+  }
+
+  .ai-chat-suggestions {
+    padding: 14px 15px 13px;
+    border-top: 1px solid var(--wa-border);
+    background: #07111f;
+  }
+
+  .ai-chat-section-title {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    color: var(--wa-text);
+  }
+
+  .ai-chat-section-title > i {
+    width: 31px;
+    height: 31px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #c4b5fd;
+    background: var(--wa-purple-soft);
+  }
+
+  .ai-chat-section-title small {
+    display: block;
+    margin-top: 2px;
+    color: var(--wa-muted);
+    font-size: 10px;
+  }
+
+  .ai-chat-suggestion-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-top: 11px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ai-chat-suggestion-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ai-chat-suggestion {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 8px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(139, 92, 246, 0.28);
+    background: rgba(76, 29, 149, 0.12);
+    color: #ddd6fe;
+    font-size: 10px;
+    font-weight: 850;
+    cursor: pointer;
+    transition:
+      transform 0.16s ease,
+      border-color 0.16s ease,
+      background 0.16s ease;
+  }
+
+  .ai-chat-suggestion:hover {
+    transform: translateY(-1px);
+    border-color: rgba(167, 139, 250, 0.55);
+    background: rgba(76, 29, 149, 0.2);
+  }
+
+  .ai-chat-no-suggestions {
+    color: var(--wa-muted);
+    font-size: 11px;
+  }
+
+  .ai-chat-reply {
+    padding: 15px;
+    border-top: 1px solid rgba(37, 211, 102, 0.18);
+    background: #07140f;
+  }
+
+  .ai-chat-reply label {
+    display: block;
+    margin-bottom: 9px;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .ai-chat-reply textarea {
+    width: 100%;
+    min-height: 110px;
+    max-height: 210px;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1px solid var(--wa-border-strong);
+    background: #020617;
+    color: var(--wa-text);
+    resize: vertical;
+    outline: none;
+    line-height: 1.55;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .ai-chat-reply textarea:focus {
+    border-color: rgba(37, 211, 102, 0.62);
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.08);
+  }
+
+  .ai-chat-send-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 9px 1px 11px;
+    color: var(--wa-muted);
+    font-size: 10px;
+  }
+
+  .ai-chat-reply button {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 13px;
+    background: var(--wa-green);
+    color: #ffffff;
+    font-weight: 950;
+    cursor: pointer;
+    box-shadow: 0 12px 26px rgba(37, 211, 102, 0.16);
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .ai-chat-reply button:hover {
+    transform: translateY(-1px);
+    background: var(--wa-green-dark);
+    box-shadow: 0 16px 34px rgba(37, 211, 102, 0.2);
+  }
+
+  .ai-chat-reply button:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .ai-chat-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+  }
+
+  .ai-chat-minimized {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 100000;
+    padding: 12px 16px;
+    border: 1px solid rgba(37, 211, 102, 0.4);
+    border-radius: 999px;
+    background: #0f172a;
+    color: #bbf7d0;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 18px 40px rgba(2, 6, 23, 0.42);
+  }
+
+  @media (max-width: 980px) {
+    .ai-draft-page {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-draft-sidebar {
+      position: static;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ai-draft-main,
+    .ai-draft-sidebar {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .ai-draft-message-stage {
+      padding: 18px;
+    }
+
+    .ai-draft-heading {
+      flex-direction: column;
+    }
+
+    .ai-chat-widget {
+      right: 8px;
+      bottom: 8px;
+      width: calc(100vw - 16px);
+      height: calc(100vh - 16px);
+      min-width: 0;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="ai-draft-page">
+  <article class="ai-draft-main">
+    <div class="ai-draft-heading">
+      <div>
+        <span class="ai-draft-eyebrow">
+          <i class="bi bi-stars"></i>
+          Borrador generado por IA
+        </span>
+
+        <h2>Vista previa del mensaje</h2>
+
+        <p>
+          Revisa la propuesta, abre el chat interno y confirma el envío
+          mediante el canal Premium asignado.
+        </p>
+      </div>
+
+      <span class="ai-draft-status status-{{ draft.status }}">
+        <i class="bi bi-circle-fill"></i>
+        {{ draft.get_status_display }}
+      </span>
+    </div>
+
+    <div class="ai-draft-message-stage">
+      <div class="ai-draft-message-meta">
+        <div class="ai-draft-avatar">
+          <i class="bi bi-stars"></i>
+        </div>
+
+        <div>
+          <strong>Copiloto CEO PAKIVOX</strong>
+          Propuesta preparada para WhatsApp
+        </div>
+      </div>
+      <div class="ai-draft-preview">
+        {{ default_suggested_message }}
+        <small>
+            Borrador · pendiente de confirmación
+        </small>
+    </div>
+</div>
+
+    <div class="ai-draft-actions">
+      {% if chat_conversation and can_view_chat %}
+        <button
+          type="button"
+          class="ai-draft-primary"
+          id="openAiDraftChat"
+        >
+          <i class="bi bi-whatsapp"></i>
+          Abrir chat flotante
+        </button>
+      {% else %}
+        <button
+          type="button"
+          class="ai-draft-primary"
+          disabled
+        >
+          <i class="bi bi-whatsapp"></i>
+          Chat no disponible
+        </button>
+      {% endif %}
+
+      <a
+        class="ai-draft-secondary"
+        href="{% url 'messaging:ai_offer_draft_list' %}"
+      >
+        <i class="bi bi-arrow-left"></i>
+        Volver a borradores
+      </a>
+    </div>
+
+    {% if not chat_conversation %}
+      <div class="ai-draft-alert danger">
+        El borrador todavía no tiene una conversación interna asociada.
+      </div>
+    {% elif not can_view_chat %}
+      <div class="ai-draft-alert danger">
+        Tu usuario no tiene permiso para visualizar este canal.
+      </div>
+    {% elif not can_reply %}
+      <div class="ai-draft-alert warning">
+        Puedes visualizar el chat, pero no tienes permiso para responder.
+      </div>
+    {% endif %}
+
+    <div class="ai-draft-security">
+      <i class="bi bi-shield-lock-fill"></i>
+
+      <div>
+        <strong>Envío interno protegido</strong>
+
+        <p>
+          PAKIVOX valida empresa, canal, permisos, créditos y auditoría
+          antes de utilizar la API de WhatsApp Premium.
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <aside class="ai-draft-sidebar">
+    <div class="ai-draft-sidebar-title">
+      <i class="bi bi-file-earmark-text"></i>
+      <h3>Datos del borrador</h3>
+    </div>
+
+    <div class="ai-draft-info-grid">
+      <section class="ai-draft-info-card">
+        <div class="ai-draft-info-card-header">
+          <i class="bi bi-person-badge"></i>
+          Cliente
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Nombre</span>
+          <strong>
+            {{ draft.crm_customer.full_name|default:"Sin nombre" }}
+          </strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Negocio</span>
+          <strong>
+            {{ draft.crm_customer.business_name|default:"Sin negocio" }}
+          </strong>
+        </div>
+      </section>
+
+      <section class="ai-draft-info-card">
+        <div class="ai-draft-info-card-header">
+          <i class="bi bi-whatsapp"></i>
+          Contacto
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Teléfono</span>
+          <strong>
+            {{ draft.messaging_customer.phone|default:"Sin teléfono" }}
+          </strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Canal</span>
+          <strong>
+            {{ channel.channel_name|default:"Sin canal" }}
+          </strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Créditos disponibles</span>
+          <strong class="ai-draft-credit-value">
+            {{ channel.creditos_disponibles|default:"0" }}
+          </strong>
+        </div>
+      </section>
+
+      <section class="ai-draft-info-card">
+        <div class="ai-draft-info-card-header">
+          <i class="bi bi-info-circle"></i>
+          Auditoría
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Estado</span>
+          <strong>{{ draft.get_status_display }}</strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Origen</span>
+          <strong>{{ draft.get_source_display }}</strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Creado por</span>
+          <strong>{{ draft.created_by }}</strong>
+        </div>
+
+        <div class="ai-draft-info-row">
+          <span>Fecha</span>
+          <strong>{{ draft.created_at|date:"d/m/Y H:i" }}</strong>
+        </div>
+      </section>
+    </div>
+  </aside>
+</section>
+
+{% if chat_conversation and can_view_chat %}
+  <aside
+    class="ai-chat-widget"
+    id="aiDraftChatWidget"
+    data-storage-key="wms360_ai_draft_chat_{{ draft.pk }}"
+    hidden
+  >
+    <header class="ai-chat-header" id="aiDraftChatDragHandle">
+      <div class="ai-chat-contact">
+        <span class="ai-chat-online">
+          <span class="ai-chat-online-dot"></span>
+          WhatsApp conectado
+        </span>
+
+        <h3>
+          {{ chat_conversation.customer.name|default:chat_conversation.customer.phone }}
+        </h3>
+
+        <p>
+          {{ chat_conversation.customer.phone }}
+          ·
+          {{ chat_conversation.whatsapp_number.channel_name }}
+        </p>
+      </div>
+
+      <div class="ai-chat-header-actions">
+        <a
+          href="{% url 'messaging:chat_detail' chat_conversation.pk %}"
+          title="Abrir chat completo"
+        >
+          Abrir
+        </a>
+
+        <button
+          type="button"
+          id="aiDraftChatToggleSize"
+          title="Agrandar o restaurar"
+        >
+          ⛶
+        </button>
+
+        <button
+          type="button"
+          id="aiDraftChatReset"
+          title="Restaurar posición"
+        >
+          ↺
+        </button>
+
+        <button
+          type="button"
+          id="aiDraftChatMinimize"
+          title="Minimizar"
+        >
+          —
+        </button>
+      </div>
+    </header>
+
+    <div class="ai-chat-body">
+      <div class="ai-chat-messages" id="aiDraftChatMessages">
+        {% for chat_message in chat_messages %}
+          <div
+            class="
+              ai-chat-bubble
+              {% if chat_message.direction == 'inbound' %}
+                inbound
+              {% elif chat_message.direction == 'outbound' %}
+                outbound
+              {% else %}
+                system
+              {% endif %}
+            "
+          >
+            {{ chat_message.body|default:chat_message.message_type }}
+
+            <small>
+              {% if chat_message.direction == "inbound" %}
+                Cliente
+              {% elif chat_message.agent %}
+                {{ chat_message.agent.username }}
+              {% else %}
+                Sistema
+              {% endif %}
+              · {{ chat_message.created_at|date:"d/m/Y H:i" }}
+            </small>
+          </div>
+        {% empty %}
+          <div class="ai-chat-empty">
+            <div>
+              <div class="ai-chat-empty-icon">
+                <i class="bi bi-chat-square-dots"></i>
+              </div>
+
+              <strong>Sin mensajes todavía</strong>
+
+              <p>
+                El historial de esta conversación aparecerá aquí
+                cuando comience la interacción.
+              </p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <section class="ai-chat-suggestions">
+        <div class="ai-chat-section-title">
+          <i class="bi bi-stars"></i>
+
+          <div>
+            <strong>Mensajes sugeridos</strong>
+
+            <small>
+            Selecciona el enfoque más adecuado antes de enviar.
+            </small>
+            </small>
+          </div>
+        </div>
+
+        <div class="ai-chat-suggestion-list">
+          {% for suggestion in suggested_messages %}
+            <button
+              type="button"
+              class="ai-chat-suggestion"
+              data-message="{{ suggestion.body|escapejs }}"
+            >
+              <i class="bi {{ suggestion.icon }}"></i>
+              {{ suggestion.label }}
+            </button>
+          {% empty %}
+            <span class="ai-chat-no-suggestions">
+              No hay sugerencias disponibles.
+            </span>
+          {% endfor %}
+        </div>
+      </section>
+
+      <form
+        method="post"
+        action="{% url 'messaging:chat_reply' chat_conversation.pk %}"
+        class="ai-chat-reply"
+        id="aiDraftReplyForm"
+      >
+        {% csrf_token %}
+
+        <input
+          type="hidden"
+          name="next"
+          value="{{ chat_return_url }}"
+        >
+
+        <input
+          type="hidden"
+          name="ai_draft_id"
+          value="{{ draft.pk }}"
+        >
+
+        <label for="aiDraftMessageBody">
+          Mensaje editable
+        </label>
+
+        <textarea
+          name="body"
+          id="aiDraftMessageBody"
+          maxlength="4000"
+          required
+          {% if not can_reply or draft.status == "sent" or draft.status == "cancelled" %}disabled{% endif %}
+        >{{ default_suggested_message }}</textarea>
+
+        <div class="ai-chat-send-meta">
+          <span>
+            Canal:
+            {{ chat_conversation.whatsapp_number.channel_name }}
+          </span>
+
+          <span>
+            Créditos:
+            {{ channel.creditos_disponibles|default:"0" }}
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          id="aiDraftPremiumSendButton"
+          {% if not can_reply or draft.status == "sent" or draft.status == "cancelled" %}disabled{% endif %}
+        >
+          <i class="bi bi-send-fill"></i>
+
+          {% if draft.status == "sent" %}
+            Mensaje enviado
+          {% elif draft.status == "cancelled" %}
+            Borrador cancelado
+          {% else %}
+            Enviar con WhatsApp Premium
+          {% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div
+      class="ai-chat-resize-handle"
+      id="aiDraftChatResizeHandle"
+      aria-hidden="true"
+    ></div>
+  </aside>
+
+  <button
+    type="button"
+    class="ai-chat-minimized"
+    id="aiDraftChatRestore"
+    hidden
+  >
+    <i class="bi bi-whatsapp"></i>
+    WhatsApp
+  </button>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const widget = document.getElementById("aiDraftChatWidget");
+  const openButton = document.getElementById("openAiDraftChat");
+  const restoreButton = document.getElementById("aiDraftChatRestore");
+  const dragHandle = document.getElementById("aiDraftChatDragHandle");
+  const resizeHandle = document.getElementById("aiDraftChatResizeHandle");
+  const toggleSize = document.getElementById("aiDraftChatToggleSize");
+  const resetButton = document.getElementById("aiDraftChatReset");
+  const minimizeButton = document.getElementById("aiDraftChatMinimize");
+  const messagesBox = document.getElementById("aiDraftChatMessages");
+  const textarea = document.getElementById("aiDraftMessageBody");
+  const replyForm = document.getElementById("aiDraftReplyForm");
+
+  if (!widget) {
+    return;
+  }
+
+  const storageKey = (
+    widget.dataset.storageKey
+    || "wms360_ai_draft_chat"
+  );
+
+  function scrollToBottom() {
+    if (messagesBox) {
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+  }
+
+  function openWidget() {
+    widget.hidden = false;
+    widget.style.display = "flex";
+
+    if (restoreButton) {
+      restoreButton.hidden = true;
+    }
+
+    scrollToBottom();
+
+    if (textarea && !textarea.disabled) {
+      textarea.focus();
+    }
+  }
+
+  function minimizeWidget() {
+    widget.style.display = "none";
+
+    if (restoreButton) {
+      restoreButton.hidden = false;
+    }
+
+    saveState();
+  }
+
+  function resetWidget() {
+    localStorage.removeItem(storageKey);
+
+    widget.classList.remove("is-large");
+    widget.style.left = "";
+    widget.style.top = "";
+    widget.style.right = "18px";
+    widget.style.bottom = "18px";
+    widget.style.width = "";
+    widget.style.height = "";
+
+    openWidget();
+  }
+
+  function saveState() {
+    const rect = widget.getBoundingClientRect();
+
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        large: widget.classList.contains("is-large"),
+        minimized: widget.style.display === "none"
+      })
+    );
+  }
+
+  function restoreState() {
+    const raw = localStorage.getItem(storageKey);
+
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const state = JSON.parse(raw);
+
+      if (state.large) {
+        widget.classList.add("is-large");
+      }
+
+      if (state.width) {
+        widget.style.width = state.width + "px";
+      }
+
+      if (state.height) {
+        widget.style.height = state.height + "px";
+      }
+
+      if (
+        Number.isFinite(state.left)
+        && Number.isFinite(state.top)
+      ) {
+        widget.style.left = state.left + "px";
+        widget.style.top = state.top + "px";
+        widget.style.right = "auto";
+        widget.style.bottom = "auto";
+      }
+
+      if (state.minimized && restoreButton) {
+        widget.style.display = "none";
+        restoreButton.hidden = false;
+      }
+    } catch (error) {
+      localStorage.removeItem(storageKey);
+    }
+  }
+
+  if (openButton) {
+    openButton.addEventListener("click", openWidget);
+  }
+
+  if (restoreButton) {
+    restoreButton.addEventListener("click", openWidget);
+  }
+
+  if (minimizeButton) {
+    minimizeButton.addEventListener(
+      "click",
+      minimizeWidget
+    );
+  }
+
+  if (resetButton) {
+    resetButton.addEventListener(
+      "click",
+      resetWidget
+    );
+  }
+
+  if (toggleSize) {
+    toggleSize.addEventListener("click", function () {
+      widget.classList.toggle("is-large");
+      saveState();
+    });
+  }
+
+  document.querySelectorAll(
+    ".ai-chat-suggestion"
+  ).forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (!textarea || textarea.disabled) {
+        return;
+      }
+
+      textarea.value = button.dataset.message || "";
+      textarea.focus();
+    });
+  });
+
+  if (replyForm) {
+    replyForm.addEventListener("submit", function (event) {
+      const body = textarea
+        ? textarea.value.trim()
+        : "";
+
+      if (!body) {
+        event.preventDefault();
+        alert("Escribe o selecciona un mensaje antes de enviarlo.");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "¿Enviar este mensaje mediante WhatsApp Premium?"
+      );
+
+      if (!confirmed) {
+        event.preventDefault();
+      }
+    });
+  }
+
+  if (dragHandle) {
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    dragHandle.addEventListener(
+      "mousedown",
+      function (event) {
+        if (
+          event.target.closest(
+            "button, a, input, textarea, select"
+          )
+        ) {
+          return;
+        }
+
+        const rect = widget.getBoundingClientRect();
+
+        dragging = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        startLeft = rect.left;
+        startTop = rect.top;
+
+        widget.style.left = rect.left + "px";
+        widget.style.top = rect.top + "px";
+        widget.style.right = "auto";
+        widget.style.bottom = "auto";
+
+        document.body.style.userSelect = "none";
+      }
+    );
+
+    document.addEventListener(
+      "mousemove",
+      function (event) {
+        if (!dragging) {
+          return;
+        }
+
+        const rect = widget.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width - 8;
+        const maxTop = window.innerHeight - rect.height - 8;
+
+        const left = Math.max(
+          8,
+          Math.min(
+            startLeft + event.clientX - startX,
+            maxLeft
+          )
+        );
+
+        const top = Math.max(
+          8,
+          Math.min(
+            startTop + event.clientY - startY,
+            maxTop
+          )
+        );
+
+        widget.style.left = left + "px";
+        widget.style.top = top + "px";
+      }
+    );
+
+    document.addEventListener(
+      "mouseup",
+      function () {
+        if (!dragging) {
+          return;
+        }
+
+        dragging = false;
+        document.body.style.userSelect = "";
+        saveState();
+      }
+    );
+  }
+
+  if (resizeHandle) {
+    let resizing = false;
+    let startX = 0;
+    let startY = 0;
+    let startWidth = 0;
+    let startHeight = 0;
+
+    resizeHandle.addEventListener(
+      "mousedown",
+      function (event) {
+        const rect = widget.getBoundingClientRect();
+
+        resizing = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        startWidth = rect.width;
+        startHeight = rect.height;
+
+        document.body.style.userSelect = "none";
+
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    );
+
+    document.addEventListener(
+      "mousemove",
+      function (event) {
+        if (!resizing) {
+          return;
+        }
+
+        widget.style.width = Math.max(
+          350,
+          Math.min(
+            startWidth + event.clientX - startX,
+            window.innerWidth - 16
+          )
+        ) + "px";
+
+        widget.style.height = Math.max(
+          470,
+          Math.min(
+            startHeight + event.clientY - startY,
+            window.innerHeight - 16
+          )
+        ) + "px";
+      }
+    );
+
+    document.addEventListener(
+      "mouseup",
+      function () {
+        if (!resizing) {
+          return;
+        }
+
+        resizing = false;
+        document.body.style.userSelect = "";
+        saveState();
+      }
+    );
+  }
+
+  restoreState();
+  scrollToBottom();
+});
+</script>
+{% endblock %}

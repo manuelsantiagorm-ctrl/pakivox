@@ -1,0 +1,45 @@
+{% load static %}
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>{{ document.title }} | PAKIVOX</title>
+  <link rel="icon" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="{% static 'legal/legal.css' %}">
+</head>
+<body>
+  <header class="legal-nav">
+    <a href="{% url 'landing' %}" class="legal-brand"><img src="{% static 'branding/pakivox_icon.png' %}" alt=""><span>PAKIVOX</span></a>
+    <a href="{% url 'landing' %}" class="legal-back">Volver al inicio</a>
+  </header>
+  <main class="legal-shell">
+    <aside class="legal-index" aria-label="Documentos legales">
+      <strong>Centro legal</strong>
+      <a href="{% url 'legal:document' 'terminos-condiciones' %}">Términos y condiciones</a>
+      <a href="{% url 'legal:document' 'aviso-privacidad' %}">Aviso de privacidad</a>
+      <a href="{% url 'legal:document' 'tratamiento-datos' %}">Tratamiento de datos</a>
+      <a href="{% url 'legal:document' 'politica-cookies' %}">Política de cookies</a>
+      <a href="{% url 'legal:document' 'cancelaciones-reembolsos' %}">Cancelaciones y reembolsos</a>
+      <button type="button" data-cookie-settings>Configurar cookies</button>
+    </aside>
+    <article class="legal-document">
+      <p class="legal-eyebrow">Documento legal vigente</p>
+      <h1>{{ document.title }}</h1>
+      <div class="legal-meta"><span>Versión {{ document.version }}</span><span>Última actualización: 12 de agosto de 2026</span></div>
+      {% if not legal_identity.operator_name or not legal_identity.rfc or not legal_identity.address %}
+      <div class="legal-warning"><strong>Configuración pendiente:</strong> el operador debe completar razón social o nombre fiscal, RFC y domicilio antes de publicar este documento en producción.</div>
+      {% endif %}
+      {% block legal_content %}{% endblock %}
+      <section>
+        <h2>Contacto</h2>
+        <p>Privacidad: <a href="mailto:{{ legal_identity.privacy_email }}">{{ legal_identity.privacy_email }}</a>. Soporte: <a href="mailto:{{ legal_identity.support_email }}">{{ legal_identity.support_email }}</a>.</p>
+      </section>
+      <p class="legal-note">Este texto constituye una base operativa adaptada al servicio PAKIVOX. Debe ser revisado por asesoría jurídica mexicana antes de su publicación comercial definitiva.</p>
+    </article>
+  </main>
+  {% include 'legal/_cookie_banner.html' %}
+  <script src="{% static 'legal/cookie-consent.js' %}" defer></script>
+</body>
+</html>

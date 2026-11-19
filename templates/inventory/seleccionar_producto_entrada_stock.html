@@ -1,0 +1,174 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Entrada de stock | PAKIVOX{% endblock %}
+{% block page_title %}Entrada de stock{% endblock %}
+{% block page_subtitle %}Selecciona el producto que ingresará a la bodega activa{% endblock %}
+
+{% block content %}
+<section class="stock-selector-page">
+  <header class="stock-selector-hero">
+    <div>
+      <span class="stock-selector-eyebrow">Inventario / Entrada manual</span>
+      <h1>Seleccionar producto</h1>
+      <p>
+        Elige un producto para registrar existencias nuevas. La operación se
+        aplicará exclusivamente en <strong>{{ warehouse.name }}</strong>.
+      </p>
+    </div>
+
+    <div class="stock-selector-warehouse">
+      <i class="bi bi-building-check"></i>
+      <div>
+        <small>Bodega de destino</small>
+        <strong>{{ warehouse.name }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <form method="get" class="stock-selector-search">
+    <div>
+      <label for="stock-product-search">Buscar producto o SKU</label>
+      <div class="stock-selector-input">
+        <i class="bi bi-search"></i>
+        <input
+          id="stock-product-search"
+          type="search"
+          name="q"
+          value="{{ q }}"
+          placeholder="Nombre, SKU, categoría o marca..."
+          autocomplete="off"
+        >
+      </div>
+    </div>
+    <button type="submit">
+      <i class="bi bi-search"></i>
+      Buscar
+    </button>
+    {% if q %}
+      <a href="{% url 'inventory:seleccionar_producto_entrada_stock' %}">
+        Limpiar
+      </a>
+    {% endif %}
+  </form>
+
+  <div class="stock-selector-heading">
+    <div>
+      <span class="stock-selector-eyebrow">Catálogo disponible</span>
+      <h2>Productos activos</h2>
+    </div>
+    <span>{{ total_products }} producto{{ total_products|pluralize }}</span>
+  </div>
+
+  <div class="stock-selector-grid">
+    {% for row in product_rows %}
+      <article class="stock-product-card">
+        <div class="stock-product-icon">
+          {% if row.product.image %}
+            <img src="{{ row.product.image.url }}" alt="{{ row.product.name }}">
+          {% else %}
+            <i class="bi bi-box-seam"></i>
+          {% endif %}
+        </div>
+
+        <div class="stock-product-copy">
+          <div class="stock-product-title">
+            <div>
+              <h3>{{ row.product.name }}</h3>
+              <p>
+                {{ row.product.brand.name|default:"Sin marca" }} ·
+                {{ row.product.category.name|default:"Sin categoría" }}
+              </p>
+            </div>
+            <span>{{ row.variant_count }} SKU{{ row.variant_count|pluralize }}</span>
+          </div>
+
+          <div class="stock-product-skus">
+            <small>Variantes</small>
+            <strong>{{ row.sku_preview|default:"Sin SKU activo" }}</strong>
+            {% if row.variant_count > 3 %}<em>y más...</em>{% endif %}
+          </div>
+        </div>
+
+        <a
+          href="{% url 'inventory:agregar_stock' row.product.id %}"
+          class="stock-product-action"
+        >
+          <i class="bi bi-box-arrow-in-down"></i>
+          Registrar entrada
+        </a>
+      </article>
+    {% empty %}
+      <div class="stock-selector-empty">
+        <i class="bi bi-search"></i>
+        <h3>No encontramos productos activos</h3>
+        <p>
+          {% if q %}
+            No hay resultados para “{{ q }}”. Prueba con otro nombre o SKU.
+          {% else %}
+            Primero registra un producto con al menos una variante activa.
+          {% endif %}
+        </p>
+        {% if q %}
+          <a href="{% url 'inventory:seleccionar_producto_entrada_stock' %}">Ver todos</a>
+        {% else %}
+          <a href="{% url 'inventory:lista_productos' %}">Ir a Productos</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+  .stock-selector-page { display: grid; gap: 18px; }
+  .stock-selector-hero, .stock-selector-search, .stock-product-card,
+  .stock-selector-empty { background: #111827; border: 1px solid rgba(148,163,184,.18); border-radius: 18px; }
+  .stock-selector-hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 26px; }
+  .stock-selector-hero h1 { margin: 6px 0 8px; color: #f8fafc; font-size: clamp(1.7rem,3vw,2.3rem); }
+  .stock-selector-hero p { margin: 0; max-width: 720px; color: #94a3b8; line-height: 1.65; }
+  .stock-selector-eyebrow { color: #38bdf8; font-size: .72rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+  .stock-selector-warehouse { min-width: 220px; display: flex; align-items: center; gap: 13px; padding: 15px 17px; background: rgba(14,165,233,.09); border: 1px solid rgba(56,189,248,.22); border-radius: 14px; }
+  .stock-selector-warehouse i { color: #38bdf8; font-size: 1.45rem; }
+  .stock-selector-warehouse small, .stock-product-skus small { display: block; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .64rem; }
+  .stock-selector-warehouse strong { color: #e0f2fe; }
+  .stock-selector-search { display: flex; align-items: end; gap: 12px; padding: 18px; }
+  .stock-selector-search > div { flex: 1; }
+  .stock-selector-search label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 800; }
+  .stock-selector-input { position: relative; }
+  .stock-selector-input i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; }
+  .stock-selector-input input { width: 100%; min-height: 46px; padding: 0 14px 0 42px; color: #f8fafc; background: #0b1220; border: 1px solid #334155; border-radius: 12px; outline: none; }
+  .stock-selector-input input:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.12); }
+  .stock-selector-search button, .stock-selector-search > a, .stock-selector-empty a { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; border: 0; border-radius: 12px; font-weight: 900; text-decoration: none; cursor: pointer; }
+  .stock-selector-search button { background: #0ea5e9; color: #082f49; }
+  .stock-selector-search > a { color: #cbd5e1; background: #1e293b; }
+  .stock-selector-heading { display: flex; align-items: end; justify-content: space-between; padding: 4px 2px; }
+  .stock-selector-heading h2 { margin: 5px 0 0; color: #f8fafc; }
+  .stock-selector-heading > span { color: #94a3b8; font-weight: 800; }
+  .stock-selector-grid { display: grid; gap: 12px; }
+  .stock-product-card { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 17px; transition: border-color .2s, transform .2s; }
+  .stock-product-card:hover { border-color: rgba(56,189,248,.45); transform: translateY(-1px); }
+  .stock-product-icon { width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; color: #38bdf8; background: rgba(14,165,233,.1); border-radius: 14px; font-size: 1.5rem; }
+  .stock-product-icon img { width: 100%; height: 100%; object-fit: cover; }
+  .stock-product-copy { min-width: 0; display: grid; gap: 11px; }
+  .stock-product-title { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+  .stock-product-title h3 { margin: 0 0 4px; color: #f8fafc; font-size: 1rem; }
+  .stock-product-title p { margin: 0; color: #64748b; font-size: .82rem; }
+  .stock-product-title > span { flex: 0 0 auto; padding: 5px 8px; color: #bae6fd; background: rgba(14,165,233,.1); border-radius: 999px; font-size: .7rem; font-weight: 900; }
+  .stock-product-skus { min-width: 0; }
+  .stock-product-skus strong { display: inline-block; max-width: 100%; color: #cbd5e1; font-family: ui-monospace,monospace; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+  .stock-product-skus em { color: #64748b; font-size: .75rem; }
+  .stock-product-action { display: inline-flex; align-items: center; gap: 8px; padding: 11px 15px; color: #052e16; background: #22c55e; border-radius: 11px; font-weight: 900; text-decoration: none; white-space: nowrap; }
+  .stock-product-action:hover { background: #4ade80; }
+  .stock-selector-empty { padding: 42px 24px; text-align: center; }
+  .stock-selector-empty > i { color: #38bdf8; font-size: 2rem; }
+  .stock-selector-empty h3 { color: #f8fafc; }
+  .stock-selector-empty p { color: #94a3b8; }
+  .stock-selector-empty a { margin-top: 8px; color: #082f49; background: #38bdf8; }
+  @media (max-width: 760px) {
+    .stock-selector-hero, .stock-selector-search { align-items: stretch; flex-direction: column; }
+    .stock-selector-warehouse { min-width: 0; }
+    .stock-product-card { grid-template-columns: 48px minmax(0,1fr); }
+    .stock-product-icon { width: 48px; height: 48px; }
+    .stock-product-action { grid-column: 1 / -1; justify-content: center; }
+  }
+</style>
+{% endblock %}

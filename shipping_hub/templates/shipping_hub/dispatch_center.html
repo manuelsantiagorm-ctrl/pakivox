@@ -1,0 +1,1117 @@
+﻿{% extends "base.html" %}
+{% block title %}Centro de Despacho | PAKIVOX{% endblock %}
+{% block page_title %}Centro de Despacho{% endblock %}
+{% block page_subtitle %}Seguimiento operativo desde la guía hasta la entrega{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --dispatch-bg: #081325;
+    --dispatch-panel: #0d1b31;
+    --dispatch-panel-2: #101f38;
+    --dispatch-border: #213858;
+    --dispatch-border-soft: rgba(108, 156, 210, .18);
+    --dispatch-text: #f7fbff;
+    --dispatch-muted: #8fa8c9;
+    --dispatch-muted-2: #6f89ab;
+    --dispatch-cyan: #37c9ff;
+    --dispatch-green: #3ee39b;
+    --dispatch-blue: #4d9cff;
+    --dispatch-violet: #aa75ff;
+    --dispatch-red: #ff745f;
+    --dispatch-shadow: 0 18px 42px rgba(1, 8, 20, .22);
+  }
+
+  .dispatch-page {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+    color: var(--dispatch-text);
+  }
+
+  .dispatch-shell {
+    border: 1px solid var(--dispatch-border-soft);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(55, 201, 255, .06), transparent 30%),
+      linear-gradient(180deg, rgba(15, 31, 55, .96), rgba(9, 22, 40, .98));
+    border-radius: 18px;
+    box-shadow: var(--dispatch-shadow);
+  }
+
+  .dispatch-hero {
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .dispatch-hero-copy {
+    min-width: 0;
+  }
+
+  .dispatch-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--dispatch-cyan);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  .dispatch-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(24px, 2.1vw, 31px);
+    line-height: 1.12;
+    letter-spacing: -.02em;
+  }
+
+  .dispatch-hero p {
+    margin: 7px 0 0;
+    color: var(--dispatch-muted);
+    font-size: 14px;
+  }
+
+  .dispatch-hero-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 13px;
+    border: 1px solid rgba(62, 227, 155, .28);
+    background: rgba(62, 227, 155, .08);
+    color: #aef7d4;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .dispatch-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dispatch-green);
+    box-shadow: 0 0 0 5px rgba(62, 227, 155, .10);
+  }
+
+  .dispatch-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .dispatch-kpi-card {
+    position: relative;
+    min-height: 128px;
+    padding: 16px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    background: rgba(11, 26, 47, .94);
+    border: 1px solid var(--dispatch-border);
+    border-radius: 14px;
+    transition: transform .16s ease, border-color .16s ease, background .16s ease;
+  }
+
+  .dispatch-kpi-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(55, 201, 255, .42);
+  }
+
+  .dispatch-kpi-card.active {
+    background: linear-gradient(180deg, rgba(17, 50, 57, .95), rgba(9, 36, 40, .95));
+    border-color: rgba(62, 227, 155, .62);
+    box-shadow: inset 0 0 0 1px rgba(62, 227, 155, .08);
+  }
+
+  .dispatch-kpi-card.transit.active {
+    background: linear-gradient(180deg, rgba(15, 43, 78, .96), rgba(10, 29, 54, .96));
+    border-color: rgba(77, 156, 255, .62);
+  }
+
+  .dispatch-kpi-card.out.active {
+    background: linear-gradient(180deg, rgba(48, 31, 75, .96), rgba(29, 20, 51, .96));
+    border-color: rgba(170, 117, 255, .62);
+  }
+
+  .dispatch-kpi-card.incident.active {
+    background: linear-gradient(180deg, rgba(71, 34, 33, .96), rgba(43, 24, 27, .96));
+    border-color: rgba(255, 116, 95, .62);
+  }
+
+  .dispatch-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .dispatch-kpi-icon {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(55, 201, 255, .10);
+    color: var(--dispatch-cyan);
+  }
+
+  .dispatch-kpi-card.active .dispatch-kpi-icon {
+    background: rgba(62, 227, 155, .12);
+    color: var(--dispatch-green);
+  }
+
+  .dispatch-kpi-card.transit .dispatch-kpi-icon { color: var(--dispatch-blue); background: rgba(77,156,255,.11); }
+  .dispatch-kpi-card.out .dispatch-kpi-icon { color: var(--dispatch-violet); background: rgba(170,117,255,.11); }
+  .dispatch-kpi-card.delivered .dispatch-kpi-icon { color: var(--dispatch-green); background: rgba(62,227,155,.10); }
+  .dispatch-kpi-card.incident .dispatch-kpi-icon { color: var(--dispatch-red); background: rgba(255,116,95,.10); }
+
+  .dispatch-kpi-icon svg {
+    width: 21px;
+    height: 21px;
+    stroke: currentColor;
+  }
+
+  .dispatch-kpi-label {
+    color: #c8d7eb;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dispatch-kpi-number {
+    margin-top: 10px;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -.03em;
+  }
+
+  .dispatch-kpi-caption {
+    margin-top: 8px;
+    color: var(--dispatch-muted-2);
+    font-size: 11px;
+  }
+
+  .dispatch-kpi-accent {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 11px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(121, 151, 188, .12);
+    overflow: hidden;
+  }
+
+  .dispatch-kpi-accent::after {
+    content: "";
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: .85;
+  }
+
+  .dispatch-kpi-card { color: var(--dispatch-cyan); }
+  .dispatch-kpi-card.active, .dispatch-kpi-card.delivered { color: var(--dispatch-green); }
+  .dispatch-kpi-card.transit { color: var(--dispatch-blue); }
+  .dispatch-kpi-card.out { color: var(--dispatch-violet); }
+  .dispatch-kpi-card.incident { color: var(--dispatch-red); }
+
+  .dispatch-toolbar {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .dispatch-search {
+    position: relative;
+  }
+
+  .dispatch-search svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    stroke: #6f89ab;
+    pointer-events: none;
+  }
+
+  .dispatch-toolbar input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 11px 14px 11px 42px;
+    border: 1px solid #26415f;
+    border-radius: 11px;
+    outline: none;
+    background: #071427;
+    color: #fff;
+    font-size: 13px;
+  }
+
+  .dispatch-toolbar input:focus {
+    border-color: rgba(55, 201, 255, .72);
+    box-shadow: 0 0 0 3px rgba(55, 201, 255, .08);
+  }
+
+  .dispatch-toolbar input::placeholder {
+    color: #6882a4;
+  }
+
+  .dispatch-search-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid rgba(55, 201, 255, .5);
+    border-radius: 11px;
+    padding: 0 20px;
+    cursor: pointer;
+    background: linear-gradient(180deg, #36c7fb, #22aee5);
+    color: #041522;
+    font-weight: 900;
+  }
+
+  .dispatch-search-button svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+  }
+
+  .dispatch-results-panel {
+    overflow: hidden;
+  }
+
+  .dispatch-list-head {
+    display: grid;
+    grid-template-columns: minmax(180px, .9fr) minmax(220px, 1.35fr) minmax(150px, .8fr) minmax(170px, .9fr) minmax(140px, .8fr) minmax(150px, .8fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--dispatch-border-soft);
+    background: rgba(7, 20, 38, .58);
+    color: #7892b4;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .085em;
+    text-transform: uppercase;
+  }
+
+  .dispatch-list {
+    display: grid;
+  }
+
+  .dispatch-row {
+    display: grid;
+    grid-template-columns: minmax(180px, .9fr) minmax(220px, 1.35fr) minmax(150px, .8fr) minmax(170px, .9fr) minmax(140px, .8fr) minmax(150px, .8fr) auto;
+    gap: 14px;
+    align-items: center;
+    min-height: 94px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(90, 131, 177, .14);
+    background: rgba(9, 23, 42, .62);
+    transition: background .14s ease;
+  }
+
+  .dispatch-row:last-child {
+    border-bottom: 0;
+  }
+
+  .dispatch-row:hover {
+    background: rgba(14, 32, 57, .82);
+  }
+
+  .dispatch-order {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  .dispatch-order-icon {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(55, 201, 255, .10);
+    color: var(--dispatch-cyan);
+  }
+
+  .dispatch-order-icon svg {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+  }
+
+  .dispatch-order-folio,
+  .dispatch-cell-strong {
+    color: #f8fbff;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.3;
+  }
+
+  .dispatch-order-label,
+  .dispatch-cell-muted {
+    margin-top: 4px;
+    color: var(--dispatch-muted);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .dispatch-cell-muted.compact {
+    margin-top: 2px;
+  }
+
+  .dispatch-tracking-number {
+    color: var(--dispatch-green);
+    font-size: 13px;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .dispatch-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 7px 9px;
+    border: 1px solid rgba(55, 201, 255, .28);
+    border-radius: 8px;
+    background: rgba(55, 201, 255, .07);
+    color: #6ddcff;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+  }
+
+  .dispatch-status.ready { color: #65e9bd; border-color: rgba(62,227,155,.28); background: rgba(62,227,155,.07); }
+  .dispatch-status.transit { color: #6eafff; border-color: rgba(77,156,255,.30); background: rgba(77,156,255,.07); }
+  .dispatch-status.out { color: #c69cff; border-color: rgba(170,117,255,.30); background: rgba(170,117,255,.07); }
+  .dispatch-status.delivered { color: #6aebb2; border-color: rgba(62,227,155,.30); background: rgba(62,227,155,.07); }
+  .dispatch-status.incident { color: #ff9c8e; border-color: rgba(255,116,95,.32); background: rgba(255,116,95,.08); }
+
+  .dispatch-status-dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.035);
+  }
+
+  .dispatch-latest {
+    margin: 0 18px 14px;
+    padding: 9px 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(82, 128, 176, .13);
+    border-radius: 10px;
+    background: rgba(5, 16, 31, .52);
+    color: #859dbc;
+    font-size: 11px;
+  }
+
+  .dispatch-latest strong {
+    color: #cfe0f4;
+  }
+
+  .dispatch-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+  }
+
+  .dispatch-row-actions form {
+    margin: 0;
+  }
+
+  .dispatch-btn,
+  .js-open-delivery {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border: 1px solid #2c496a;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    background: #0d2742;
+    color: #78dfff;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .dispatch-btn:hover,
+  .js-open-delivery:hover {
+    border-color: rgba(55, 201, 255, .55);
+    background: #10304f;
+  }
+
+  .dispatch-btn.primary,
+  .js-open-delivery {
+    border-color: rgba(62, 227, 155, .55);
+    background: linear-gradient(180deg, #49e6a4, #2fd28c);
+    color: #031710;
+  }
+
+  .dispatch-btn.primary:hover,
+  .js-open-delivery:hover {
+    background: linear-gradient(180deg, #5aebb0, #3ad797);
+  }
+
+  .dispatch-btn svg,
+  .js-open-delivery svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+  }
+
+  .dispatch-more {
+    position: relative;
+  }
+
+  .dispatch-more summary {
+    list-style: none;
+  }
+
+  .dispatch-more summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .dispatch-more-button {
+    width: 36px;
+    padding: 0;
+  }
+
+  .dispatch-more-menu {
+    position: absolute;
+    z-index: 35;
+    right: 0;
+    top: calc(100% + 7px);
+    min-width: 184px;
+    display: grid;
+    gap: 5px;
+    padding: 7px;
+    border: 1px solid #284667;
+    border-radius: 10px;
+    background: #0b1b31;
+    box-shadow: 0 18px 48px rgba(0,0,0,.38);
+  }
+
+  .dispatch-more-menu a {
+    padding: 9px 10px;
+    border-radius: 7px;
+    color: #b9cce3;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .dispatch-more-menu a:hover {
+    background: rgba(55, 201, 255, .08);
+    color: #fff;
+  }
+
+  .dispatch-empty {
+    padding: 58px 22px;
+    text-align: center;
+    color: var(--dispatch-muted);
+  }
+
+  .dispatch-empty-icon {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 12px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: rgba(55, 201, 255, .08);
+    color: var(--dispatch-cyan);
+  }
+
+  .dispatch-empty-icon svg {
+    width: 25px;
+    height: 25px;
+    stroke: currentColor;
+  }
+
+  .dispatch-empty strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #dce9f8;
+    font-size: 14px;
+  }
+
+  .dispatch-footer {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--dispatch-border-soft);
+    background: rgba(7, 20, 38, .55);
+  }
+
+  .dispatch-footer-copy {
+    color: #7892b4;
+    font-size: 11px;
+  }
+
+  .dispatch-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dispatch-page-link,
+  .dispatch-page-current {
+    min-width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .dispatch-page-link {
+    border: 1px solid #274462;
+    background: #0b1d34;
+    color: #9eb7d6;
+  }
+
+  .dispatch-page-current {
+    border: 1px solid rgba(55, 201, 255, .72);
+    background: rgba(55, 201, 255, .10);
+    color: #78e1ff;
+  }
+
+  .delivery-modal[hidden] { display: none; }
+
+  .delivery-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(3, 8, 20, .80);
+    backdrop-filter: blur(5px);
+  }
+
+  .delivery-modal-card {
+    width: min(540px, 100%);
+    padding: 22px;
+    border: 1px solid #315179;
+    border-radius: 18px;
+    background: #0f1a31;
+    box-shadow: 0 24px 80px rgba(0,0,0,.45);
+  }
+
+  .delivery-modal-card h2 {
+    margin: 0;
+    color: #fff;
+  }
+
+  .delivery-modal-card p {
+    color: #9db3d2;
+  }
+
+  .delivery-modal-card textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #2a3d61;
+    border-radius: 12px;
+    background: #081226;
+    color: #fff;
+  }
+
+  .delivery-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .delivery-modal-actions button {
+    border-radius: 10px;
+    padding: 11px 15px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .delivery-cancel {
+    border: 1px solid #315179;
+    background: #172641;
+    color: #c3d3eb;
+  }
+
+  .delivery-confirm {
+    border: 1px solid #41d98b;
+    background: #41d98b;
+    color: #05121b;
+  }
+
+  .delivery-confirm:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 1380px) {
+    .dispatch-list-head {
+      display: none;
+    }
+
+    .dispatch-row {
+      grid-template-columns: minmax(170px, .9fr) minmax(220px, 1.25fr) minmax(150px, .8fr) minmax(170px, .9fr) auto;
+    }
+
+    .dispatch-updated {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1120px) {
+    .dispatch-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dispatch-kpi-card:last-child {
+      grid-column: span 2;
+    }
+
+    .dispatch-row {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+
+    .dispatch-row-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .dispatch-latest {
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .dispatch-hero {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .dispatch-hero-chip {
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: center;
+    }
+
+    .dispatch-kpis {
+      grid-template-columns: 1fr;
+    }
+
+    .dispatch-kpi-card:last-child {
+      grid-column: auto;
+    }
+
+    .dispatch-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .dispatch-row {
+      grid-template-columns: 1fr;
+    }
+
+    .dispatch-row-actions {
+      grid-column: auto;
+    }
+
+    .dispatch-footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>
+
+<div class="dispatch-page">
+  <section class="dispatch-shell dispatch-hero">
+    <div class="dispatch-hero-copy">
+      <div class="dispatch-eyebrow">
+        <span class="dispatch-live-dot"></span>
+        Operación logística
+      </div>
+      <h1>Centro de Despacho</h1>
+      <p>Control visual, timeline y seguimiento multicarrier desde la guía hasta la entrega.</p>
+    </div>
+    <div class="dispatch-hero-chip" aria-label="Vista operativa activa">
+      <span class="dispatch-live-dot"></span>
+      Seguimiento operativo activo
+    </div>
+  </section>
+
+  <nav class="dispatch-shell dispatch-kpis" aria-label="Estados del Centro de Despacho">
+    <a class="dispatch-kpi-card {% if tab == 'ready' %}active{% endif %}" href="?tab=ready{% if search %}&q={{ search|urlencode }}{% endif %}">
+      <div class="dispatch-kpi-top">
+        <span class="dispatch-kpi-label">Por enviar</span>
+        <span class="dispatch-kpi-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M21 3 9.5 14.5"/><path d="m21 3-7.1 18-4.4-6.5L3 10.1 21 3Z"/></svg>
+        </span>
+      </div>
+      <div class="dispatch-kpi-number">{{ counts.ready }}</div>
+      <div class="dispatch-kpi-caption">Guías listas para despacho</div>
+      <span class="dispatch-kpi-accent" aria-hidden="true"></span>
+    </a>
+
+    <a class="dispatch-kpi-card transit {% if tab == 'transit' %}active{% endif %}" href="?tab=transit{% if search %}&q={{ search|urlencode }}{% endif %}">
+      <div class="dispatch-kpi-top">
+        <span class="dispatch-kpi-label">En tránsito</span>
+        <span class="dispatch-kpi-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        </span>
+      </div>
+      <div class="dispatch-kpi-number">{{ counts.transit }}</div>
+      <div class="dispatch-kpi-caption">Envíos actualmente en camino</div>
+      <span class="dispatch-kpi-accent" aria-hidden="true"></span>
+    </a>
+
+    <a class="dispatch-kpi-card out {% if tab == 'out_for_delivery' %}active{% endif %}" href="?tab=out_for_delivery{% if search %}&q={{ search|urlencode }}{% endif %}">
+      <div class="dispatch-kpi-top">
+        <span class="dispatch-kpi-label">En reparto</span>
+        <span class="dispatch-kpi-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M9.2 9.2 14.8 14.8"/><path d="M15 7h3v3"/></svg>
+        </span>
+      </div>
+      <div class="dispatch-kpi-number">{{ counts.out_for_delivery }}</div>
+      <div class="dispatch-kpi-caption">Última milla en curso</div>
+      <span class="dispatch-kpi-accent" aria-hidden="true"></span>
+    </a>
+
+    <a class="dispatch-kpi-card delivered {% if tab == 'delivered' %}active{% endif %}" href="?tab=delivered{% if search %}&q={{ search|urlencode }}{% endif %}">
+      <div class="dispatch-kpi-top">
+        <span class="dispatch-kpi-label">Entregados</span>
+        <span class="dispatch-kpi-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.6 2.6L16.5 9"/></svg>
+        </span>
+      </div>
+      <div class="dispatch-kpi-number">{{ counts.delivered }}</div>
+      <div class="dispatch-kpi-caption">Entregas completadas</div>
+      <span class="dispatch-kpi-accent" aria-hidden="true"></span>
+    </a>
+
+    <a class="dispatch-kpi-card incident {% if tab == 'incidents' %}active{% endif %}" href="?tab=incidents{% if search %}&q={{ search|urlencode }}{% endif %}">
+      <div class="dispatch-kpi-top">
+        <span class="dispatch-kpi-label">Incidencias</span>
+        <span class="dispatch-kpi-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3 2.7 19h18.6L12 3Z"/><path d="M12 9v4"/><path d="M12 16.5h.01"/></svg>
+        </span>
+      </div>
+      <div class="dispatch-kpi-number">{{ counts.incidents }}</div>
+      <div class="dispatch-kpi-caption">Envíos que requieren atención</div>
+      <span class="dispatch-kpi-accent" aria-hidden="true"></span>
+    </a>
+  </nav>
+
+  <form method="get" class="dispatch-shell dispatch-toolbar" role="search">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="dispatch-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input
+        name="q"
+        value="{{ search }}"
+        maxlength="120"
+        autocomplete="off"
+        aria-label="Buscar envíos"
+        placeholder="Buscar folio, cliente, tracking, servicio o transportista..."
+      >
+    </div>
+    <button type="submit" class="dispatch-search-button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      Buscar
+    </button>
+  </form>
+
+  <section class="dispatch-shell dispatch-results-panel" aria-label="Resultados de despacho">
+    <div class="dispatch-list-head" aria-hidden="true">
+      <span>Pedido</span>
+      <span>Cliente / bodega</span>
+      <span>Transportista</span>
+      <span>Tracking</span>
+      <span>Estado</span>
+      <span>Última actualización</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="dispatch-list">
+      {% for shipment in page.object_list %}
+        <div>
+          <article class="dispatch-row">
+            <div class="dispatch-order">
+              <span class="dispatch-order-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
+              </span>
+              <div>
+                <div class="dispatch-order-folio">{{ shipment.shipping_order.order.folio }}</div>
+                <div class="dispatch-order-label">Pedido</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="dispatch-cell-strong">{{ shipment.shipping_order.order.customer|default:"Cliente sin nombre" }}</div>
+              <div class="dispatch-cell-muted">{{ shipment.shipping_order.packing_order.picking_order.warehouse }}</div>
+            </div>
+
+            <div>
+              <div class="dispatch-cell-strong">{{ shipment.carrier_name|default:"Transportista" }}</div>
+              <div class="dispatch-cell-muted compact">{{ shipment.service_name|default:"Servicio no especificado" }}</div>
+            </div>
+
+            <div>
+              <div class="dispatch-tracking-number">{{ shipment.master_tracking_number|default:"Sin tracking" }}</div>
+              <div class="dispatch-cell-muted compact">
+                {% if shipment.primary_package and shipment.primary_package.label_url %}
+                  Etiqueta disponible
+                {% else %}
+                  {{ shipment.get_status_display }}
+                {% endif %}
+              </div>
+            </div>
+
+            <div>
+              {% if tab == "ready" %}
+                <span class="dispatch-status ready"><span class="dispatch-status-dot"></span>{{ shipment.get_status_display }}</span>
+              {% elif tab == "transit" %}
+                <span class="dispatch-status transit"><span class="dispatch-status-dot"></span>{{ shipment.get_status_display }}</span>
+              {% elif tab == "out_for_delivery" %}
+                <span class="dispatch-status out"><span class="dispatch-status-dot"></span>{{ shipment.get_status_display }}</span>
+              {% elif tab == "delivered" %}
+                <span class="dispatch-status delivered"><span class="dispatch-status-dot"></span>{{ shipment.get_status_display }}</span>
+              {% else %}
+                <span class="dispatch-status incident"><span class="dispatch-status-dot"></span>{{ shipment.get_status_display }}</span>
+              {% endif %}
+              {% if shipment.transit_days is not None %}
+                <div class="dispatch-cell-muted">{{ shipment.transit_days }} día(s) en tránsito</div>
+              {% endif %}
+            </div>
+
+            <div class="dispatch-updated">
+              {% if shipment.latest_tracking_event %}
+                <div class="dispatch-cell-strong">{{ shipment.latest_tracking_event.occurred_at|date:"d/m/Y" }}</div>
+                <div class="dispatch-cell-muted compact">{{ shipment.latest_tracking_event.occurred_at|date:"H:i" }}</div>
+              {% else %}
+                <div class="dispatch-cell-strong">{{ shipment.updated_at|date:"d/m/Y" }}</div>
+                <div class="dispatch-cell-muted compact">{{ shipment.updated_at|date:"H:i" }}</div>
+              {% endif %}
+            </div>
+
+            <div class="dispatch-row-actions">
+              <a class="dispatch-btn" href="{% url 'shipping_hub_dispatch:shipment_tracking_timeline' shipment.id %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                Ver timeline
+              </a>
+
+              {% if tab == "ready" %}
+                <form method="post" action="{% url 'shipping_hub_dispatch:mark_dispatched' shipment.id %}" class="js-dispatch-form">
+                  {% csrf_token %}
+                  <button type="submit" class="dispatch-btn primary js-dispatch-submit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M21 3 9.5 14.5"/><path d="m21 3-7.1 18-4.4-6.5L3 10.1 21 3Z"/></svg>
+                    Marcar como enviado
+                  </button>
+                </form>
+              {% endif %}
+
+              {% if tab == "transit" or tab == "out_for_delivery" %}
+                <button
+                  type="button"
+                  class="js-open-delivery"
+                  data-action="{% url 'shipping_hub_dispatch:mark_delivered' shipment.id %}"
+                  data-order="{{ shipment.shipping_order.order.folio }}"
+                  data-tracking="{{ shipment.master_tracking_number }}"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                  Marcar entregado
+                </button>
+              {% endif %}
+
+              {% if shipment.master_tracking_url or shipment.primary_package and shipment.primary_package.label_url %}
+                <details class="dispatch-more">
+                  <summary class="dispatch-btn dispatch-more-button" aria-label="Más acciones">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                  </summary>
+                  <div class="dispatch-more-menu">
+                    {% if shipment.master_tracking_url %}
+                      <a href="{{ shipment.master_tracking_url }}" target="_blank" rel="noopener noreferrer">Abrir tracking externo</a>
+                    {% endif %}
+                    {% if shipment.primary_package and shipment.primary_package.label_url %}
+                      <a href="{{ shipment.primary_package.label_url }}" target="_blank" rel="noopener noreferrer">Abrir etiqueta</a>
+                    {% endif %}
+                  </div>
+                </details>
+              {% endif %}
+            </div>
+          </article>
+
+          {% if shipment.latest_tracking_event %}
+            <div class="dispatch-latest">
+              <span><strong>{{ shipment.latest_tracking_event.event_name }}</strong> · {{ shipment.latest_tracking_event.description|default:"Actualización del transportista" }}</span>
+              <span>{{ shipment.latest_tracking_event.location|default:"Ubicación no informada" }} · {{ shipment.latest_tracking_event.occurred_at|date:"d/m/Y H:i" }}</span>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="dispatch-empty">
+          <div class="dispatch-empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/></svg>
+          </div>
+          <strong>No hay pedidos en esta bandeja</strong>
+          {% if search %}
+            No encontramos resultados para “{{ search }}”.
+          {% else %}
+            Los envíos aparecerán aquí cuando entren en esta etapa operativa.
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <footer class="dispatch-footer">
+      <div class="dispatch-footer-copy">
+        {% if page.paginator.count %}
+          Mostrando {{ page.start_index }}–{{ page.end_index }} de {{ page.paginator.count }} resultado{{ page.paginator.count|pluralize:"s" }}
+        {% else %}
+          0 resultados
+        {% endif %}
+      </div>
+
+      {% if page.paginator.num_pages > 1 %}
+        <nav class="dispatch-pagination" aria-label="Paginación">
+          {% if page.has_previous %}
+            <a class="dispatch-page-link" href="?tab={{ tab }}&q={{ search|urlencode }}&page={{ page.previous_page_number }}" aria-label="Página anterior">‹</a>
+          {% endif %}
+
+          <span class="dispatch-page-current" aria-current="page">{{ page.number }}</span>
+          <span class="dispatch-footer-copy">de {{ page.paginator.num_pages }}</span>
+
+          {% if page.has_next %}
+            <a class="dispatch-page-link" href="?tab={{ tab }}&q={{ search|urlencode }}&page={{ page.next_page_number }}" aria-label="Página siguiente">›</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    </footer>
+  </section>
+</div>
+
+<div id="delivery-modal" class="delivery-modal" hidden>
+  <div class="delivery-modal-card" role="dialog" aria-modal="true" aria-labelledby="delivery-modal-title">
+    <h2 id="delivery-modal-title">Confirmar entrega</h2>
+    <p id="delivery-modal-summary"></p>
+    <form id="delivery-form" method="post" action="">
+      {% csrf_token %}
+      <label for="delivery-observation" class="dispatch-cell-muted">Observación de entrega (opcional)</label>
+      <textarea
+        id="delivery-observation"
+        name="observation"
+        maxlength="500"
+        placeholder="Ejemplo: Recibió María López en recepción."
+      ></textarea>
+      <div class="delivery-modal-actions">
+        <button type="button" class="delivery-cancel" id="delivery-cancel">Cancelar</button>
+        <button type="submit" class="delivery-confirm" id="delivery-confirm">Confirmar entrega</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  const modal = document.getElementById('delivery-modal');
+  const form = document.getElementById('delivery-form');
+  const summary = document.getElementById('delivery-modal-summary');
+  const observation = document.getElementById('delivery-observation');
+  const cancel = document.getElementById('delivery-cancel');
+  const confirmButton = document.getElementById('delivery-confirm');
+  let deliverySubmitting = false;
+
+  const closeModal = () => {
+    if (deliverySubmitting) return;
+    modal.hidden = true;
+    form.action = '';
+    observation.value = '';
+  };
+
+  document.querySelectorAll('.js-open-delivery').forEach((button) => {
+    button.addEventListener('click', () => {
+      form.action = button.dataset.action;
+      summary.textContent =
+        `Pedido ${button.dataset.order} · Tracking ${button.dataset.tracking || 'sin tracking'}. ` +
+        'Esta acción cerrará el envío, sus bultos y el pedido como entregados.';
+      modal.hidden = false;
+      observation.focus();
+    });
+  });
+
+  cancel.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  form.addEventListener('submit', (event) => {
+    if (deliverySubmitting) {
+      event.preventDefault();
+      return;
+    }
+
+    deliverySubmitting = true;
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Cerrando entrega...';
+  });
+
+  document.querySelectorAll('.js-dispatch-form').forEach((dispatchForm) => {
+    dispatchForm.addEventListener('submit', (event) => {
+      const submitButton = dispatchForm.querySelector('.js-dispatch-submit');
+      if (!submitButton) return;
+
+      if (dispatchForm.dataset.submitting === '1') {
+        event.preventDefault();
+        return;
+      }
+
+      dispatchForm.dataset.submitting = '1';
+      submitButton.disabled = true;
+      submitButton.textContent = 'Marcando...';
+    });
+  });
+})();
+</script>
+{% endblock %}

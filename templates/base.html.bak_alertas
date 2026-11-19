@@ -1,0 +1,2661 @@
+{% load static %}
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>{% block title %}WMS360{% endblock %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+    <link rel="stylesheet" href="{% static 'wms360/css/alerts.css' %}" />
+    <script src="{% static 'wms360/js/alerts.js' %}" defer></script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% block extra_head %}{% endblock %}
+
+    <style>
+        /* TARJETA EN SIDEBAR */
+.premium-upgrade-card {
+  margin: 14px 12px 20px 12px;
+  padding: 12px 14px;
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.03));
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+}
+
+.plan-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.plan-title {
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-desc {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.btn-upgrade-premium {
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.btn-upgrade-premium:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+}
+
+/* MODAL DE BENEFICIOS PREMIUM */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(4, 12, 24, 0.85);
+  backdrop-filter: blur(8px);
+  display: none;
+  place-items: center;
+  padding: 20px;
+}
+
+.modal-overlay.active { display: grid; }
+
+.premium-modal {
+  width: min(100%, 520px);
+  background: #0f172a;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  position: relative;
+  color: #f8fafc;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.modal-header { text-align: center; margin-bottom: 24px; }
+.modal-header h3 { font-size: 22px; font-weight: 900; color: #fff; }
+.modal-header p { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+
+.price-tag {
+  font-size: 32px;
+  font-weight: 900;
+  color: #f59e0b;
+  text-align: center;
+  margin: 16px 0;
+}
+.price-tag span { font-size: 14px; color: #64748b; font-weight: 500; }
+
+.benefits-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.benefit-icon {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  display: grid; place-items: center;
+  font-weight: 900; font-size: 11px;
+  flex-shrink: 0;
+}
+
+.btn-pay-now {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s;
+}
+
+.btn-pay-now:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+}
+      :root {
+        /* Ajustes rápidos del menú lateral */
+        --sidebar-width: 285px;
+        --sidebar-scrollbar-width: 9px;
+        --sidebar-scrollbar-track: #081120;
+        --sidebar-scrollbar-thumb: #0891b2;
+        --sidebar-scrollbar-hover: #22d3ee;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1050;
+        width: var(--sidebar-width);
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: #0f172a;
+        scrollbar-width: thin;
+        scrollbar-color: var(--sidebar-scrollbar-thumb)
+          var(--sidebar-scrollbar-track);
+      }
+
+      .sidebar::-webkit-scrollbar {
+        width: var(--sidebar-scrollbar-width);
+      }
+
+      .sidebar::-webkit-scrollbar-track {
+        background: var(--sidebar-scrollbar-track);
+        border-radius: 999px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        min-height: 45px;
+        border: 2px solid var(--sidebar-scrollbar-track);
+        border-radius: 999px;
+        background: linear-gradient(
+          180deg,
+          var(--sidebar-scrollbar-hover),
+          var(--sidebar-scrollbar-thumb)
+        );
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background: var(--sidebar-scrollbar-hover);
+      }
+
+      .main-content {
+        min-width: 0;
+        margin-left: var(--sidebar-width);
+      }
+
+      .menu {
+        padding-bottom: 22px;
+      }
+
+      .menu-group {
+        display: grid;
+        gap: 4px;
+        margin-top: 18px;
+      }
+
+      .menu-group:first-child {
+        margin-top: 8px;
+      }
+
+      .menu-group-title {
+        display: block;
+        margin: 0;
+        padding: 0 14px 7px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        line-height: 1.3;
+        text-transform: uppercase;
+      }
+
+      .menu-group + .menu-group {
+        padding-top: 17px;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .menu-group > a,
+      .menu-group > .menu-section > .menu-toggle {
+        min-height: 47px;
+      }
+
+      @media (max-width: 900px) {
+        :root {
+          --sidebar-width: 260px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.22s ease;
+        }
+
+        .sidebar.is-open {
+          transform: translateX(0);
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+      }
+
+      .menu-section {
+        display: grid;
+        gap: 4px;
+      }
+
+      .menu-toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .menu-toggle:hover,
+      .menu-toggle.is-active {
+        background: rgba(59, 130, 246, 0.14);
+      }
+
+      .menu-toggle-left {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .submenu {
+        display: none;
+        padding-left: 22px;
+        gap: 4px;
+      }
+
+      .submenu.is-open {
+        display: grid;
+      }
+
+      .submenu a {
+        color: #94a3b8;
+        text-decoration: none;
+        padding: 9px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.25;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .submenu a:hover,
+      .submenu a.is-active,
+      .menu a.is-active {
+        color: #f8fafc;
+        background: rgba(56, 189, 248, 0.12);
+      }
+
+      .menu-label {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .menu-label small {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 500;
+      }
+
+      .toast-stack {
+        position: fixed;
+        top: 90px;
+        right: 24px;
+        z-index: 99999;
+        display: grid;
+        gap: 10px;
+        max-width: 440px;
+      }
+
+      .toast-message {
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-weight: 800;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        animation: toastIn 0.25s ease-out;
+        color: #f8fafc;
+      }
+
+      .toast-success {
+        background: #14532d;
+        color: #bbf7d0;
+        border-color: rgba(34, 197, 94, 0.45);
+      }
+
+      .toast-error {
+        background: #7f1d1d;
+        color: #fecaca;
+        border-color: rgba(239, 68, 68, 0.55);
+      }
+
+      .toast-warning {
+        background: #78350f;
+        color: #fde68a;
+        border-color: rgba(245, 158, 11, 0.55);
+      }
+
+      .toast-info,
+      .toast-debug {
+        background: #0c4a6e;
+        color: #bae6fd;
+        border-color: rgba(56, 189, 248, 0.55);
+      }
+
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 760px) {
+        .toast-stack {
+          left: 14px;
+          right: 14px;
+          top: 76px;
+          max-width: none;
+        }
+      }
+
+      /* PERFIL EMPRESA MENU PRIORITARIO - PASO 9 */
+      .company-priority-menu {
+        margin-bottom: 8px;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: linear-gradient(
+          135deg,
+          rgba(34, 197, 94, 0.12),
+          rgba(6, 182, 212, 0.06)
+        );
+      }
+
+      .company-priority-menu > i {
+        color: #4ade80;
+      }
+      .warehouse-selector-form {
+        margin: 0;
+      }
+
+      .warehouse-selector {
+        min-width: 230px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 11px;
+        border: 1px solid rgba(56, 189, 248, 0.28);
+        border-radius: 12px;
+        background: rgba(2, 6, 23, 0.75);
+        color: #e2e8f0;
+      }
+
+      .warehouse-selector > i {
+        color: #38bdf8;
+        font-size: 18px;
+      }
+
+      .warehouse-selector > span {
+        min-width: 0;
+        flex: 1;
+        display: grid;
+        gap: 2px;
+      }
+
+      .warehouse-selector small {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .warehouse-selector select {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #f8fafc;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .warehouse-selector select option {
+        background: #0f172a;
+        color: #f8fafc;
+      }
+
+      @media (max-width: 900px) {
+        .warehouse-selector {
+          min-width: 190px;
+        }
+      }
+      .submenu-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 7px 10px;
+        padding: 10px;
+        border: 1px solid rgba(56, 189, 248, 0.18);
+        border-radius: 9px;
+        background: rgba(56, 189, 248, 0.07);
+        color: #94a3b8;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .submenu-info i {
+        color: #38bdf8;
+        margin-top: 1px;
+      }
+      .submenu {
+        display: none;
+      }
+
+      .submenu.is-open {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .promotions-submenu {
+        display: none;
+      }
+
+      .promotions-submenu.is-open {
+        display: flex;
+        flex-direction: column;
+      }
+      .sidebar-logout {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .sidebar-logout form {
+        width: 100%;
+        margin: 0;
+      }
+
+      .sidebar-logout-button {
+        width: 100%;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 10px 13px;
+        border: 1px solid rgba(248, 113, 113, 0.15);
+        border-radius: 11px;
+        background: rgba(239, 68, 68, 0.06);
+        color: #fca5a5;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      .sidebar-logout-button:hover {
+        border-color: rgba(248, 113, 113, 0.35);
+        background: rgba(239, 68, 68, 0.13);
+        color: #ffffff;
+        transform: translateX(2px);
+      }
+
+      .sidebar-logout-button i {
+        width: 20px;
+        flex-shrink: 0;
+        color: #f87171;
+        font-size: 17px;
+        text-align: center;
+      }
+
+      .sidebar-logout-button .menu-label {
+        display: flex;
+        flex-direction: column;
+        color: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+
+      .sidebar-logout-button .menu-label small {
+        margin-top: 4px;
+        color: rgba(252, 165, 165, 0.7);
+        font-size: 9px;
+        font-weight: 500;
+      }
+      .notification-bell {
+        position: relative;
+      }
+
+      .notification-bell > summary {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        height: 42px;
+        justify-content: center;
+        list-style: none;
+        position: relative;
+        width: 42px;
+      }
+
+      .notification-bell > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .notification-bell > summary i {
+        font-size: 1.2rem;
+      }
+
+      .notification-badge {
+        align-items: center;
+        background: #ef4444;
+        border: 2px solid #111827;
+        border-radius: 999px;
+        display: flex;
+        font-size: 0.68rem;
+        font-weight: 800;
+        height: 20px;
+        justify-content: center;
+        min-width: 20px;
+        padding: 0 4px;
+        position: absolute;
+        right: -7px;
+        top: -7px;
+      }
+
+      .notification-dropdown {
+        background: #101827;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+        position: absolute;
+        right: 0;
+        top: calc(100% + 12px);
+        width: min(390px, calc(100vw - 28px));
+        z-index: 1100;
+      }
+
+      .notification-dropdown-head,
+      .notification-dropdown-footer {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        padding: 14px 16px;
+      }
+
+      .notification-dropdown-head {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+      }
+
+      .notification-dropdown-head strong {
+        color: #f8fafc;
+      }
+
+      .notification-dropdown-head span {
+        color: #94a3b8;
+        font-size: 0.78rem;
+      }
+
+      .notification-dropdown-item {
+        align-items: flex-start;
+        border-left: 3px solid transparent;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        color: #dbeafe;
+        display: flex;
+        gap: 12px;
+        padding: 13px 16px;
+        text-decoration: none;
+      }
+
+      .notification-dropdown-item:hover {
+        background: rgba(59, 130, 246, 0.09);
+        color: #fff;
+      }
+
+      .notification-dropdown-item > i {
+        align-items: center;
+        background: rgba(148, 163, 184, 0.1);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 10px;
+        color: #94a3b8;
+        display: flex;
+        flex: 0 0 36px;
+        height: 36px;
+        justify-content: center;
+        margin-top: 3px;
+      }
+
+      .notification-dropdown-item.level-critical {
+        border-left-color: #ff334f;
+      }
+
+      .notification-dropdown-item.level-critical > i {
+        background: rgba(239, 68, 68, 0.13);
+        border-color: rgba(255, 51, 79, 0.48);
+        color: #ef4444;
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.18);
+      }
+
+      .notification-dropdown-item.level-warning {
+        border-left-color: #f59e0b;
+      }
+
+      .notification-dropdown-item.level-warning > i {
+        background: rgba(245, 158, 11, 0.13);
+        border-color: rgba(245, 158, 11, 0.42);
+        color: #f59e0b;
+      }
+
+      .notification-dropdown-item.level-info {
+        border-left-color: #3b82f6;
+      }
+
+      .notification-dropdown-item.level-info > i {
+        background: rgba(59, 130, 246, 0.13);
+        border-color: rgba(59, 130, 246, 0.42);
+        color: #60a5fa;
+      }
+
+      .notification-dropdown-item.level-success {
+        border-left-color: #22c55e;
+      }
+
+      .notification-dropdown-item.level-success > i {
+        background: rgba(34, 197, 94, 0.13);
+        border-color: rgba(34, 197, 94, 0.42);
+        color: #4ade80;
+      }
+
+      .notification-dropdown-item span {
+        display: grid;
+        gap: 3px;
+      }
+
+      .notification-dropdown-item small {
+        color: #94a3b8;
+      }
+
+      .notification-dropdown-empty {
+        color: #94a3b8;
+        padding: 24px 16px;
+        text-align: center;
+      }
+
+      .notification-dropdown-footer {
+        color: #60a5fa;
+        justify-content: center;
+        text-decoration: none;
+      }
+
+      .notification-center-page {
+        padding: 22px;
+      }
+
+      .notification-center-head,
+      .notification-filters {
+        align-items: center;
+        display: flex;
+        gap: 14px;
+        justify-content: space-between;
+      }
+
+      .notification-center-head {
+        margin-bottom: 20px;
+      }
+
+      .notification-center-head h2 {
+        color: #f8fafc;
+        margin: 4px 0;
+      }
+
+      .notification-center-head p,
+      .notification-kicker {
+        color: #94a3b8;
+      }
+
+      .notification-kicker {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+
+      .notification-filters {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        padding: 14px;
+      }
+
+      .notification-filters input,
+      .notification-filters select {
+        background: #0b1220;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 9px;
+        color: #e2e8f0;
+        min-height: 40px;
+        padding: 8px 11px;
+      }
+
+      .notification-filters input {
+        flex: 1 1 230px;
+      }
+
+      .notification-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .notification-card {
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-left: 4px solid #64748b;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .notification-card.is-unread {
+        background: rgba(30, 41, 59, 0.92);
+      }
+
+      .notification-card.notification-critical {
+        border-left-color: #ef4444;
+      }
+      .notification-card.notification-warning {
+        border-left-color: #f59e0b;
+      }
+      .notification-card.notification-success {
+        border-left-color: #22c55e;
+      }
+      .notification-card.notification-info {
+        border-left-color: #3b82f6;
+      }
+
+      .notification-card.notification-critical .notification-card-icon {
+        background: rgba(239, 68, 68, 0.13);
+        border: 1px solid rgba(255, 51, 79, 0.5);
+        color: #ff334f;
+        box-shadow: 0 0 16px rgba(239, 68, 68, 0.18);
+      }
+
+      .notification-card.notification-warning .notification-card-icon {
+        background: rgba(245, 158, 11, 0.13);
+        border: 1px solid rgba(245, 158, 11, 0.42);
+        color: #f59e0b;
+      }
+
+      .notification-card.notification-info .notification-card-icon {
+        background: rgba(59, 130, 246, 0.13);
+        border: 1px solid rgba(59, 130, 246, 0.42);
+        color: #60a5fa;
+      }
+
+      .notification-card.notification-success .notification-card-icon {
+        background: rgba(34, 197, 94, 0.13);
+        border: 1px solid rgba(34, 197, 94, 0.42);
+        color: #4ade80;
+      }
+
+      .notification-card-main {
+        align-items: center;
+        color: #e2e8f0;
+        display: flex;
+        gap: 14px;
+        padding: 16px;
+        text-decoration: none;
+      }
+
+      .notification-card-icon {
+        align-items: center;
+        background: rgba(148, 163, 184, 0.1);
+        border-radius: 12px;
+        display: flex;
+        flex: 0 0 44px;
+        height: 44px;
+        justify-content: center;
+      }
+
+      .notification-card-copy {
+        display: grid;
+        flex: 1;
+        gap: 4px;
+      }
+
+      .notification-card-title {
+        color: #fff;
+        font-weight: 800;
+      }
+
+      .notification-card-title em {
+        background: #2563eb;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-style: normal;
+        margin-left: 7px;
+        padding: 3px 7px;
+      }
+
+      .notification-card-message,
+      .notification-card-copy small {
+        color: #94a3b8;
+      }
+
+      .notification-card-action {
+        color: #60a5fa;
+        font-weight: 700;
+      }
+
+      .notification-card > form {
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+        padding: 7px 16px;
+        text-align: right;
+      }
+
+      .notification-card > form button {
+        background: none;
+        border: 0;
+        color: #94a3b8;
+        cursor: pointer;
+      }
+
+      .notification-empty {
+        color: #94a3b8;
+        padding: 60px 20px;
+        text-align: center;
+      }
+
+      .notification-empty i {
+        font-size: 2.4rem;
+      }
+
+      @media (max-width: 760px) {
+        .notification-card-action {
+          display: none;
+        }
+        .notification-center-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+<body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <!-- MARCA Y LOGO ORIGINAL DE WMS360 -->
+        <div class="brand">
+          <div class="brand-icon">W</div>
+          <div>
+            <strong>WMS360</strong>
+            <span>{{ warehouse_company.name|default:"SaaS Mayorista" }}</span>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 🚀 TARJETA DINÁMICA DE ESTADO DE SUSCRIPCIÓN              -->
+        <!-- ========================================================= -->
+        {% with sub=warehouse_company.subscription %}
+          {% if sub and sub.status == "active" or sub.status == "paid" or sub.status == "valid" %}
+            <!-- TARJETA: PLAN PREMIUM ACTIVO (VERDE ES MERALDA) -->
+            <div class="premium-upgrade-card" style="background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.05)); border: 1px solid rgba(16, 185, 129, 0.4);">
+              <div class="plan-badge">
+                <span class="status-dot" style="background-color: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                <span class="plan-title" style="color: #34d399;">Plan Premium Activo</span>
+              </div>
+              <p class="plan-desc" style="color: #94a3b8; margin-bottom: 0;">Tu empresa cuenta con acceso ilimitado a WMS360.</p>
+            </div>
+          {% else %}
+            <!-- TARJETA: PRUEBA GRATUITA (ÁMBAR) -->
+            <div class="premium-upgrade-card">
+              <div class="plan-badge">
+                <span class="status-dot"></span>
+                <span class="plan-title">Prueba Gratuita</span>
+              </div>
+
+              <p class="plan-desc">Disfrutas de 14 días de acceso Pro.</p>
+
+              <button type="button" class="btn-upgrade-premium" onclick="openPremiumModal()">
+                <span>⚡ Mejorar a Premium</span>
+              </button>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <nav class="menu">
+          {% if capability_access_all or "dashboard.view" in user_capability_codes %}
+          <section class="menu-group" aria-labelledby="menu-principal">
+            <h2 id="menu-principal" class="menu-group-title">Principal</h2>
+            <a href="/ceo/" data-menu-link>
+              <i class="bi bi-grid-1x2-fill"></i>
+              <span class="menu-label">
+                Dashboard
+                <small>Panel</small>
+              </span>
+            </a>
+
+            <a href="{% url 'dashboard:control_flow_dashboard' %}" data-menu-link>
+              <i class="bi bi-kanban-fill"></i>
+              <span class="menu-label">
+                Mesa de Control
+                <small>Control Tower</small>
+              </span>
+            </a>
+          </section>
+          {% endif %}
+          <!-- ========================================================= -->
+<!-- PRINCIPAL                                                 -->
+<!-- ========================================================= -->
+<div class="menu-section">
+  <div class="menu-section-title">
+    PRINCIPAL
+  </div>
+
+  <!-- Inicio personal para empleados -->
+  {% if not capability_access_all %}
+    <a
+      href="{% url 'accounts:employee_home' %}"
+      class="menu-link"
+      data-menu-link
+    >
+      <i class="fa-solid fa-house"></i>
+
+      <span class="menu-label">
+        Inicio
+        <small>Mi espacio de trabajo</small>
+      </span>
+    </a>
+  {% endif %}
+
+  <!-- Dashboard CEO para owner, admin o empleado autorizado -->
+  {% if capability_access_all or "dashboard.view" in user_capability_codes %}
+    <a
+      href="{% url 'dashboard:ceo_dashboard' %}"
+      class="menu-link"
+      data-menu-link
+    >
+      <i class="fa-solid fa-chart-line"></i>
+
+      <span class="menu-label">
+        Dashboard CEO
+        <small>Panel ejecutivo</small>
+      </span>
+    </a>
+  {% endif %}
+</div>
+
+
+<!-- ========================================================= -->
+<!-- OPERACIÓN Y ALMACÉN                                       -->
+<!-- ========================================================= -->
+{% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes or "receiving.execute" in user_capability_codes or "picking.execute" in user_capability_codes or "packing.execute" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+
+  <section
+    class="menu-group"
+    aria-labelledby="menu-operacion"
+  >
+    <h2
+      id="menu-operacion"
+      class="menu-group-title"
+    >
+      Operación y almacén
+    </h2>
+
+
+    <!-- ======================================================= -->
+    <!-- INVENTARIO                                              -->
+    <!-- ======================================================= -->
+    {% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes %}
+      <div class="menu-section">
+
+        <button
+          id="inventory-toggle"
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="inventory-menu"
+          onclick="toggleInventoryMenu()"
+        >
+          <span class="menu-toggle-left">
+            <i class="bi bi-box-seam-fill"></i>
+
+            <span class="menu-label">
+              Inventario
+              <small>Inventory</small>
+            </span>
+          </span>
+
+          <i
+            id="inventory-arrow"
+            class="bi bi-chevron-down"
+          ></i>
+        </button>
+
+        <div
+          id="inventory-menu"
+          class="submenu"
+        >
+
+          <!-- Productos -->
+          <a
+            href="{% url 'inventory:lista_productos' %}"
+            data-menu-link
+          >
+            <i class="bi bi-box"></i>
+
+            <span class="menu-label">
+              Productos
+              <small>Products</small>
+            </span>
+          </a>
+
+
+          <!-- Stock global -->
+          <a
+            href="{% url 'inventory:lista_stock' %}"
+            data-menu-link
+          >
+            <i class="bi bi-bar-chart-fill"></i>
+
+            <span class="menu-label">
+              Stock global
+              <small>Physical / Reserved</small>
+            </span>
+          </a>
+
+
+          <!-- Opciones que modifican inventario -->
+          {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+
+            <a
+              href="{% url 'inventory:seleccionar_producto_entrada_stock' %}"
+              data-menu-link
+            >
+              <i class="bi bi-box-arrow-in-down"></i>
+
+              <span class="menu-label">
+                Entrada de stock
+                <small>Seleccionar producto</small>
+              </span>
+            </a>
+
+          {% endif %}
+
+
+          <!-- Alertas de stock crítico -->
+          <a
+            href="{% url 'inventory:stock_critical_alerts' %}"
+            data-menu-link
+          >
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            <span class="menu-label">
+              Alertas stock crítico
+              <small>Low inventory</small>
+            </span>
+          </a>
+
+
+          <!-- Movimientos de inventario -->
+          <a
+            href="{% url 'inventory:movimientos_inventario' %}"
+            data-menu-link
+          >
+            <i class="bi bi-arrow-left-right"></i>
+
+            <span class="menu-label">
+              Movimientos
+              <small>Stock movements</small>
+            </span>
+          </a>
+
+
+          <!-- Ubicaciones: requiere administración de inventario -->
+          {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+
+            <a
+              href="{% url 'warehouse:lista_ubicaciones' %}"
+              data-menu-link
+            >
+              <i class="bi bi-geo-alt"></i>
+              <span class="menu-label">
+                Ubicaciones
+                <small>Locations</small>
+              </span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- Aquí continúan los bloques de Recepción, Picking, Packing -->
+    <!-- y Shipping, cada uno protegido por su capacidad.            -->
+            {% if capability_access_all or "inventory.manage" in user_capability_codes or "receiving.execute" in user_capability_codes or "picking.execute" in user_capability_codes or "packing.execute" in user_capability_codes or "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="warehouse-toggle" class="menu-toggle" type="button" onclick="toggleWarehouseMenu()">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-upc-scan"></i>
+                  <span class="menu-label">
+                    Almacén
+                    <small>Warehouse</small>
+                  </span>
+                </span>
+                <i id="warehouse-arrow" class="bi bi-chevron-down"></i>
+              </button>
+              <div id="warehouse-menu" class="submenu">
+                <a href="{% url 'warehouse:pendientes_por_enviar' %}" data-menu-link>
+                  <i class="bi bi-box-arrow-up"></i>
+                  <span class="menu-label">
+                    Pendientes por enviar
+                    <small>Cola de preparación</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:listos_despacho' %}" data-menu-link>
+                  <i class="bi bi-box2-heart"></i>
+                  <span class="menu-label">
+                    Listos para despacho
+                    <small>Empacados / Ready</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:pedidos_en_ruta' %}" data-menu-link>
+                  <i class="bi bi-truck"></i>
+                  <span class="menu-label">
+                    Enviados / En ruta
+                    <small>Con guía enviada</small>
+                  </span>
+                </a>
+                {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+                <a href="{% url 'warehouse:layout_designer' %}" data-menu-link>
+                  <i class="bi bi-grid-3x3-gap-fill"></i>
+                  <span class="menu-label">
+                    Mapa Visual
+                    <small>Layout Designer</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:mapa_ubicaciones_qr' %}" data-menu-link>
+                  <i class="bi bi-qr-code"></i>
+                  <span class="menu-label">
+                    Mapa de Bodega
+                    <small>Warehouse Map</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "picking.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_picking' %}" data-menu-link>
+                  <i class="bi bi-list-check"></i>
+                  <span class="menu-label">
+                    Rutas de Picking
+                    <small>Picking Routes</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "packing.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_packing' %}" data-menu-link>
+                  <i class="bi bi-box-seam"></i>
+                  <span class="menu-label">
+                    Empaque
+                    <small>Packing</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_shipping' %}" data-menu-link>
+                  <i class="bi bi-send-check"></i>
+                  <span class="menu-label">
+                    Todos los envíos
+                    <small>Shipping</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+                <a href="{% url 'warehouse:auditoria_warehouse' %}" data-menu-link>
+                  <i class="bi bi-clock-history"></i>
+                  <span class="menu-label">
+                    Auditoría
+                    <small>Audit</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'warehouse:lista_ubicaciones' %}" data-menu-link>
+                  <i class="bi bi-geo-alt"></i>
+                  <span class="menu-label">
+                    Ubicaciones
+                    <small>Locations</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "shipping.configure" in user_capability_codes %}
+            <a href="{% url 'shipping_hub:integrations_list' %}" data-menu-link>
+              <i class="bi bi-truck-front-fill"></i>
+              <span class="menu-label">
+                Shipping Hub
+                <small>Guías / Envia.com</small>
+              </span>
+            </a>
+            {% elif "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes or "shipping.quote" in user_capability_codes %}
+            <a href="{% url 'warehouse:lista_shipping' %}" data-menu-link>
+              <i class="bi bi-truck-front-fill"></i>
+              <span class="menu-label">
+                Logística y entregas
+                <small>Envíos / Tracking</small>
+              </span>
+            </a>
+            {% endif %}
+          </section>
+          {% endif %}
+
+          {% if capability_access_all or "sales.view" in user_capability_codes or "sales.create" in user_capability_codes or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes or "crm.manage" in user_capability_codes or "messaging.operate" in user_capability_codes %}
+          <section class="menu-group" aria-labelledby="menu-comercial">
+            <h2 id="menu-comercial" class="menu-group-title">Comercial y ventas</h2>
+            {% if capability_access_all or "sales.view" in user_capability_codes or "sales.create" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="sales-toggle" class="menu-toggle" type="button" onclick="toggleSalesMenu()">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-cart-check-fill"></i>
+                  <span class="menu-label">
+                    Ventas
+                    <small>Sales</small>
+                  </span>
+                </span>
+                <i id="sales-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="sales-menu" class="submenu">
+                <a href="{% url 'sales:pedidos_sin_pagar' %}" data-menu-link>
+                  <i class="bi bi-exclamation-circle"></i>
+                  <span class="menu-label">
+                    Pedidos sin pagar
+                    <small>Recuperar dinero</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:pedidos_en_revision_pago' %}" data-menu-link>
+                  <i class="bi bi-hourglass-split"></i>
+                  <span class="menu-label">
+                    En revisión de pago
+                    <small>Comprobante pendiente</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:pedidos_aprobados' %}" data-menu-link>
+                  <i class="bi bi-patch-check"></i>
+                  <span class="menu-label">
+                    Pedidos aprobados
+                    <small>Listos para almacén</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:lista_pedidos' %}" data-menu-link>
+                  <i class="bi bi-receipt"></i>
+                  <span class="menu-label">
+                    Todos los pedidos
+                    <small>Orders</small>
+                  </span>
+                </a>
+
+                {% if capability_access_all or "sales.create" in user_capability_codes %}
+                <a href="{% url 'sales:crear_pedido' %}" data-menu-link>
+                  <i class="bi bi-plus-circle"></i>
+                  <span class="menu-label">
+                    Nuevo pedido
+                    <small>Create order</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="promotions-toggle" class="menu-toggle" type="button" onclick="togglePromotionsMenu()">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-tags-fill"></i>
+                  <span class="menu-label">
+                    Promociones
+                    <small>Combos / Ofertas</small>
+                  </span>
+                </span>
+                <i id="promotions-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="promotions-menu" class="submenu promotions-submenu">
+                {% if active_warehouse and can_operate_active_warehouse %}
+                <a href="{% url 'inventory:bundle_create' %}" data-menu-link>
+                  <i class="bi bi-boxes"></i>
+                  <span class="menu-label">
+                    Crear combo
+                    <small>Nuevo kit promocional</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                <a href="{% url 'inventory:lista_productos' %}" data-menu-link>
+                  <i class="bi bi-grid-3x3-gap-fill"></i>
+                  <span class="menu-label">
+                    Catálogo comercial
+                    <small>Productos y combos</small>
+                  </span>
+                </a>
+
+                {% if active_warehouse_is_all %}
+                <div class="submenu-info">
+                  <i class="bi bi-info-circle"></i>
+                  <span>Selecciona una bodega específica para crear combos.</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "crm.manage" in user_capability_codes %}
+            <a href="/crm/" data-menu-link>
+              <i class="bi bi-people-fill"></i>
+              <span class="menu-label">
+                CRM
+                <small>Clientes / Customers</small>
+              </span>
+            </a>
+            {% endif %}
+
+            {% if capability_access_all or "messaging.operate" in user_capability_codes or "messaging.supervise" in user_capability_codes or "messaging.configure" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="messaging-toggle" class="menu-toggle" type="button" onclick="toggleMessagingMenu()">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-whatsapp"></i>
+                  <span class="menu-label">
+                    Messaging
+                    <small>WhatsApp Premium</small>
+                  </span>
+                </span>
+                <i id="messaging-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="messaging-menu" class="submenu">
+                {% if capability_access_all or "messaging.configure" in user_capability_codes %}
+                <a href="{% url 'messaging:channels_list' %}" data-menu-link>
+                  <i class="bi bi-broadcast"></i>
+                  <span class="menu-label">
+                    Canales WhatsApp
+                    <small>Numbers / Channels</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "messaging.operate" in user_capability_codes %}
+                <a href="{% url 'messaging:chat_inbox' %}" data-menu-link>
+                  <i class="bi bi-chat-dots-fill"></i>
+                  <span class="menu-label">
+                    Bandeja de chats
+                    <small>Inbox / Conversations</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'messaging:ai_offer_draft_list' %}" data-menu-link>
+                  <i class="bi bi-stars"></i>
+                  <span class="menu-label">
+                    Borradores IA
+                    <small>Ofertas pendientes</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="/admin/messaging/whatsappconfig/" data-menu-link>
+                  <i class="bi bi-gear-fill"></i>
+                  <span class="menu-label">
+                    Configuración
+                    <small>Meta API</small>
+                  </span>
+                </a>
+
+                <a href="/admin/messaging/webhookevent/" data-menu-link>
+                  <i class="bi bi-activity"></i>
+                  <span class="menu-label">
+                    Webhook Events
+                    <small>Auditoría</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </section>
+          {% endif %}
+
+          {% if capability_access_all or "purchases.manage" in user_capability_codes or "accounting.view" in user_capability_codes or "payments.view" in user_capability_codes %}
+          <section class="menu-group" aria-labelledby="menu-finanzas">
+            <h2 id="menu-finanzas" class="menu-group-title">Compras y finanzas</h2>
+            {% if capability_access_all or "purchases.manage" in user_capability_codes %}
+            <a href="{% url 'purchases:lista_compras' %}" data-menu-link>
+              <i class="bi bi-bag-check-fill"></i>
+              <span class="menu-label">
+                Compras
+                <small>Purchases</small>
+              </span>
+            </a>
+            {% endif %}
+
+            {% if capability_access_all or "accounting.view" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="accounting-toggle" class="menu-toggle" type="button" onclick="toggleAccountingMenu()">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-cash-coin"></i>
+                  <span class="menu-label">
+                    Finanzas
+                    <small>Accounting / Reports</small>
+                  </span>
+                </span>
+                <i id="accounting-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="accounting-menu" class="submenu">
+                <a href="{% url 'accounting:financial_ai_advisor' %}" data-menu-link>
+                  <i class="bi bi-stars"></i>
+                  <span class="menu-label">
+                    Analista Financiero IA
+                    <small>Gemini AI</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:financial_dashboard' %}" data-menu-link>
+                  <i class="bi bi-speedometer2"></i>
+                  <span class="menu-label">
+                    Mesa Financiera
+                    <small>Financial Dashboard</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:income_statement' %}" data-menu-link>
+                  <i class="bi bi-graph-up-arrow"></i>
+                  <span class="menu-label">
+                    Estado de Resultados
+                    <small>Income Statement</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:balance_sheet' %}" data-menu-link>
+                  <i class="bi bi-building-check"></i>
+                  <span class="menu-label">
+                    Balance General
+                    <small>Balance Sheet</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:expense_list' %}" data-menu-link>
+                  <i class="bi bi-receipt-cutoff"></i>
+                  <span class="menu-label">
+                    Gastos
+                    <small>Operating Expenses</small>
+                  </span>
+                </a>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "payments.view" in user_capability_codes %}
+            <a href="{% url 'payments:lista_pagos' %}" data-menu-link>
+              <i class="bi bi-credit-card-fill"></i>
+              <span class="menu-label">
+                Pagos
+                <small>Payments</small>
+              </span>
+            </a>
+            {% endif %}
+          </section>
+          {% endif %}
+
+          <section class="menu-group" aria-labelledby="menu-configuracion">
+
+  <h2
+    id="menu-configuracion"
+    class="menu-group-title"
+  >
+    Configuración y utilerías
+  </h2>
+
+
+  {% if request.user.is_authenticated %}
+
+    <!-- =====================================================
+         MI EMPRESA
+    ====================================================== -->
+
+    {% if not request.user.is_superuser %}
+
+      <a
+        href="{% url 'companies:profile' %}"
+        data-menu-link
+        class="company-priority-menu"
+      >
+        <i class="bi bi-building-check"></i>
+
+        <span class="menu-label">
+          Mi empresa
+          <small>Perfil corporativo</small>
+        </span>
+      </a>
+
+
+      <!-- ===================================================
+           BODEGAS
+           SOLO OWNER / ADMIN DE LA EMPRESA
+      ==================================================== -->
+
+      {% if request.user.profile.role == "owner" or request.user.profile.role == "admin" %}
+
+        <div class="menu-section">
+          <button
+            id="team-toggle"
+            class="menu-toggle"
+            type="button"
+            onclick="toggleTeamMenu()"
+            aria-expanded="false"
+          >
+            <span class="menu-toggle-left">
+              <i class="bi bi-people-fill"></i>
+              <span class="menu-label">
+                Equipo y accesos
+                <small>Personal multirrol</small>
+              </span>
+            </span>
+            <i id="team-arrow" class="bi bi-chevron-down"></i>
+          </button>
+
+          <div id="team-menu" class="submenu">
+            <a
+              href="{% url 'accounts:employee_invitation_create' %}#team-directory"
+              data-menu-link
+            >
+              <i class="bi bi-person-lines-fill"></i>
+              <span>Directorio del equipo</span>
+            </a>
+
+            <a
+              href="{% url 'accounts:employee_invitation_create' %}#invite-form"
+              data-menu-link
+            >
+              <i class="bi bi-person-plus-fill"></i>
+              <span>Invitar trabajador</span>
+            </a>
+
+            <a
+              href="{% url 'accounts:employee_invitation_create' %}#pending-invitations"
+              data-menu-link
+            >
+              <i class="bi bi-envelope-check-fill"></i>
+              <span>Invitaciones pendientes</span>
+            </a>
+          </div>
+        </div>
+
+        <a
+          href="{% url 'companies:warehouse_list' %}"
+          data-menu-link
+        >
+          <i class="bi bi-buildings-fill"></i>
+
+          <span class="menu-label">
+            Bodegas
+            <small>Warehouses</small>
+          </span>
+        </a>
+
+      {% endif %}
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         IMPORTACIONES
+    ====================================================== -->
+
+    {% if capability_access_all or "imports.manage" in user_capability_codes %}
+    <a
+      href="{% url 'data_imports:dashboard' %}"
+      data-menu-link
+      {% if '/importaciones/' in request.path %}
+        class="active"
+      {% endif %}
+    >
+      <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+
+      <span class="menu-label">
+        Importaciones
+        <small>Excel / CSV</small>
+      </span>
+    </a>
+    {% endif %}
+
+
+    <!-- =====================================================
+         SUSCRIPCIONES / ADMIN DJANGO
+         SOLO STAFF / SUPERUSER
+    ====================================================== -->
+
+    {% if request.user.is_staff or request.user.is_superuser %}
+
+      <a
+        href="/admin/subscriptions/subscription/"
+        data-menu-link
+      >
+        <i class="bi bi-repeat"></i>
+
+        <span class="menu-label">
+          Suscripciones
+          <small>Subscriptions</small>
+        </span>
+      </a>
+
+
+      <a
+        href="/admin/"
+        data-menu-link
+      >
+        <i class="bi bi-shield-lock-fill"></i>
+
+        <span class="menu-label">
+          Admin Django
+          <small>Django Admin</small>
+        </span>
+      </a>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         OWNER SAAS
+         SOLO SUPERUSER
+    ====================================================== -->
+
+    {% if request.user.is_superuser %}
+
+      <a
+        href="/owner/"
+        data-menu-link
+      >
+        <i class="bi bi-building-lock"></i>
+
+        <span class="menu-label">
+          Owner SaaS
+          <small>Panel propietario</small>
+        </span>
+      </a>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         CERRAR SESIÓN
+    ====================================================== -->
+
+    <div class="sidebar-logout">
+
+      <form
+        method="post"
+        action="{% url 'accounts:logout' %}"
+      >
+        {% csrf_token %}
+
+        <button
+          type="submit"
+          class="sidebar-logout-button"
+        >
+          <i class="bi bi-box-arrow-right"></i>
+
+          <span class="menu-label">
+            Cerrar sesión
+            <small>Logout</small>
+          </span>
+        </button>
+
+      </form>
+
+    </div>
+
+  {% endif %}
+
+</section>
+
+</nav>
+
+</aside>
+
+
+<main class="main-content">
+        <header class="topbar">
+          <div>
+            <h1>{% block page_title %} Dashboard CEO {% endblock %}</h1>
+            <p>{% block page_subtitle %} Panel general de operación SaaS mayorista / Wholesale SaaS operations panel {% endblock %}</p>
+          </div>
+
+          <div class="topbar-actions">
+            {% if request.user.is_authenticated and warehouse_company %}
+            <form method="post" action="{% url 'accounts:seleccionar_bodega_activa' %}" class="warehouse-selector-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+
+              <label class="warehouse-selector">
+                <i class="bi bi-building"></i>
+                <span>
+                  <small>Bodega activa</small>
+                  <select name="warehouse" onchange="this.form.submit()">
+                    <option value="all" {% if active_warehouse_is_all %}selected{% endif %}>
+                      Todas las bodegas
+                    </option>
+
+                    {% for warehouse in accessible_warehouses %}
+                    <option value="{{ warehouse.id }}" {% if active_warehouse and active_warehouse.id == warehouse.id %}selected{% endif %}>
+                      {{ warehouse.name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </span>
+              </label>
+            </form>
+            {% endif %}
+
+            {% if request.user.is_authenticated %}
+            <details class="notification-bell">
+              <summary aria-label="Abrir notificaciones">
+                <i class="bi bi-bell-fill"></i>
+                {% if notification_unread_count %}
+                <span class="notification-badge">
+                  {% if notification_unread_count > 99 %}99+{% else %}{{ notification_unread_count }}{% endif %}
+                </span>
+                {% endif %}
+              </summary>
+              <div class="notification-dropdown">
+                <div class="notification-dropdown-head">
+                  <strong>Notificaciones</strong>
+                  <span>{{ notification_unread_count }} sin leer</span>
+                </div>
+                {% for notification in notification_dropdown_items %}
+                <a href="{% url 'notifications:open' notification.id %}" class="notification-dropdown-item level-{{ notification.level }}">
+                  <i class="bi {{ notification.icon }}"></i>
+                  <span>
+                    <strong>{{ notification.title }}</strong>
+                    <small>{{ notification.message|truncatechars:105 }}</small>
+                  </span>
+                </a>
+                {% empty %}
+                <div class="notification-dropdown-empty">
+                  No tienes notificaciones nuevas.
+                </div>
+                {% endfor %}
+                <a href="{% url 'notifications:center' %}" class="notification-dropdown-footer">
+                  Ver centro de notificaciones
+                </a>
+              </div>
+            </details>
+            {% endif %}
+
+            <span class="badge bg-success">Sistema activo / Active system</span>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="/admin/" class="btn btn-sm btn-outline-light"> Admin </a>
+            {% endif %}
+            
+            {% if request.user.is_superuser %}
+            <a href="/owner/" class="btn btn-sm btn-warning"> Owner </a>
+            {% endif %}
+          </div>
+        </header>
+
+        {% if messages %}
+        <div hidden aria-hidden="true">
+          {% for message in messages %}
+          <div data-wms-django-message data-tags="{{ message.tags|default:'info' }}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 💳 MODAL DE BENEFICIOS PREMIUM & SISTEMA DE PAGO          -->
+    <!-- ========================================================= -->
+    <div id="premiumModal" class="modal-overlay">
+      <div class="premium-modal">
+        <button type="button" class="modal-close" onclick="closePremiumModal()">✕</button>
+
+        <div class="modal-header">
+          <span style="color: #f59e0b; font-size: 11px; font-weight: 800; text-transform: uppercase;">Plan Empresarial</span>
+          <h3>Pasa a WMS360 Premium ⚡</h3>
+          <p>Desbloquea el poder operativo ilimitado para tu negocio</p>
+        </div>
+
+        <div class="price-tag">
+          $4,500 MXN <span>/ mes por bodega</span>
+        </div>
+
+        <div class="benefits-list">
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Gestión Multi-bodega:</strong> Entradas, salidas y transferencias en tiempo real.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Copiloto Gemini AI:</strong> Consultas ilimitadas de rentabilidad e inventario crítico.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>WhatsApp Operativo Integrado:</strong> Alertas y seguimiento automático a clientes.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Shipping Hub:</strong> Generación de guías con Envia.com y Skydropx.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Soporte Prioritario 24/7</strong> y respaldos diarios automatizados.</span>
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'subscriptions:create_checkout_session' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-pay-now">
+                Pagar $4,500 MXN y Activar Ahora →
+            </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- JS PARA ABRIR Y CERRAR EL MODAL PREMIUM -->
+    <script>
+      function openPremiumModal() {
+        document.getElementById('premiumModal').classList.add('active');
+      }
+      function closePremiumModal() {
+        document.getElementById('premiumModal').classList.remove('active');
+      }
+    </script>
+</body>
+    <!-- JS PARA ABRIR Y CERRAR EL MODAL PREMIUM -->
+    <script>
+      function openPremiumModal() {
+        document.getElementById('premiumModal').classList.add('active');
+      }
+      function closePremiumModal() {
+        document.getElementById('premiumModal').classList.remove('active');
+      }
+    </script>
+</body>
+    <!-- JS PARA ABRIR Y CERRAR EL MODAL PREMIUM -->
+    <script>
+      function openPremiumModal() {
+        document.getElementById('premiumModal').classList.add('active');
+      }
+      function closePremiumModal() {
+        document.getElementById('premiumModal').classList.remove('active');
+      }
+    </script>
+  </body>
+    <script>
+      function toggleMenu(menuId, arrowId) {
+        const menu = document.getElementById(menuId);
+        const arrow = document.getElementById(arrowId);
+
+        if (!menu || !arrow) {
+          return;
+        }
+
+        const shouldOpen = !menu.classList.contains("is-open");
+
+        menu.classList.toggle("is-open", shouldOpen);
+        arrow.classList.toggle("bi-chevron-up", shouldOpen);
+        arrow.classList.toggle("bi-chevron-down", !shouldOpen);
+      }
+
+      function openMenu(menuId, arrowId, toggleId) {
+        const menu = document.getElementById(menuId);
+        const arrow = document.getElementById(arrowId);
+        const toggle = document.getElementById(toggleId);
+
+        if (menu) {
+          menu.classList.add("is-open");
+        }
+
+        if (arrow) {
+          arrow.classList.remove("bi-chevron-down");
+          arrow.classList.add("bi-chevron-up");
+        }
+
+        if (toggle) {
+          toggle.classList.add("is-active");
+        }
+      }
+
+      function toggleInventoryMenu() {
+        toggleMenu("inventory-menu", "inventory-arrow");
+      }
+
+      function toggleWarehouseMenu() {
+        toggleMenu("warehouse-menu", "warehouse-arrow");
+      }
+
+      function toggleSalesMenu() {
+        toggleMenu("sales-menu", "sales-arrow");
+      }
+
+      function toggleMessagingMenu() {
+        toggleMenu("messaging-menu", "messaging-arrow");
+      }
+
+      function toggleAccountingMenu() {
+        toggleMenu("accounting-menu", "accounting-arrow");
+      }
+
+      function toggleTeamMenu() {
+        toggleMenu("team-menu", "team-arrow");
+      }
+
+      function togglePromotionsMenu() {
+        toggleMenu("promotions-menu", "promotions-arrow");
+      }
+
+      function normalizePath(path) {
+        if (!path) {
+          return "/";
+        }
+
+        if (path.length > 1 && path.endsWith("/")) {
+          return path.slice(0, -1);
+        }
+
+        return path;
+      }
+
+      function activateCurrentMenu() {
+        const path = normalizePath(window.location.pathname);
+
+        const currentSearch = window.location.search || "";
+
+        /*
+         * Los combos pertenecen al menú Promociones.
+         * El resto de /inventory pertenece a Inventario.
+         */
+        if (
+          path.startsWith("/inventory/combos") ||
+          path.startsWith("/promociones")
+        ) {
+          openMenu("promotions-menu", "promotions-arrow", "promotions-toggle");
+        } else if (path.startsWith("/inventory")) {
+          openMenu("inventory-menu", "inventory-arrow", "inventory-toggle");
+        }
+
+        if (path.startsWith("/warehouse")) {
+          openMenu("warehouse-menu", "warehouse-arrow", "warehouse-toggle");
+        }
+
+        if (path.startsWith("/sales")) {
+          openMenu("sales-menu", "sales-arrow", "sales-toggle");
+        }
+
+        if (path.startsWith("/messaging")) {
+          openMenu("messaging-menu", "messaging-arrow", "messaging-toggle");
+        }
+
+        if (path.startsWith("/finanzas") || path.startsWith("/accounting")) {
+          openMenu("accounting-menu", "accounting-arrow", "accounting-toggle");
+        }
+
+        if (path.startsWith("/accounts/equipo")) {
+          openMenu("team-menu", "team-arrow", "team-toggle");
+        }
+
+        let bestLink = null;
+        let bestScore = 0;
+
+        document.querySelectorAll("[data-menu-link]").forEach(function (link) {
+          link.classList.remove("is-active");
+
+          const rawHref = link.getAttribute("href");
+
+          if (
+            !rawHref ||
+            rawHref.startsWith("#") ||
+            rawHref.startsWith("javascript:")
+          ) {
+            return;
+          }
+
+          const hrefUrl = new URL(rawHref, window.location.origin);
+
+          const hrefPath = normalizePath(hrefUrl.pathname);
+
+          const hrefSearch = hrefUrl.search || "";
+
+          let isMatch = false;
+
+          if (hrefSearch) {
+            isMatch = path === hrefPath && currentSearch === hrefSearch;
+          } else {
+            isMatch =
+              path === hrefPath ||
+              (hrefPath !== "/" && path.startsWith(hrefPath + "/"));
+          }
+
+          if (!isMatch) {
+            return;
+          }
+
+          const score =
+            hrefPath.length + (hrefSearch ? hrefSearch.length + 1000 : 0);
+
+          if (score > bestScore) {
+            bestLink = link;
+            bestScore = score;
+          }
+        });
+
+        if (bestLink) {
+          bestLink.classList.add("is-active");
+        }
+      }
+
+      function initializeToasts() {
+        const stack = document.getElementById("toast-stack");
+
+        if (!stack) {
+          return;
+        }
+
+        setTimeout(function () {
+          stack.style.opacity = "0";
+          stack.style.transform = "translateY(-8px)";
+          stack.style.transition = "all .25s ease";
+
+          setTimeout(function () {
+            stack.remove();
+          }, 300);
+        }, 7000);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        activateCurrentMenu();
+        initializeToasts();
+      });
+
+      function openPremiumModal() {
+    document.getElementById('premiumModal').classList.add('active');
+  }
+  function closePremiumModal() {
+    document.getElementById('premiumModal').classList.remove('active');
+  }
+    </script>
+    
+<script>
+  (function () {
+    "use strict";
+
+    const notificationIdElement = document.getElementById(
+      "notification-sound-id"
+    );
+
+    const storageKeyElement = document.getElementById(
+      "notification-storage-key"
+    );
+
+    if (!notificationIdElement || !storageKeyElement) {
+      return;
+    }
+
+    const notificationId = JSON.parse(
+      notificationIdElement.textContent
+    );
+
+    const storageKey = JSON.parse(
+      storageKeyElement.textContent
+    );
+    if (!storageKey) {
+        return;
+    }
+    if (!notificationId) {
+        try {
+            localStorage.setItem(storageKey, "0");
+        } catch (error) {
+
+        }
+        return;
+    }
+
+    let previousNotificationId = 0;
+
+    try {
+      previousNotificationId = Number(
+        localStorage.getItem(storageKey) || 0
+      );
+    } catch (error) {
+      previousNotificationId = 0;
+    }
+
+    /*
+     * La primera vez se establece una referencia sin reproducir todas
+     * las alertas antiguas que ya estaban pendientes.
+     */
+    if (!previousNotificationId) {
+      try {
+        localStorage.setItem(
+          storageKey,
+          String(notificationId)
+        );
+      } catch (error) {
+        // El sistema continúa aunque el navegador bloquee localStorage.
+      }
+
+      return;
+    }
+
+    if (Number(notificationId) <= previousNotificationId) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        String(notificationId)
+      );
+    } catch (error) {
+      // El sonido todavía puede funcionar sin almacenamiento.
+    }
+
+    let soundPlayed = false;
+
+    function playNotificationSound() {
+      if (soundPlayed) {
+        return;
+      }
+
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return;
+      }
+
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const startTime = audioContext.currentTime;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, startTime);
+      oscillator.frequency.setValueAtTime(1046, startTime + 0.12);
+
+      gainNode.gain.setValueAtTime(0.0001, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.18,
+        startTime + 0.02
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.0001,
+        startTime + 0.32
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start(startTime);
+      oscillator.stop(startTime + 0.34);
+
+      soundPlayed = true;
+
+      document.removeEventListener(
+        "pointerdown",
+        playNotificationSound
+      );
+
+      document.removeEventListener(
+        "keydown",
+        playNotificationSound
+      );
+    }
+
+    /*
+     * Primero intenta reproducirlo directamente. Si el navegador
+     * exige interacción, sonará en el primer clic o tecla.
+     */
+    try {
+      playNotificationSound();
+    } catch (error) {
+      soundPlayed = false;
+    }
+
+    if (!soundPlayed) {
+      document.addEventListener(
+        "pointerdown",
+        playNotificationSound,
+        { once: true }
+      );
+
+      document.addEventListener(
+        "keydown",
+        playNotificationSound,
+        { once: true }
+      );
+    }
+  })();
+</script>
+{{ notification_sound_id|json_script:"notification-sound-id" }}
+{{ notification_sound_area|json_script:"notification-sound-area" }}
+{{ notification_sound_level|json_script:"notification-sound-level" }}
+{{ notification_sound_storage_key|json_script:"notification-storage-key" }}
+
+<script>
+  (function () {
+    "use strict";
+
+    const idElement = document.getElementById(
+      "notification-sound-id"
+    );
+
+    const areaElement = document.getElementById(
+      "notification-sound-area"
+    );
+
+    const levelElement = document.getElementById(
+      "notification-sound-level"
+    );
+
+    const storageElement = document.getElementById(
+      "notification-storage-key"
+    );
+
+    if (
+      !idElement ||
+      !areaElement ||
+      !levelElement ||
+      !storageElement
+    ) {
+      return;
+    }
+
+    const notificationId = Number(
+      JSON.parse(idElement.textContent) || 0
+    );
+
+    const sourceApp = String(
+      JSON.parse(areaElement.textContent) || ""
+    ).toLowerCase();
+
+    const notificationLevel = String(
+      JSON.parse(levelElement.textContent) || "info"
+    ).toLowerCase();
+
+    const storageKey = String(
+      JSON.parse(storageElement.textContent) || ""
+    );
+
+    if (!storageKey) {
+      return;
+    }
+
+    /*
+     * Cuando no existen alertas, dejamos el navegador preparado
+     * para que la primera alerta nueva sí produzca sonido.
+     */
+    if (!notificationId) {
+      try {
+        localStorage.setItem(storageKey, "0");
+      } catch (error) {
+        // La página continúa funcionando.
+      }
+
+      return;
+    }
+
+    let previousNotificationId = 0;
+
+    try {
+      previousNotificationId = Number(
+        localStorage.getItem(storageKey) || 0
+      );
+    } catch (error) {
+      previousNotificationId = 0;
+    }
+
+    if (notificationId <= previousNotificationId) {
+      return;
+    }
+
+    /*
+     * Marcamos la alerta antes de reproducir para impedir sonidos
+     * duplicados por doble carga o recarga rápida.
+     */
+    try {
+      localStorage.setItem(
+        storageKey,
+        String(notificationId)
+      );
+    } catch (error) {
+      // El audio todavía puede reproducirse.
+    }
+
+    const AREA_SOUNDS = {
+      payments: {
+        wave: "sine",
+        frequencies: [740, 988]
+      },
+      accounting: {
+        wave: "sine",
+        frequencies: [698, 880]
+      },
+      inventory: {
+        wave: "triangle",
+        frequencies: [880, 659]
+      },
+      purchases: {
+        wave: "triangle",
+        frequencies: [587, 784]
+      },
+      warehouse: {
+        wave: "square",
+        frequencies: [330, 440]
+      },
+      shipping_hub: {
+        wave: "sawtooth",
+        frequencies: [523, 784]
+      },
+      sales: {
+        wave: "sine",
+        frequencies: [659, 880]
+      },
+      crm: {
+        wave: "sine",
+        frequencies: [622, 831]
+      },
+      messaging: {
+        wave: "triangle",
+        frequencies: [988, 1175]
+      },
+      dashboard: {
+        wave: "sine",
+        frequencies: [523, 659]
+      }
+    };
+
+    const URGENCY_PATTERNS = {
+      info: {
+        repetitions: 1,
+        duration: 0.18,
+        pause: 0.08,
+        volume: 0.10
+      },
+      success: {
+        repetitions: 2,
+        duration: 0.14,
+        pause: 0.07,
+        volume: 0.12
+      },
+      warning: {
+        repetitions: 2,
+        duration: 0.20,
+        pause: 0.11,
+        volume: 0.16
+      },
+      danger: {
+        repetitions: 3,
+        duration: 0.16,
+        pause: 0.07,
+        volume: 0.21
+      },
+      critical: {
+        repetitions: 3,
+        duration: 0.18,
+        pause: 0.05,
+        volume: 0.23
+      },
+      error: {
+        repetitions: 3,
+        duration: 0.18,
+        pause: 0.05,
+        volume: 0.23
+      }
+    };
+
+    const areaSound = AREA_SOUNDS[sourceApp] || {
+      wave: "sine",
+      frequencies: [660, 880]
+    };
+
+    const urgency = URGENCY_PATTERNS[notificationLevel] ||
+      URGENCY_PATTERNS.info;
+
+    let soundPlayed = false;
+
+    function createTone(
+      audioContext,
+      frequency,
+      startTime,
+      duration,
+      volume
+    ) {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      const endTime = startTime + duration;
+
+      oscillator.type = areaSound.wave;
+
+      oscillator.frequency.setValueAtTime(
+        frequency,
+        startTime
+      );
+
+      gainNode.gain.setValueAtTime(
+        0.0001,
+        startTime
+      );
+
+      gainNode.gain.exponentialRampToValueAtTime(
+        volume,
+        startTime + 0.025
+      );
+
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.0001,
+        endTime
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start(startTime);
+      oscillator.stop(endTime + 0.02);
+    }
+
+    function playAuthorizedNotificationSound() {
+      if (soundPlayed) {
+        return;
+      }
+
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return;
+      }
+
+      const audioContext = new AudioContextClass();
+
+      const playSequence = function () {
+        const startTime = audioContext.currentTime + 0.03;
+        const noteDuration = urgency.duration / 2;
+
+        for (
+          let repetition = 0;
+          repetition < urgency.repetitions;
+          repetition += 1
+        ) {
+          const repetitionStart =
+            startTime +
+            repetition * (
+              urgency.duration + urgency.pause
+            );
+
+          areaSound.frequencies.forEach(
+            function (frequency, noteIndex) {
+              createTone(
+                audioContext,
+                frequency,
+                repetitionStart +
+                  noteIndex * noteDuration,
+                noteDuration,
+                urgency.volume
+              );
+            }
+          );
+        }
+
+        soundPlayed = true;
+
+        document.removeEventListener(
+          "pointerdown",
+          playAuthorizedNotificationSound
+        );
+
+        document.removeEventListener(
+          "keydown",
+          playAuthorizedNotificationSound
+        );
+      };
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume()
+          .then(playSequence)
+          .catch(function () {
+            soundPlayed = false;
+          });
+
+        return;
+      }
+
+      playSequence();
+    }
+
+    /*
+     * Chrome puede bloquear el audio hasta que exista una interacción.
+     * Si sucede, el aviso se reproducirá con el primer clic o tecla.
+     */
+    try {
+      playAuthorizedNotificationSound();
+    } catch (error) {
+      soundPlayed = false;
+    }
+
+    if (!soundPlayed) {
+      document.addEventListener(
+        "pointerdown",
+        playAuthorizedNotificationSound,
+        { once: true }
+      );
+
+      document.addEventListener(
+        "keydown",
+        playAuthorizedNotificationSound,
+        { once: true }
+      );
+    }
+  })();
+</script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

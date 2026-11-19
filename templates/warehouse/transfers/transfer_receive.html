@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}{% include "warehouse/transfers/_styles.html" %}
+<main class="wt">
+<section class="wt-head">
+  <h1>Recepción de traspaso</h1>
+  <div>{{ transfer.folio }} · {{ transfer.destination_warehouse.name }}</div>
+</section>
+
+<form method="post">
+{% csrf_token %}
+<input type="hidden" name="request_id" value="{{ request_id }}">
+
+<section class="wt-card wt-table">
+  <table>
+    <thead>
+      <tr>
+        <th>SKU / lote</th>
+        <th>Pendiente</th>
+        <th>Conforme</th>
+        <th>Dañado</th>
+        <th>Rechazado</th>
+        <th>Faltante</th>
+        <th>Ubicación conforme</th>
+        <th>Nota</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for i in transfer.items.all %}
+      {% if i.variant.inventory_control == "normal" %}
+        <tr>
+          <td>
+            <strong>{{ i.variant.sku }}</strong>
+            <div class="wt-muted">Inventario NORMAL</div>
+          </td>
+          <td>{{ i.pending_receipt_quantity }}</td>
+          <td><input class="wt-number" type="number" min="0" name="received_{{ i.pk }}" value="0"></td>
+          <td><input class="wt-number" type="number" min="0" name="damaged_{{ i.pk }}" value="0"></td>
+          <td><input class="wt-number" type="number" min="0" name="rejected_{{ i.pk }}" value="0"></td>
+          <td><input class="wt-number" type="number" min="0" name="missing_{{ i.pk }}" value="0"></td>
+          <td><span class="wt-muted">Flujo actual</span></td>
+          <td><input name="notes_{{ i.pk }}"></td>
+        </tr>
+      {% else %}
+        {% for a in i.lot_allocations.all %}
+          {% if a.pending_quantity > 0 %}
+          <tr>
+            <td>
+              <strong>{{ i.variant.sku }}</strong>
+              <div>Lote <b>{{ a.lot.lot_number }}</b></div>
+              <div class="wt-muted">
+                {% if a.lot.expiration_date %}
+                  Caduca {{ a.lot.expiration_date|date:"d/m/Y" }}
+                {% else %}
+                  Sin caducidad
+                {% endif %}
+              </div>
+            </td>
+            <td>{{ a.pending_quantity }}</td>
+            <td><input class="wt-number" type="number" min="0" max="{{ a.pending_quantity }}" name="lot_received_{{ a.pk }}" value="0"></td>
+            <td><input class="wt-number" type="number" min="0" max="{{ a.pending_quantity }}" name="lot_damaged_{{ a.pk }}" value="0"></td>
+            <td><input class="wt-number" type="number" min="0" max="{{ a.pending_quantity }}" name="lot_rejected_{{ a.pk }}" value="0"></td>
+            <td><input class="wt-number" type="number" min="0" max="{{ a.pending_quantity }}" name="lot_missing_{{ a.pk }}" value="0"></td>
+            <td>
+              <select name="lot_location_{{ a.pk }}">
+                <option value="">Seleccionar</option>
+                {% for location in destination_locations %}
+                  <option value="{{ location.pk }}">{{ location.bin_code }}</option>
+                {% endfor %}
+              </select>
+              <div class="wt-muted">Obligatoria solo si hay conforme.</div>
+            </td>
+            <td><input name="lot_notes_{{ a.pk }}"></td>
+          </tr>
+          {% endif %}
+        {% empty %}
+          <tr>
+            <td colspan="8">
+              <strong>{{ i.variant.sku }}</strong> · Sin asignaciones de lote.
+            </td>
+          </tr>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="wt-muted">
+    Para SKU controlados, dañado y rechazado ingresan automáticamente a
+    CUARENTENA. Faltante no incrementa inventario.
+  </p>
+
+  <div class="wt-actions" style="margin-top:16px">
+    <button class="wt-btn ok">Registrar recepción</button>
+    <a class="wt-btn alt" href="{% url 'warehouse:transfer_detail' transfer.pk %}">Volver</a>
+  </div>
+</section>
+</form>
+</main>
+{% endblock %}

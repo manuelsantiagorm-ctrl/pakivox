@@ -1,0 +1,514 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Pagos | PAKIVOX{% endblock %}
+
+{% block page_title %}Pagos{% endblock %}
+
+{% block page_subtitle %}
+Control financiero de pagos, comprobantes, aprobaciones y saldos por pedido
+{% endblock %}
+
+{% block content %}
+
+<section class="payments-page">
+
+  <section class="payment-actions">
+    <form method="get" class="payment-filters">
+      <input
+        type="text"
+        name="q"
+        id="paymentsSearchInput"
+        value="{{ q }}"
+        placeholder="Buscar por folio, pedido, cliente o transacción..."
+        autocomplete="off"
+      />
+
+      <select name="status">
+        <option value="">Todos los estados</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <select name="method">
+        <option value="">Todos los métodos</option>
+        {% for value, label in method_choices %}
+          <option value="{{ value }}" {% if method == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <button type="submit">
+        <i class="bi bi-search"></i>
+        Filtrar
+      </button>
+
+      <a href="{% url 'payments:lista_pagos' %}" class="btn-clear">
+        Limpiar
+      </a>
+    </form>
+        <button type="button" class="btn-primary-pay" onclick="openPaymentModal()">
+      <i class="bi bi-plus-circle"></i>
+      Registrar pago
+    </button>
+  </section>
+
+  <div id="paymentResultsContainer">
+    {% include "payments/partials/_pagos_results.html" %}
+  </div>
+
+</section>
+
+<div id="paymentModal" class="payment-modal">
+  <div class="payment-modal-backdrop" onclick="closePaymentModal()"></div>
+
+  <div class="payment-modal-card">
+    <div class="payment-modal-header">
+      <div>
+        <h3>Registrar pago</h3>
+        <p>Captura un pago manual, transferencia o comprobante.</p>
+      </div>
+
+      <button type="button" onclick="closePaymentModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form
+      method="post"
+      action="{% url 'payments:registrar_pago' %}"
+      enctype="multipart/form-data"
+      class="payment-form"
+    >
+      {% csrf_token %}
+
+      <label>
+        Pedido
+        <select name="order" required>
+          <option value="">Seleccionar pedido</option>
+          {% for order in orders %}
+            <option value="{{ order.id }}">
+              {{ order.folio }} —
+              {% if order.customer %}
+                {{ order.customer.full_name }}
+              {% else %}
+                Sin cliente
+              {% endif %}
+              — Saldo: ${{ order.balance_due|floatformat:2 }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="form-grid-2">
+        <label>
+          Monto
+          <input type="number" name="amount" step="0.01" min="0.01" required />
+        </label>
+
+        <label>
+          Estado inicial
+          <select name="status" required>
+            <option value="pending">Pendiente</option>
+            <option value="under_review">En revisión</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-grid-2">
+        <label>
+          Método
+          <select name="payment_method" required>
+            {% for value, label in method_choices %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          ID transacción / referencia
+          <input type="text" name="transaction_id" placeholder="Opcional" />
+        </label>
+      </div>
+
+      <label>
+        Comprobante
+        <input type="file" name="proof_file" />
+      </label>
+
+      <label>
+        Notas
+        <textarea name="notes" rows="3" placeholder="Notas internas del pago..."></textarea>
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary-pay" onclick="closePaymentModal()">
+          Cancelar
+        </button>
+
+        <button type="submit" class="btn-primary-pay">
+          Registrar pago
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .payments-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .payment-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+
+  .payment-kpi,
+  .payments-table-card,
+  .payment-modal-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 16px;
+  }
+
+  .payment-kpi {
+    padding: 18px;
+  }
+
+  .payment-kpi span {
+    color: #94a3b8;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .payment-kpi strong {
+    color: #f8fafc;
+    font-size: 26px;
+    display: block;
+  }
+
+  .payment-kpi small {
+    color: #64748b;
+    display: block;
+    margin-top: 8px;
+  }
+
+  .payment-kpi.success strong {
+    color: #22c55e;
+  }
+
+  .payment-kpi.warning strong {
+    color: #f59e0b;
+  }
+
+  .payment-kpi.danger strong {
+    color: #ef4444;
+  }
+
+  .payment-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .payment-filters {
+    display: grid;
+    grid-template-columns: 1.5fr 180px 180px auto auto;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .payment-filters input,
+  .payment-filters select,
+  .payment-form input,
+  .payment-form select,
+  .payment-form textarea {
+    width: 100%;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 12px;
+    padding: 11px 12px;
+    outline: none;
+  }
+
+  .payment-filters button,
+  .btn-primary-pay,
+  .btn-secondary-pay,
+  .btn-clear,
+  .btn-table {
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-weight: 900;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .payment-filters button,
+  .btn-primary-pay {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .btn-secondary-pay,
+  .btn-clear {
+    background: rgba(148, 163, 184, .12);
+    color: #cbd5e1;
+  }
+
+  .btn-table {
+    background: rgba(56, 189, 248, .14);
+    color: #7dd3fc;
+    padding: 8px 12px;
+  }
+
+  .payments-table-card {
+    overflow: hidden;
+  }
+
+  .payments-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .payments-table th,
+  .payments-table td {
+    padding: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .10);
+    color: #cbd5e1;
+    vertical-align: middle;
+  }
+
+  .payments-table th {
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    background: rgba(15, 23, 42, .8);
+  }
+
+  .payments-table td strong {
+    color: #f8fafc;
+  }
+
+  .payments-table td small {
+    display: block;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .payments-table a {
+    color: #7dd3fc;
+    text-decoration: none;
+    font-weight: 900;
+  }
+
+  .payment-status {
+    display: inline-flex;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .status-pending {
+    background: rgba(245, 158, 11, .13);
+    color: #fbbf24;
+  }
+
+  .status-under_review {
+    background: rgba(56, 189, 248, .13);
+    color: #7dd3fc;
+  }
+
+  .status-approved {
+    background: rgba(34, 197, 94, .13);
+    color: #86efac;
+  }
+
+  .status-rejected,
+  .status-cancelled {
+    background: rgba(239, 68, 68, .13);
+    color: #fca5a5;
+  }
+
+  .status-refunded {
+    background: rgba(168, 85, 247, .13);
+    color: #c4b5fd;
+  }
+
+  .empty-cell {
+    text-align: center;
+    color: #94a3b8 !important;
+    padding: 32px !important;
+  }
+
+  .payment-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+  }
+
+  .payment-modal.is-open {
+    display: block;
+  }
+
+  .payment-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, .78);
+    backdrop-filter: blur(8px);
+  }
+  .payment-modal-card {
+    position: relative;
+    max-width: 520px;
+    margin: 40px auto;
+    padding: 18px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+  }
+
+  .payment-modal-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .14);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+
+  .payment-modal-header h3 {
+    margin: 0;
+    color: #f8fafc;
+  }
+
+  .payment-modal-header p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+
+  .payment-modal-header button {
+    background: transparent;
+    color: #f8fafc;
+    border: 0;
+    font-size: 20px;
+  }
+  .payment-form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .payment-form label {
+    color: #cbd5e1;
+    font-weight: 800;
+    display: grid;
+    gap: 8px;
+  }
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 1100px) {
+    .payment-kpis {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .payment-actions {
+      display: grid;
+    }
+
+    .payment-filters {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 650px) {
+    .payment-kpis,
+    .form-grid-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .payment-modal-card {
+      margin: 20px;
+    }
+  }
+</style>
+
+<script>
+function openPaymentModal(orderId) {
+    const modal = document.getElementById("paymentModal");
+    if (modal) modal.classList.add("is-open");
+    if (orderId) {
+        const select = document.querySelector('#paymentModal select[name="order"]');
+        if (select) select.value = orderId;
+    }
+}
+
+  function closePaymentModal() {
+    const modal = document.getElementById("paymentModal");
+    if (modal) modal.classList.remove("is-open");
+  }
+
+  let paymentsSearchDebounce = null;
+  let paymentsSearchController = null;
+
+  function runPaymentsSearch(query) {
+    const container = document.getElementById("paymentResultsContainer");
+    if (!container) return;
+
+    if (paymentsSearchController) {
+      paymentsSearchController.abort();
+    }
+    paymentsSearchController = new AbortController();
+
+    const url = window.location.pathname + "?q=" + encodeURIComponent(query);
+
+    fetch(url, {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      signal: paymentsSearchController.signal,
+    })
+      .then((response) => response.text())
+      .then((html) => {
+        container.innerHTML = html;
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        console.error("Error buscando pagos:", error);
+      });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("paymentsSearchInput");
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        window.clearTimeout(paymentsSearchDebounce);
+        paymentsSearchDebounce = window.setTimeout(function () {
+          runPaymentsSearch(searchInput.value.trim());
+        }, 300);
+      });
+    }
+  });
+</script>
+
+{% endblock %}

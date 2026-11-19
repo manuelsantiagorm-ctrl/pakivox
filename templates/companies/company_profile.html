@@ -1,0 +1,2503 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Mi empresa | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Perfil de empresa
+{% endblock %}
+
+{% block page_subtitle %}
+Identidad corporativa, suscripción y uso operativo de PAKIVOX
+{% endblock %}
+
+{% block content %}
+<section class="saas-company-page">
+  <header class="saas-company-hero">
+    <div class="saas-company-identity">
+      <div class="saas-company-avatar">
+        {{ initials }}
+      </div>
+
+      <div>
+        <div class="saas-company-badges">
+          {% if company.is_active %}
+            <span class="saas-badge success">
+              <i class="bi bi-check-circle-fill"></i>
+              Empresa activa
+            </span>
+          {% else %}
+            <span class="saas-badge danger">
+              Empresa suspendida
+            </span>
+          {% endif %}
+
+          {% if subscription %}
+            <span class="saas-badge neutral">
+              {{ subscription.get_status_display }}
+            </span>
+          {% else %}
+            <span class="saas-badge warning">
+              Sin suscripción
+            </span>
+          {% endif %}
+        </div>
+
+        <h2>{{ company.name }}</h2>
+
+        <p>
+          {% if company_lines %}
+            {% for link in company_lines %}
+              {% if link.is_primary %}
+                {{ link.business_line.name }}
+              {% endif %}
+            {% empty %}
+              Empresa cliente de PAKIVOX
+            {% endfor %}
+          {% else %}
+            Empresa cliente de PAKIVOX
+          {% endif %}
+        </p>
+
+        <div class="saas-company-meta">
+          <span>
+            <i class="bi bi-person-badge"></i>
+            {{ profile.get_role_display }}
+          </span>
+
+          <span>
+            <i class="bi bi-hash"></i>
+            Empresa #{{ company.id }}
+          </span>
+
+          <span>
+            <i class="bi bi-calendar3"></i>
+            Desde {{ company.created_at|date:"d/m/Y" }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="saas-company-actions">
+      {% if company.phone %}
+        <a
+          href="tel:{{ company.phone }}"
+          class="saas-action secondary"
+        >
+          <i class="bi bi-telephone"></i>
+          Llamar
+        </a>
+      {% endif %}
+
+      {% if company.email %}
+        <a
+          href="mailto:{{ company.email }}"
+          class="saas-action secondary"
+        >
+          <i class="bi bi-envelope"></i>
+          Correo
+        </a>
+      {% endif %}
+
+      {% if can_edit_company %}
+        <a
+          href="{% url 'companies:profile_edit' %}"
+          class="saas-action primary"
+        >
+          <i class="bi bi-pencil-square"></i>
+          Editar empresa
+        </a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="saas-company-kpis">
+    <article>
+      <span>Ventas del mes</span>
+      <strong>${{ month_sales|floatformat:2 }}</strong>
+      <small>{{ month_orders_count }} pedidos del periodo</small>
+    </article>
+
+    <article>
+      <span>Clientes comerciales</span>
+      <strong>{{ customers_count }}</strong>
+      <small>Registrados en el CRM</small>
+    </article>
+
+    <article>
+      <span>Usuarios activos</span>
+      <strong>{{ active_users_count }}</strong>
+      <small>
+        {% if plan %}
+          de {{ plan.max_users }} permitidos
+        {% else %}
+          sin límite configurado
+        {% endif %}
+      </small>
+    </article>
+
+    <article>
+      <span>Próxima renovación</span>
+      <strong>
+        {% if renewal_date %}
+          {{ renewal_date|date:"d/m/Y" }}
+        {% else %}
+          Sin fecha
+        {% endif %}
+      </strong>
+      <small>
+        {% if days_to_renewal != None %}
+          {% if days_to_renewal >= 0 %}
+            Faltan {{ days_to_renewal }} días
+          {% else %}
+            Venció hace {{ days_to_renewal|stringformat:"+d"|slice:"1:" }} días
+          {% endif %}
+        {% else %}
+          Revisa tu suscripción
+        {% endif %}
+      </small>
+    </article>
+  </div>
+
+  <nav class="saas-company-tabs" aria-label="Secciones del perfil">
+    <button type="button" class="is-active" data-company-tab="overview">
+      <i class="bi bi-grid-1x2"></i>
+      Resumen
+    </button>
+
+    <button type="button" data-company-tab="corporate">
+      <i class="bi bi-building"></i>
+      Información corporativa
+    </button>
+
+    <button type="button" data-company-tab="subscription">
+      <i class="bi bi-credit-card"></i>
+      Plan y suscripción
+    </button>
+
+    <button type="button" data-company-tab="media">
+      <i class="bi bi-geo-alt-fill"></i>
+      Sucursales y archivos
+    </button>
+
+    <button type="button" data-company-tab="activity">
+      <i class="bi bi-activity"></i>
+      Operación reciente
+    </button>
+  </nav>
+<div class="saas-company-panel is-active" data-company-panel="overview">
+  <div class="saas-company-grid two">
+    <article class="saas-card">
+      <header>
+        <div>
+          <span class="eyebrow">Estado general</span>
+          <h3>Salud de la cuenta</h3>
+        </div>
+
+        <span class="health-pill {{ health_class }}">
+          {{ health_score }}/100 · {{ health_label }}
+        </span>
+      </header>
+
+      <div class="health-track">
+        <span style="width: {{ health_score }}%;"></span>
+      </div>
+
+      <div class="mini-metrics">
+        <div>
+          <span>Pedidos activos</span>
+          <strong>{{ active_orders_count }}</strong>
+        </div>
+
+        <div>
+          <span>Pedidos entregados</span>
+          <strong>{{ delivered_orders_count }}</strong>
+        </div>
+
+        <div>
+          <span>Productos activos</span>
+          <strong>{{ active_products_count }}</strong>
+        </div>
+
+        <div>
+          <span>Bodegas activas</span>
+          <strong>{{ active_warehouses_count }}</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="saas-card">
+      <header>
+        <div>
+          <span class="eyebrow">Resumen financiero</span>
+          <h3>Rendimiento comercial</h3>
+        </div>
+      </header>
+
+      <div class="financial-list">
+        <div>
+          <span>Venta histórica</span>
+          <strong>${{ total_sales|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Utilidad histórica</span>
+          <strong class="positive">
+            ${{ total_profit|floatformat:2 }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Saldo comercial pendiente</span>
+          <strong class="warning-text">
+            ${{ total_pending|floatformat:2 }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Utilidad del mes</span>
+          <strong class="positive">
+            ${{ month_profit|floatformat:2 }}
+          </strong>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="saas-company-grid three">
+      <article class="saas-card compact">
+        <span class="eyebrow">Inventario</span>
+        <strong class="large-number">{{ products_count }}</strong>
+        <p>Productos registrados</p>
+      </article>
+
+      <article class="saas-card compact">
+        <span class="eyebrow">Infraestructura</span>
+        <strong class="large-number">{{ warehouses_count }}</strong>
+        <p>Bodegas registradas</p>
+      </article>
+
+      <article class="saas-card compact">
+        <span class="eyebrow">WhatsApp Premium</span>
+        <strong class="large-number">{{ whatsapp_credits }}</strong>
+        <p>Créditos en {{ channels_count }} canales</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="saas-company-panel" data-company-panel="corporate">
+    <div class="saas-company-grid two">
+      <article class="saas-card">
+        <header>
+          <div>
+            <span class="eyebrow">Identidad legal</span>
+            <h3>Datos corporativos</h3>
+          </div>
+
+          {% if can_edit_company %}
+            <a href="{% url 'companies:profile_edit' %}">
+              Editar
+            </a>
+          {% endif %}
+        </header>
+
+        <dl class="company-data-list">
+          <div>
+            <dt>Nombre de la empresa</dt>
+            <dd>{{ company.name }}</dd>
+          </div>
+
+          <div>
+            <dt>RFC</dt>
+            <dd>{{ company.rfc|default:"Pendiente de completar" }}</dd>
+          </div>
+
+          <div>
+            <dt>Correo corporativo</dt>
+            <dd>{{ company.email|default:"Pendiente de completar" }}</dd>
+          </div>
+
+          <div>
+            <dt>Teléfono</dt>
+            <dd>{{ company.phone|default:"Pendiente de completar" }}</dd>
+          </div>
+
+          <div class="full">
+            <dt>Dirección</dt>
+            <dd>{{ company.address|default:"Pendiente de completar"|linebreaksbr }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="saas-card">
+        <header>
+          <div>
+            <span class="eyebrow">Segmentación</span>
+            <h3>Giros comerciales</h3>
+          </div>
+        </header>
+
+        <div class="business-line-list">
+          {% for link in company_lines %}
+            <span class="{% if link.is_primary %}primary{% endif %}">
+              {{ link.business_line.name }}
+              {% if link.is_primary %}
+                <small>Principal</small>
+              {% endif %}
+            </span>
+          {% empty %}
+            <div class="empty-state">
+              <i class="bi bi-tags"></i>
+              <p>No se han configurado giros comerciales.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+
+    <article class="saas-card">
+      <header>
+        <div>
+          <span class="eyebrow">Equipo</span>
+          <h3>Usuarios de la empresa</h3>
+        </div>
+
+        <span>{{ active_users_count }} activos</span>
+      </header>
+
+      <div class="responsive-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último acceso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recent_users %}
+              <tr>
+                <td>
+                  <strong>
+                    {{ item.user.get_full_name|default:item.user.username }}
+                  </strong>
+                </td>
+                <td>{{ item.user.email|default:item.user.username }}</td>
+                <td>{{ item.get_role_display }}</td>
+                <td>
+                  {% if item.is_active and item.user.is_active %}
+                    <span class="table-status success">Activo</span>
+                  {% else %}
+                    <span class="table-status danger">Inactivo</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.user.last_login %}
+                    {{ item.user.last_login|date:"d/m/Y H:i" }}
+                  {% else %}
+                    Sin acceso
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">No hay usuarios registrados.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+
+  <div class="saas-company-panel" data-company-panel="subscription">
+    <div class="saas-company-grid two">
+      <article class="saas-card plan-card">
+        <header>
+          <div>
+            <span class="eyebrow">Suscripción PAKIVOX</span>
+            <h3>
+              {% if plan %}
+                Plan {{ plan.name }}
+              {% else %}
+                Sin plan asignado
+              {% endif %}
+            </h3>
+          </div>
+
+          {% if subscription %}
+            <span class="saas-badge {% if subscription.is_valid %}success{% else %}danger{% endif %}">
+              {{ subscription.get_status_display }}
+            </span>
+          {% endif %}
+        </header>
+
+        {% if plan %}
+          <strong class="plan-price">
+            ${{ plan.price|floatformat:2 }}
+            <small>/ {{ plan.get_billing_period_display|lower }}</small>
+          </strong>
+
+          <p>{{ plan.description|default:"Plan operativo PAKIVOX" }}</p>
+
+          <div class="feature-tags">
+            {% if plan.has_ai %}
+              <span><i class="bi bi-stars"></i> IA</span>
+            {% endif %}
+
+            {% if plan.has_whatsapp %}
+              <span><i class="bi bi-whatsapp"></i> WhatsApp</span>
+            {% endif %}
+
+            {% if plan.has_api %}
+              <span><i class="bi bi-code-slash"></i> API</span>
+            {% endif %}
+
+            {% if plan.has_multiwarehouse %}
+              <span><i class="bi bi-buildings"></i> Multi-bodega</span>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="bi bi-credit-card-2-front"></i>
+            <p>Contacta al propietario de PAKIVOX para asignar un plan.</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <article class="saas-card">
+        <header>
+          <div>
+            <span class="eyebrow">Fechas y facturación</span>
+            <h3>Estado de la suscripción</h3>
+          </div>
+        </header>
+
+        <dl class="company-data-list">
+          <div>
+            <dt>Inicio</dt>
+            <dd>
+              {% if subscription %}
+                {{ subscription.start_date|date:"d/m/Y" }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Próximo cobro</dt>
+            <dd>
+              {% if subscription and subscription.next_billing_date %}
+                {{ subscription.next_billing_date|date:"d/m/Y" }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Fin del periodo</dt>
+            <dd>
+              {% if subscription and subscription.end_date %}
+                {{ subscription.end_date|date:"d/m/Y" }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Renovación automática</dt>
+            <dd>
+              {% if subscription and subscription.auto_renew %}
+                Activada
+              {% else %}
+                Desactivada
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+      </article>
+    </div>
+
+    <article class="saas-card">
+      <header>
+        <div>
+          <span class="eyebrow">Consumo del plan</span>
+          <h3>Uso actual</h3>
+        </div>
+      </header>
+
+      <div class="usage-grid">
+        <div class="usage-item">
+          <div>
+            <span>Usuarios</span>
+            <strong>{{ usage.users.current }} / {{ usage.users.maximum }}</strong>
+          </div>
+
+          <div class="usage-track">
+            <span style="width: {{ usage.users.percentage }}%;"></span>
+          </div>
+        </div>
+
+        <div class="usage-item">
+          <div>
+            <span>Productos</span>
+            <strong>{{ usage.products.current }} / {{ usage.products.maximum|default:"sin límite" }}</strong>
+          </div>
+
+          <div class="usage-track">
+            <span style="width: {{ usage.products.percentage }}%;"></span>
+          </div>
+        </div>
+
+        <div class="usage-item">
+          <div>
+            <span>Bodegas</span>
+            <strong>{{ usage.warehouses.current }} / {{ usage.warehouses.maximum }}</strong>
+          </div>
+
+          <div class="usage-track">
+            <span style="width: {{ usage.warehouses.percentage }}%;"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="saas-card">
+      <header>
+        <div>
+          <span class="eyebrow">Historial</span>
+          <h3>Pagos de suscripción</h3>
+        </div>
+      </header>
+
+      <div class="responsive-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Fecha</th>
+              <th>Método</th>
+              <th>Estado</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for payment in subscription_payments %}
+              <tr>
+                <td><strong>{{ payment.folio }}</strong></td>
+                <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ payment.get_payment_method_display }}</td>
+                <td>
+                  <span class="table-status {% if payment.status == 'paid' %}success{% elif payment.status == 'pending' %}warning{% else %}danger{% endif %}">
+                    {{ payment.get_status_display }}
+                  </span>
+                </td>
+                <td>${{ payment.amount|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">No hay pagos de suscripción registrados.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+
+
+  <div class="saas-company-panel" data-company-panel="media">
+    <div class="saas-company-grid two media-top-grid">
+      <article class="saas-card company-map-card">
+        <header>
+          <div>
+            <span class="eyebrow">Ubicación corporativa</span>
+            <h3>Mapa y Street View</h3>
+          </div>
+
+          <i class="bi bi-map"></i>
+        </header>
+
+        {% if company.address %}
+          <div class="company-map-frame">
+            <iframe
+              title="Mapa de {{ company.name }}"
+              src="https://www.google.com/maps?q={{ company.address|urlencode }}&output=embed"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+
+          <div class="company-map-address">
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>{{ company.address }}</span>
+          </div>
+
+          <div class="company-map-actions">
+            <a
+              href="https://www.google.com/maps/search/?api=1&query={{ company.address|urlencode }}"
+              target="_blank"
+              rel="noopener"
+              class="media-action-button primary"
+            >
+              <i class="bi bi-sign-turn-right-fill"></i>
+              Abrir ruta
+            </a>
+
+            {% if branding and branding.latitude and branding.longitude %}
+              <a
+                href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={{ branding.latitude }},{{ branding.longitude }}"
+                target="_blank"
+                rel="noopener"
+                class="media-action-button secondary"
+              >
+                <i class="bi bi-badge-vr-fill"></i>
+                Street View
+              </a>
+            {% else %}
+              <a
+                href="https://www.google.com/maps/search/?api=1&query={{ company.address|urlencode }}"
+                target="_blank"
+                rel="noopener"
+                class="media-action-button secondary"
+              >
+                <i class="bi bi-badge-vr-fill"></i>
+                Buscar fachada
+              </a>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="media-empty-block">
+            <i class="bi bi-geo-alt"></i>
+            <strong>Falta la dirección corporativa</strong>
+            <p>Agrega la dirección desde Editar empresa para activar el mapa.</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <article class="saas-card media-help-card">
+        <header>
+          <div>
+            <span class="eyebrow">Información logística</span>
+            <h3>Cómo usar esta sección</h3>
+          </div>
+        </header>
+
+        <div class="media-help-list">
+          <div>
+            <i class="bi bi-camera-fill"></i>
+            <span>
+              <strong>Fotos de acceso</strong>
+              Fachada, portón, rampa o punto de descarga.
+            </span>
+          </div>
+
+          <div>
+            <i class="bi bi-phone-fill"></i>
+            <span>
+              <strong>Carga desde celular</strong>
+              El botón de fotografía abre directamente la cámara compatible.
+            </span>
+          </div>
+
+          <div>
+            <i class="bi bi-file-earmark-pdf-fill"></i>
+            <span>
+              <strong>Documentos fiscales</strong>
+              Los PDF se visualizan dentro de PAKIVOX sin descarga obligatoria.
+            </span>
+          </div>
+
+          <div>
+            <i class="bi bi-shield-lock-fill"></i>
+            <span>
+              <strong>Aislamiento empresarial</strong>
+              Archivos, fotos y documentos se validan siempre por empresa.
+            </span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <article class="saas-card media-section-card">
+      <header>
+        <div>
+          <span class="eyebrow">Galería logística</span>
+          <h3>Fotos de sucursales y bodegas</h3>
+          <p>Documenta fachadas, rampas y accesos para futuras entregas.</p>
+        </div>
+
+        <span class="media-counter">
+          {{ branch_photos|length }} fotos
+        </span>
+      </header>
+
+      {% if can_upload_photos %}
+        <form
+          method="post"
+          action="{% url 'companies:branch_photo_upload' %}"
+          enctype="multipart/form-data"
+          class="media-upload-form photo-upload-form"
+        >
+          {% csrf_token %}
+
+          <div class="media-form-grid">
+            <label>
+              <span>Sucursal o bodega</span>
+              {{ photo_form.warehouse }}
+            </label>
+
+            <label>
+              <span>Título</span>
+              {{ photo_form.title }}
+            </label>
+
+            <label class="full">
+              <span>Indicaciones logísticas</span>
+              {{ photo_form.description }}
+            </label>
+          </div>
+
+          <label class="media-dropzone photo-dropzone" for="id_image">
+            {{ photo_form.image }}
+            <i class="bi bi-camera-fill"></i>
+            <strong>Tomar foto o seleccionar imagen</strong>
+            <span id="photoFileName">JPG, PNG o WEBP · máximo 10 MB</span>
+          </label>
+
+          <div class="media-form-footer">
+            <button type="submit" class="media-action-button primary">
+              <i class="bi bi-cloud-arrow-up-fill"></i>
+              Guardar fotografía
+            </button>
+          </div>
+        </form>
+      {% endif %}
+
+      <div class="branch-photo-grid">
+        {% for photo in branch_photos %}
+          <article class="branch-photo-card">
+            <button
+              type="button"
+              class="branch-photo-preview"
+              data-image-url="{% url 'companies:branch_photo_file' photo.id %}"
+              data-image-title="{{ photo.title|default:'Fotografía logística'|escapejs }}"
+            >
+              <img
+                src="{% url 'companies:branch_photo_file' photo.id %}"
+                alt="{{ photo.title|default:'Fotografía logística' }}"
+                loading="lazy"
+              >
+              <span>
+                <i class="bi bi-arrows-fullscreen"></i>
+              </span>
+            </button>
+
+            <div class="branch-photo-body">
+              <div>
+                <strong>{{ photo.title|default:"Fotografía logística" }}</strong>
+                <small>
+                  {% if photo.warehouse %}
+                    {{ photo.warehouse.name }}
+                  {% else %}
+                    Empresa / Matriz
+                  {% endif %}
+                </small>
+              </div>
+
+              {% if photo.description %}
+                <p>{{ photo.description }}</p>
+              {% endif %}
+
+              <div class="branch-photo-footer">
+                <span>{{ photo.created_at|date:"d/m/Y H:i" }}</span>
+
+                {% if can_delete_photos %}
+                  <form
+                    method="post"
+                    action="{% url 'companies:branch_photo_delete' photo.id %}"
+                    onsubmit="return confirm('¿Eliminar esta fotografía?');"
+                  >
+                    {% csrf_token %}
+                    <button type="submit" title="Eliminar fotografía">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="media-empty-block wide">
+            <i class="bi bi-images"></i>
+            <strong>Todavía no hay fotografías</strong>
+            <p>Sube la fachada o la rampa de descarga de tu primera ubicación.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+
+    {% if can_view_documents %}
+    <article class="saas-card media-section-card">
+      <header>
+        <div>
+          <span class="eyebrow">Expediente digital</span>
+          <h3>Documentos adjuntos</h3>
+          <p>Constancia fiscal, identificación y contratos protegidos por empresa.</p>
+        </div>
+
+        <span class="media-counter">
+          {{ company_documents|length }} documentos
+        </span>
+      </header>
+
+      {% if can_upload_documents %}
+        <form
+          method="post"
+          action="{% url 'companies:document_upload' %}"
+          enctype="multipart/form-data"
+          class="media-upload-form document-upload-form"
+        >
+          {% csrf_token %}
+
+          <div class="media-form-grid">
+            <label>
+              <span>Tipo de documento</span>
+              {{ document_form.document_type }}
+            </label>
+
+            <label>
+              <span>Nombre del documento</span>
+              {{ document_form.title }}
+            </label>
+          </div>
+
+          <label class="media-dropzone document-dropzone" for="id_file">
+            {{ document_form.file }}
+            <i class="bi bi-file-earmark-arrow-up-fill"></i>
+            <strong>Arrastra el PDF o haz clic para seleccionarlo</strong>
+            <span id="documentFileName">PDF · máximo 15 MB</span>
+          </label>
+
+          <div class="media-form-footer">
+            <button type="submit" class="media-action-button primary">
+              <i class="bi bi-cloud-check-fill"></i>
+              Guardar documento
+            </button>
+          </div>
+        </form>
+      {% endif %}
+
+      <div class="document-grid">
+        {% for document in company_documents %}
+          <article class="document-card">
+            <div class="document-icon">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+            </div>
+
+            <div class="document-info">
+              <strong>{{ document.title }}</strong>
+              <span>{{ document.get_document_type_display }}</span>
+              <small>{{ document.created_at|date:"d/m/Y H:i" }}</small>
+            </div>
+
+            <div class="document-actions">
+              <button
+                type="button"
+                class="document-preview-button"
+                data-pdf-url="{% url 'companies:document_file' document.id %}"
+                data-pdf-title="{{ document.title|escapejs }}"
+                title="Previsualizar PDF"
+              >
+                <i class="bi bi-eye-fill"></i>
+              </button>
+
+              <a
+                href="{% url 'companies:document_file' document.id %}?download=1"
+                title="Descargar PDF"
+              >
+                <i class="bi bi-download"></i>
+              </a>
+
+              {% if can_upload_documents %}
+                <form
+                  method="post"
+                  action="{% url 'companies:document_delete' document.id %}"
+                  onsubmit="return confirm('¿Eliminar este documento?');"
+                >
+                  {% csrf_token %}
+                  <button type="submit" title="Eliminar documento">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </article>
+        {% empty %}
+          <div class="media-empty-block wide">
+            <i class="bi bi-folder2-open"></i>
+            <strong>Expediente sin documentos</strong>
+            <p>Agrega la Constancia de Situación Fiscal o documentos corporativos.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+    {% endif %}
+  </div>
+
+  <div class="saas-company-panel" data-company-panel="activity">
+    <div class="saas-company-grid two">
+      <article class="saas-card">
+        <header>
+          <div>
+            <span class="eyebrow">Infraestructura</span>
+            <h3>Bodegas</h3>
+          </div>
+
+          <span>{{ warehouses_count }} registradas</span>
+        </header>
+
+        <div class="warehouse-list">
+          {% for warehouse in recent_warehouses %}
+            <div>
+              <span class="warehouse-icon">
+                <i class="bi bi-box-seam"></i>
+              </span>
+
+              <div>
+                <strong>{{ warehouse.name }}</strong>
+                <p>{{ warehouse.address|default:"Sin dirección registrada" }}</p>
+              </div>
+
+              {% if warehouse.is_active %}
+                <span class="table-status success">Activa</span>
+              {% else %}
+                <span class="table-status danger">Inactiva</span>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="empty-state">
+              <p>No hay bodegas registradas.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="saas-card">
+        <header>
+          <div>
+            <span class="eyebrow">Actividad comercial</span>
+            <h3>Pedidos recientes</h3>
+          </div>
+
+          <span>{{ orders_count }} históricos</span>
+        </header>
+
+        <div class="order-list">
+          {% for order in recent_orders %}
+            <div class="order-row">
+              <div>
+                <strong>{{ order.folio }}</strong>
+                <p>{{ order.customer.full_name }}</p>
+              </div>
+
+              <div>
+                <strong>${{ order.total|floatformat:2 }}</strong>
+                <small>{{ order.get_status_display }}</small>
+              </div>
+            </div>
+          {% empty %}
+            <div class="empty-state">
+              <p>No hay pedidos registrados.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <div id="companyMediaModal" class="company-media-modal" aria-hidden="true">
+    <div class="company-media-modal-backdrop" data-media-modal-close></div>
+
+    <div class="company-media-modal-dialog" role="dialog" aria-modal="true">
+      <header>
+        <strong id="companyMediaModalTitle">Vista previa</strong>
+        <button type="button" data-media-modal-close aria-label="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div id="companyMediaModalContent"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .saas-company-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .saas-company-hero,
+  .saas-card,
+  .saas-company-kpis article,
+  .saas-company-tabs {
+    border: 1px solid rgba(148, 163, 184, .15);
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .18);
+  }
+
+  .saas-company-hero {
+    padding: 24px;
+    border-radius: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    background:
+      radial-gradient(circle at top right, rgba(34, 197, 94, .12), transparent 35%),
+      #0f172a;
+  }
+
+  .saas-company-identity {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+  }
+
+  .saas-company-avatar {
+    position: relative;
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    overflow: hidden;
+    color: #fff;
+    font-size: 27px;
+    font-weight: 950;
+    isolation: isolate;
+    border: 2px solid rgba(255, 255, 255, .16);
+    box-shadow: 0 18px 35px rgba(15, 23, 42, .44);
+  }
+
+  .saas-company-avatar.gradient-0 {
+    background: linear-gradient(135deg, #22c55e, #0f766e);
+  }
+
+  .saas-company-avatar.gradient-1 {
+    background: linear-gradient(135deg, #8b5cf6, #2563eb);
+  }
+
+  .saas-company-avatar.gradient-2 {
+    background: linear-gradient(135deg, #f97316, #ec4899);
+  }
+
+  .saas-company-avatar.gradient-3 {
+    background: linear-gradient(135deg, #06b6d4, #4f46e5);
+  }
+
+  .saas-company-avatar.gradient-4 {
+    background: linear-gradient(135deg, #eab308, #ea580c);
+  }
+
+  .saas-company-avatar.gradient-5 {
+    background: linear-gradient(135deg, #14b8a6, #16a34a);
+  }
+
+  .saas-company-avatar.gradient-6 {
+    background: linear-gradient(135deg, #6366f1, #9333ea);
+  }
+
+  .saas-company-avatar.gradient-7 {
+    background: linear-gradient(135deg, #ef4444, #7c3aed);
+  }
+
+  .saas-company-avatar > span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .saas-company-avatar > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .company-logo-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border: 0;
+    border-radius: inherit;
+    display: grid;
+    place-content: center;
+    gap: 2px;
+    opacity: 0;
+    color: #fff;
+    background: rgba(2, 6, 23, .72);
+    cursor: pointer;
+    transition: opacity .2s ease;
+  }
+
+  .company-logo-overlay i {
+    font-size: 19px;
+  }
+
+  .company-logo-overlay span {
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .saas-company-avatar:hover .company-logo-overlay,
+  .company-logo-overlay:focus-visible {
+    opacity: 1;
+  }
+
+  #companyLogoForm {
+    display: none;
+  }
+
+  .saas-company-avatar.is-uploading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    border: 3px solid rgba(255, 255, 255, .2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: companyLogoSpin .75s linear infinite;
+  }
+
+  @keyframes companyLogoSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .saas-company-badges,
+  .saas-company-meta,
+  .saas-company-actions,
+  .feature-tags,
+  .business-line-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .saas-company-hero h2 {
+    margin: 7px 0 3px;
+    color: #f8fafc;
+    font-size: 27px;
+    font-weight: 950;
+    letter-spacing: -.04em;
+  }
+
+  .saas-company-hero p,
+  .saas-company-meta {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .saas-company-meta {
+    margin-top: 9px;
+    gap: 14px;
+    font-size: 12px;
+  }
+
+  .saas-badge,
+  .table-status,
+  .health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 6px 9px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .saas-badge.success,
+  .table-status.success,
+  .health-pill.success {
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, .28);
+    background: rgba(34, 197, 94, .12);
+  }
+
+  .saas-badge.danger,
+  .table-status.danger,
+  .health-pill.danger {
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, .28);
+    background: rgba(239, 68, 68, .12);
+  }
+
+  .saas-badge.warning,
+  .table-status.warning,
+  .health-pill.warning {
+    color: #fde68a;
+    border: 1px solid rgba(245, 158, 11, .28);
+    background: rgba(245, 158, 11, .12);
+  }
+
+  .saas-badge.neutral,
+  .health-pill.info {
+    color: #bae6fd;
+    border: 1px solid rgba(56, 189, 248, .25);
+    background: rgba(56, 189, 248, .1);
+  }
+
+  .saas-action {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .saas-action.primary {
+    color: #052e16;
+    background: #22c55e;
+  }
+
+  .saas-action.secondary {
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, .2);
+    background: #020617;
+  }
+
+  .saas-company-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .saas-company-kpis article {
+    padding: 18px;
+    border-radius: 17px;
+  }
+
+  .saas-company-kpis span,
+  .eyebrow,
+  .compact > span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .saas-company-kpis strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 21px;
+  }
+
+  .saas-company-kpis small {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+  }
+
+  .saas-company-tabs {
+    padding: 6px;
+    border-radius: 15px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+  }
+
+  .saas-company-tabs button {
+    border: 0;
+    border-radius: 11px;
+    padding: 11px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    color: #94a3b8;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .saas-company-tabs button.is-active {
+    color: #dcfce7;
+    background: rgba(34, 197, 94, .13);
+  }
+
+  .saas-company-panel {
+    display: none;
+    gap: 16px;
+  }
+
+  .saas-company-panel.is-active {
+    display: grid;
+  }
+
+  .saas-company-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .saas-company-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .saas-company-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .saas-card {
+    padding: 20px;
+    border-radius: 19px;
+    min-width: 0;
+  }
+
+  .saas-card > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .saas-card h3 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+    font-size: 17px;
+  }
+
+  .saas-card header > span,
+  .saas-card header a {
+    color: #67e8f9;
+    font-size: 11px;
+    font-weight: 850;
+    text-decoration: none;
+  }
+
+  .health-track,
+  .usage-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #020617;
+  }
+
+  .health-track span,
+  .usage-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #22c55e, #14b8a6);
+  }
+
+  .mini-metrics,
+  .financial-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 17px;
+  }
+
+  .mini-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mini-metrics > div,
+  .financial-list > div {
+    padding: 13px;
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .46);
+    border: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .mini-metrics span,
+  .financial-list span {
+    color: #94a3b8;
+    font-size: 11px;
+  }
+
+  .mini-metrics strong,
+  .financial-list strong {
+    display: block;
+    margin-top: 5px;
+    color: #f8fafc;
+  }
+
+  .financial-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .financial-list strong {
+    margin: 0;
+  }
+
+  .positive {
+    color: #86efac !important;
+  }
+
+  .warning-text {
+    color: #fde68a !important;
+  }
+
+  .compact {
+    text-align: center;
+  }
+
+  .large-number {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 32px;
+  }
+
+  .compact p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+
+  .company-data-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+    margin: 0;
+  }
+
+  .company-data-list > div {
+    padding: 13px;
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .42);
+  }
+
+  .company-data-list .full {
+    grid-column: 1 / -1;
+  }
+
+  .company-data-list dt {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .company-data-list dd {
+    margin: 5px 0 0;
+    color: #e2e8f0;
+  }
+
+  .business-line-list > span,
+  .feature-tags span {
+    padding: 9px 11px;
+    border-radius: 11px;
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .16);
+    background: rgba(2, 6, 23, .45);
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .business-line-list > span.primary {
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, .28);
+    background: rgba(34, 197, 94, .1);
+  }
+
+  .business-line-list small {
+    margin-left: 5px;
+    opacity: .7;
+  }
+
+  .responsive-table {
+    overflow-x: auto;
+  }
+
+  .responsive-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .responsive-table th,
+  .responsive-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(148, 163, 184, .1);
+    text-align: left;
+    color: #cbd5e1;
+    font-size: 12px;
+  }
+
+  .responsive-table th {
+    color: #64748b;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  .plan-price {
+    display: block;
+    margin: 14px 0 8px;
+    color: #f8fafc;
+    font-size: 30px;
+  }
+
+  .plan-price small {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .plan-card > p {
+    color: #94a3b8;
+  }
+
+  .usage-grid {
+    display: grid;
+    gap: 17px;
+  }
+
+  .usage-item > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+    color: #cbd5e1;
+    font-size: 12px;
+  }
+
+  .warehouse-list,
+  .order-list {
+    display: grid;
+    gap: 9px;
+  }
+
+  .warehouse-list > div,
+  .order-list > .order-row {
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    color: #cbd5e1;
+    text-decoration: none;
+    border: 1px solid rgba(148, 163, 184, .1);
+    background: rgba(2, 6, 23, .4);
+  }
+
+  .warehouse-list > div > div,
+  .order-list > .order-row > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .warehouse-list p,
+  .order-list p,
+  .order-list small {
+    margin: 3px 0 0;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .warehouse-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #86efac;
+    background: rgba(34, 197, 94, .11);
+  }
+
+  .order-list > .order-row > div:last-child {
+    text-align: right;
+  }
+
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .empty-state i {
+    font-size: 24px;
+  }
+
+
+  .media-top-grid {
+    align-items: stretch;
+  }
+
+  .company-map-card > header > i {
+    color: #34d399;
+    font-size: 26px;
+  }
+
+  .company-map-frame {
+    height: 280px;
+    margin-top: 15px;
+    overflow: hidden;
+    border-radius: 15px;
+    border: 1px solid rgba(148, 163, 184, .14);
+    background: #020617;
+  }
+
+  .company-map-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    filter: saturate(.82) contrast(1.03);
+  }
+
+  .company-map-address {
+    margin-top: 13px;
+    padding: 12px 13px;
+    border-radius: 12px;
+    display: flex;
+    gap: 9px;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, .48);
+  }
+
+  .company-map-address i {
+    color: #34d399;
+  }
+
+  .company-map-actions,
+  .media-form-footer {
+    margin-top: 13px;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .media-action-button {
+    min-height: 40px;
+    padding: 0 13px;
+    border-radius: 11px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .media-action-button.primary {
+    color: #052e16;
+    background: #22c55e;
+  }
+
+  .media-action-button.secondary {
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, .18);
+    background: rgba(15, 23, 42, .85);
+  }
+
+  .media-help-list {
+    display: grid;
+    gap: 11px;
+  }
+
+  .media-help-list > div {
+    padding: 13px;
+    border-radius: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    border: 1px solid rgba(148, 163, 184, .11);
+    background: rgba(2, 6, 23, .42);
+  }
+
+  .media-help-list i {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #67e8f9;
+    background: rgba(8, 145, 178, .12);
+  }
+
+  .media-help-list span {
+    color: #94a3b8;
+    font-size: 11px;
+  }
+
+  .media-help-list strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #e2e8f0;
+  }
+
+  .media-section-card {
+    margin-top: 16px;
+  }
+
+  .media-section-card > header p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .media-counter {
+    padding: 7px 10px;
+    border-radius: 999px;
+    color: #a7f3d0;
+    background: rgba(16, 185, 129, .1);
+    border: 1px solid rgba(16, 185, 129, .2);
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .media-upload-form {
+    margin: 16px 0;
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px dashed rgba(56, 189, 248, .24);
+    background: rgba(2, 6, 23, .34);
+  }
+
+  .media-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .media-form-grid label {
+    display: grid;
+    gap: 6px;
+  }
+
+  .media-form-grid label.full {
+    grid-column: 1 / -1;
+  }
+
+  .media-form-grid label > span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .media-form-control {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, .16);
+    color: #e2e8f0;
+    background: #020617;
+    outline: none;
+  }
+
+  textarea.media-form-control {
+    min-height: 80px;
+    resize: vertical;
+  }
+
+  .media-form-control:focus {
+    border-color: rgba(34, 197, 94, .6);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .08);
+  }
+
+  .media-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .media-dropzone {
+    min-height: 130px;
+    margin-top: 13px;
+    padding: 18px;
+    border-radius: 15px;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    text-align: center;
+    color: #cbd5e1;
+    border: 1px dashed rgba(52, 211, 153, .34);
+    background: rgba(16, 185, 129, .045);
+    cursor: pointer;
+    transition: border-color .2s ease, background .2s ease, transform .2s ease;
+  }
+
+  .media-dropzone:hover,
+  .media-dropzone.is-dragging {
+    border-color: rgba(52, 211, 153, .7);
+    background: rgba(16, 185, 129, .09);
+    transform: translateY(-1px);
+  }
+
+  .media-dropzone i {
+    color: #34d399;
+    font-size: 28px;
+  }
+
+  .media-dropzone strong {
+    font-size: 12px;
+  }
+
+  .media-dropzone span {
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .branch-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px;
+  }
+
+  .branch-photo-card {
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 15px;
+    border: 1px solid rgba(148, 163, 184, .12);
+    background: rgba(2, 6, 23, .5);
+  }
+
+  .branch-photo-preview {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: #020617;
+    cursor: zoom-in;
+  }
+
+  .branch-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .25s ease;
+  }
+
+  .branch-photo-preview:hover img {
+    transform: scale(1.04);
+  }
+
+  .branch-photo-preview > span {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: rgba(2, 6, 23, .75);
+  }
+
+  .branch-photo-body {
+    padding: 13px;
+  }
+
+  .branch-photo-body > div:first-child {
+    display: grid;
+    gap: 3px;
+  }
+
+  .branch-photo-body strong {
+    color: #e2e8f0;
+  }
+
+  .branch-photo-body small,
+  .branch-photo-body p,
+  .branch-photo-footer span {
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .branch-photo-body p {
+    margin: 9px 0;
+    line-height: 1.55;
+  }
+
+  .branch-photo-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(148, 163, 184, .09);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .branch-photo-footer button,
+  .document-actions button,
+  .document-actions a {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 9px;
+    border: 1px solid rgba(148, 163, 184, .14);
+    display: grid;
+    place-items: center;
+    color: #cbd5e1;
+    background: rgba(15, 23, 42, .8);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .branch-photo-footer button:hover,
+  .document-actions button:hover,
+  .document-actions a:hover {
+    color: #fff;
+    border-color: rgba(52, 211, 153, .38);
+  }
+
+  .document-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .document-card {
+    padding: 13px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(148, 163, 184, .11);
+    background: rgba(2, 6, 23, .44);
+  }
+
+  .document-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    color: #f87171;
+    background: rgba(239, 68, 68, .1);
+    font-size: 21px;
+  }
+
+  .document-info {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    gap: 3px;
+  }
+
+  .document-info strong {
+    color: #e2e8f0;
+  }
+
+  .document-info span,
+  .document-info small {
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .document-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .document-actions form {
+    margin: 0;
+  }
+
+  .media-empty-block {
+    min-height: 180px;
+    padding: 24px;
+    border-radius: 15px;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    text-align: center;
+    color: #64748b;
+    border: 1px dashed rgba(148, 163, 184, .15);
+    background: rgba(2, 6, 23, .28);
+  }
+
+  .media-empty-block.wide {
+    grid-column: 1 / -1;
+  }
+
+  .media-empty-block i {
+    color: #475569;
+    font-size: 28px;
+  }
+
+  .media-empty-block strong {
+    color: #94a3b8;
+  }
+
+  .media-empty-block p {
+    margin: 0;
+    font-size: 11px;
+  }
+
+  .company-media-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .company-media-modal.is-open {
+    display: flex;
+  }
+
+  .company-media-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, .86);
+    backdrop-filter: blur(8px);
+  }
+
+  .company-media-modal-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(1100px, 96vw);
+    height: min(820px, 90vh);
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, .2);
+    background: #0f172a;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+  }
+
+  .company-media-modal-dialog > header {
+    height: 58px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+  }
+
+  .company-media-modal-dialog > header strong {
+    color: #f8fafc;
+  }
+
+  .company-media-modal-dialog > header button {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    color: #cbd5e1;
+    background: rgba(148, 163, 184, .1);
+    cursor: pointer;
+  }
+
+  #companyMediaModalContent {
+    height: calc(100% - 58px);
+    display: grid;
+    place-items: center;
+    background: #020617;
+  }
+
+  #companyMediaModalContent iframe,
+  #companyMediaModalContent img {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  #companyMediaModalContent img {
+    object-fit: contain;
+  }
+
+  body.company-media-modal-open {
+    overflow: hidden;
+  }
+
+  @media (max-width: 1100px) {
+    .saas-company-kpis,
+    .saas-company-grid.three {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .branch-photo-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 780px) {
+    .saas-company-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .saas-company-identity {
+      align-items: flex-start;
+    }
+
+    .saas-company-kpis,
+    .saas-company-grid.two,
+    .saas-company-grid.three {
+      grid-template-columns: 1fr;
+    }
+
+    .company-data-list {
+      grid-template-columns: 1fr;
+    }
+
+    .company-data-list .full {
+      grid-column: auto;
+    }
+
+    .media-form-grid,
+    .branch-photo-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .media-form-grid label.full {
+      grid-column: auto;
+    }
+
+    .document-card {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .document-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .company-media-modal {
+      padding: 10px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const buttons = Array.from(
+      document.querySelectorAll("[data-company-tab]")
+    );
+    const panels = Array.from(
+      document.querySelectorAll("[data-company-panel]")
+    );
+
+    function activateCompanyTab(target, updateUrl) {
+      const selectedButton = buttons.find(function (button) {
+        return button.dataset.companyTab === target;
+      });
+
+      const selectedPanel = panels.find(function (panel) {
+        return panel.dataset.companyPanel === target;
+      });
+
+      if (!selectedButton || !selectedPanel) {
+        target = "overview";
+      }
+
+      buttons.forEach(function (button) {
+        button.classList.toggle(
+          "is-active",
+          button.dataset.companyTab === target
+        );
+      });
+
+      panels.forEach(function (panel) {
+        panel.classList.toggle(
+          "is-active",
+          panel.dataset.companyPanel === target
+        );
+      });
+
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", target);
+        window.history.replaceState({}, "", url);
+      }
+    }
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        activateCompanyTab(
+          button.dataset.companyTab,
+          true
+        );
+      });
+    });
+
+    const requestedTab = new URLSearchParams(
+      window.location.search
+    ).get("tab");
+
+    if (requestedTab) {
+      activateCompanyTab(requestedTab, false);
+    }
+
+    function showCompanyToast(message, type) {
+      const toast = document.createElement("div");
+      toast.className = "company-ajax-toast " + (type || "success");
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      window.setTimeout(function () {
+        toast.classList.add("is-visible");
+      }, 20);
+
+      window.setTimeout(function () {
+        toast.classList.remove("is-visible");
+        window.setTimeout(function () {
+          toast.remove();
+        }, 250);
+      }, 3200);
+    }
+
+    const logoTrigger = document.getElementById("companyLogoTrigger");
+    const logoInput = document.getElementById("companyLogoInput");
+    const logoForm = document.getElementById("companyLogoForm");
+    const companyAvatar = document.getElementById("companyAvatar");
+
+    if (logoTrigger && logoInput && logoForm && companyAvatar) {
+      logoTrigger.addEventListener("click", function () {
+        logoInput.click();
+      });
+
+      logoInput.addEventListener("change", async function () {
+        if (!logoInput.files || !logoInput.files.length) {
+          return;
+        }
+
+        const formData = new FormData(logoForm);
+        formData.set("logo", logoInput.files[0]);
+        companyAvatar.classList.add("is-uploading");
+        logoTrigger.disabled = true;
+
+        try {
+          const response = await fetch(logoForm.action, {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": logoForm.querySelector(
+                "[name=csrfmiddlewaretoken]"
+              ).value,
+              "X-Requested-With": "XMLHttpRequest"
+            }
+          });
+
+          const payload = await response.json();
+
+          if (!response.ok || !payload.ok) {
+            throw new Error(
+              payload.error || "No se pudo actualizar el logo."
+            );
+          }
+
+          const oldImage = document.getElementById("companyLogoImage");
+          const initials = document.getElementById("companyInitials");
+          const image = oldImage || document.createElement("img");
+
+          image.id = "companyLogoImage";
+          image.alt = "Logo de {{ company.name|escapejs }}";
+          image.src = payload.logo_url + "?v=" + Date.now();
+
+          if (!oldImage) {
+            companyAvatar.insertBefore(image, logoTrigger);
+          }
+
+          if (initials) {
+            initials.remove();
+          }
+
+          showCompanyToast(
+            payload.message || "Logo actualizado correctamente.",
+            "success"
+          );
+        } catch (error) {
+          showCompanyToast(error.message, "error");
+        } finally {
+          companyAvatar.classList.remove("is-uploading");
+          logoTrigger.disabled = false;
+          logoInput.value = "";
+        }
+      });
+    }
+
+    function configureDropzone(dropzoneSelector, inputSelector, nameSelector) {
+      const dropzone = document.querySelector(dropzoneSelector);
+      const input = document.querySelector(inputSelector);
+      const name = document.querySelector(nameSelector);
+
+      if (!dropzone || !input || !name) {
+        return;
+      }
+
+      function updateName() {
+        if (input.files && input.files.length) {
+          name.textContent = input.files[0].name;
+        }
+      }
+
+      input.addEventListener("change", updateName);
+
+      ["dragenter", "dragover"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          dropzone.classList.add("is-dragging");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(function (eventName) {
+        dropzone.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          dropzone.classList.remove("is-dragging");
+        });
+      });
+
+      dropzone.addEventListener("drop", function (event) {
+        if (!event.dataTransfer.files.length) {
+          return;
+        }
+
+        const transfer = new DataTransfer();
+        transfer.items.add(event.dataTransfer.files[0]);
+        input.files = transfer.files;
+        updateName();
+      });
+    }
+
+    configureDropzone(
+      ".photo-dropzone",
+      ".photo-dropzone input[type=file]",
+      "#photoFileName"
+    );
+
+    configureDropzone(
+      ".document-dropzone",
+      ".document-dropzone input[type=file]",
+      "#documentFileName"
+    );
+
+    const modal = document.getElementById("companyMediaModal");
+    const modalTitle = document.getElementById("companyMediaModalTitle");
+    const modalContent = document.getElementById("companyMediaModalContent");
+
+    function openMediaModal(title, element) {
+      if (!modal || !modalTitle || !modalContent) {
+        return;
+      }
+
+      modalTitle.textContent = title || "Vista previa";
+      modalContent.replaceChildren(element);
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("company-media-modal-open");
+    }
+
+    function closeMediaModal() {
+      if (!modal || !modalContent) {
+        return;
+      }
+
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("company-media-modal-open");
+      modalContent.replaceChildren();
+    }
+
+    document.querySelectorAll(".document-preview-button").forEach(
+      function (button) {
+        button.addEventListener("click", function () {
+          const iframe = document.createElement("iframe");
+          iframe.src = button.dataset.pdfUrl;
+          iframe.title = button.dataset.pdfTitle || "Documento PDF";
+          openMediaModal(iframe.title, iframe);
+        });
+      }
+    );
+
+    document.querySelectorAll(".branch-photo-preview").forEach(
+      function (button) {
+        button.addEventListener("click", function () {
+          const image = document.createElement("img");
+          image.src = button.dataset.imageUrl;
+          image.alt = button.dataset.imageTitle || "Fotografía logística";
+          openMediaModal(image.alt, image);
+        });
+      }
+    );
+
+    document.querySelectorAll("[data-media-modal-close]").forEach(
+      function (button) {
+        button.addEventListener("click", closeMediaModal);
+      }
+    );
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeMediaModal();
+      }
+    });
+  });
+</script>
+
+<style>
+  .company-ajax-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 120000;
+    max-width: 420px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    opacity: 0;
+    transform: translateY(-8px);
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .38);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+
+  .company-ajax-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .company-ajax-toast.success {
+    border: 1px solid rgba(34, 197, 94, .42);
+    background: #14532d;
+  }
+
+  .company-ajax-toast.error {
+    border: 1px solid rgba(239, 68, 68, .5);
+    background: #7f1d1d;
+  }
+</style>
+{% endblock %}

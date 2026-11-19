@@ -1,0 +1,161 @@
+<section class="founder-section" id="operaciones">
+
+  <div class="founder-section-head">
+
+    <div>
+      <span class="founder-section-number">05</span>
+
+      <div>
+
+        <h2>
+          Global Audit & Operations
+        </h2>
+
+        <p>
+          Situaciones que podrían afectar clientes antes de que las reporten.
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="founder-grid">
+
+    <article class="founder-metric pending">
+
+      <span class="founder-metric-label">
+        Excepciones críticas
+      </span>
+
+      <strong>
+        Pendiente
+      </strong>
+
+      <small>
+        Falta un almacenamiento global y sanitizado de excepciones.
+      </small>
+
+    </article>
+
+
+    <article class="
+      founder-metric
+      {% if founder.system.shipping_purchases.manual_review %}
+        bad
+      {% else %}
+        good
+      {% endif %}
+    ">
+
+      <span class="founder-metric-label">
+        Guías en revisión
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.manual_review }}
+      </strong>
+
+      <small>
+        Operaciones que requieren intervención humana.
+      </small>
+
+    </article>
+
+
+    <article class="
+      founder-metric
+      {% if founder.system.shipping_purchases.possible_charge %}
+        warn
+      {% else %}
+        good
+      {% endif %}
+    ">
+
+      <span class="founder-metric-label">
+        Cobro incierto
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.possible_charge }}
+      </strong>
+
+      <small>
+        Casos donde no debemos repetir la compra.
+      </small>
+
+    </article>
+
+
+    <article class="
+      founder-metric
+      {% if founder.system.shipping_events.dead_letter %}
+        bad
+      {% else %}
+        good
+      {% endif %}
+    ">
+
+      <span class="founder-metric-label">
+        Dead Letters
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_events.dead_letter }}
+      </strong>
+
+      <small>
+        Eventos externos que agotaron sus intentos.
+      </small>
+
+    </article>
+
+  </div>
+
+
+  <div class="owner-card founder-future-panel">
+
+    <div class="owner-card-header">
+
+      <div>
+
+        <h2>
+          Founder Activity Feed
+        </h2>
+
+        <p>
+          Aquí terminaremos concentrando eventos relevantes del SaaS.
+        </p>
+
+      </div>
+
+      <span class="founder-chip warn">
+        Requiere instrumentación
+      </span>
+
+    </div>
+
+
+    <div class="owner-card-body">
+
+      <div class="founder-empty-state">
+
+        <i class="bi bi-activity"></i>
+
+        <strong>
+          El feed global todavía no está habilitado
+        </strong>
+
+        <p>
+          No mezclaremos auditorías parciales ni fabricaremos una cronología.
+          Primero construiremos el modelo global de eventos Founder.
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>

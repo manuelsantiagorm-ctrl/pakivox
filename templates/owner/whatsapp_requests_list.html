@@ -1,0 +1,412 @@
+﻿{% extends "owner/base_owner.html" %}
+
+{% block title %}Solicitudes WhatsApp | PAKIVOX{% endblock %}
+{% block page_title %}Solicitudes WhatsApp{% endblock %}
+{% block page_subtitle %}Administra activaciones, verificaciones y canales suspendidos{% endblock %}
+
+{% block content %}
+
+<style>
+  .wa-owner-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .wa-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .wa-summary-card {
+    display: block;
+    padding: 18px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: #0f172a;
+    color: inherit;
+    text-decoration: none;
+    transition: 0.18s ease;
+  }
+
+  .wa-summary-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  .wa-summary-card.active {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+
+  .wa-summary-card span {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .wa-summary-card strong {
+    display: block;
+    margin-top: 10px;
+    color: #f8fafc;
+    font-size: 29px;
+    font-weight: 950;
+  }
+
+  .wa-panel {
+    padding: 20px;
+    border-radius: 23px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  }
+
+  .wa-filter-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 220px 220px auto auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .wa-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .wa-field input,
+  .wa-field select {
+    width: 100%;
+    height: 44px;
+    padding: 0 13px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 13px;
+    outline: none;
+    background: #020617;
+    color: #e5e7eb;
+  }
+
+  .wa-field input:focus,
+  .wa-field select:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+  }
+
+  .wa-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 17px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 13px;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #111827;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .wa-button.secondary {
+    border-color: rgba(148, 163, 184, 0.2);
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+
+  .wa-table-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+  }
+
+  .wa-table {
+    width: 100%;
+    min-width: 950px;
+    border-collapse: collapse;
+  }
+
+  .wa-table th {
+    padding: 13px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 950;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .wa-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    color: #cbd5e1;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .wa-table tbody tr:hover {
+    background: rgba(148, 163, 184, 0.04);
+  }
+
+  .wa-company {
+    color: #f8fafc;
+    font-weight: 900;
+  }
+
+  .wa-muted {
+    display: block;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .wa-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .wa-status.pending_activation {
+    background: rgba(245, 158, 11, 0.13);
+    color: #fbbf24;
+  }
+
+  .wa-status.verifying {
+    background: rgba(59, 130, 246, 0.14);
+    color: #60a5fa;
+  }
+
+  .wa-status.active {
+    background: rgba(34, 197, 94, 0.14);
+    color: #4ade80;
+  }
+
+  .wa-status.suspended {
+    background: rgba(239, 68, 68, 0.14);
+    color: #f87171;
+  }
+
+  .wa-empty {
+    padding: 50px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .wa-empty strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  @media (max-width: 1200px) {
+    .wa-summary-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .wa-filter-form {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .wa-summary-grid,
+    .wa-filter-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="wa-owner-shell">
+
+  <div class="wa-summary-grid">
+    <a
+      href="{% url 'owner:whatsapp_requests_list' %}"
+      class="wa-summary-card {% if not status_filter %}active{% endif %}"
+    >
+      <span>Todos los canales</span>
+      <strong>{{ status_counts.all }}</strong>
+    </a>
+
+    <a
+      href="?status=pending_activation"
+      class="wa-summary-card {% if status_filter == 'pending_activation' %}active{% endif %}"
+    >
+      <span>Pendientes</span>
+      <strong>{{ status_counts.pending }}</strong>
+    </a>
+
+    <a
+      href="?status=verifying"
+      class="wa-summary-card {% if status_filter == 'verifying' %}active{% endif %}"
+    >
+      <span>En verificación</span>
+      <strong>{{ status_counts.verifying }}</strong>
+    </a>
+
+    <a
+      href="?status=active"
+      class="wa-summary-card {% if status_filter == 'active' %}active{% endif %}"
+    >
+      <span>Activos</span>
+      <strong>{{ status_counts.active }}</strong>
+    </a>
+
+    <a
+      href="?status=suspended"
+      class="wa-summary-card {% if status_filter == 'suspended' %}active{% endif %}"
+    >
+      <span>Suspendidos</span>
+      <strong>{{ status_counts.suspended }}</strong>
+    </a>
+  </div>
+
+  <div class="wa-panel">
+    <form method="get" class="wa-filter-form">
+
+      <div class="wa-field">
+        <label for="id_q">Buscar</label>
+        <input
+          id="id_q"
+          type="search"
+          name="q"
+          value="{{ search }}"
+          placeholder="Empresa, canal o número"
+        />
+      </div>
+
+      <div class="wa-field">
+        <label for="id_company">Empresa</label>
+        <select id="id_company" name="company">
+          <option value="">Todas las empresas</option>
+
+          {% for company in companies %}
+            <option
+              value="{{ company.pk }}"
+              {% if company_filter == company.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ company.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="wa-field">
+        <label for="id_status">Estado</label>
+        <select id="id_status" name="status">
+          <option value="">Todos los estados</option>
+          <option value="pending_activation" {% if status_filter == "pending_activation" %}selected{% endif %}>
+            Pendiente de activación
+          </option>
+          <option value="verifying" {% if status_filter == "verifying" %}selected{% endif %}>
+            En verificación
+          </option>
+          <option value="active" {% if status_filter == "active" %}selected{% endif %}>
+            Activo
+          </option>
+          <option value="suspended" {% if status_filter == "suspended" %}selected{% endif %}>
+            Suspendido
+          </option>
+        </select>
+      </div>
+
+      <button type="submit" class="wa-button">Aplicar filtros</button>
+
+      <a href="{% url 'owner:whatsapp_requests_list' %}" class="wa-button secondary">
+        Limpiar
+      </a>
+    </form>
+
+    <div class="wa-table-wrap">
+      <table class="wa-table">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Canal</th>
+            <th>Bodega</th>
+            <th>Proveedor</th>
+            <th>Estado</th>
+            <th>Solicitud</th>
+            <th>Créditos</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for channel in channels %}
+            <tr>
+              <td>
+                <span class="wa-company">{{ channel.company.name }}</span>
+                <span class="wa-muted">ID empresa: {{ channel.company_id }}</span>
+              </td>
+
+              <td>
+                <span class="wa-company">{{ channel.channel_name }}</span>
+                <span class="wa-muted">
+                  {{ channel.display_number|default:"Número no capturado" }}
+                </span>
+              </td>
+
+              <td>
+                {% if channel.warehouse %}
+                  {{ channel.warehouse.name }}
+                {% else %}
+                  <span class="wa-muted">Sin bodega asignada</span>
+                {% endif %}
+              </td>
+
+              <td>{{ channel.get_provider_display }}</td>
+
+              <td>
+                <span class="wa-status {{ channel.activation_status }}">
+                  {{ channel.get_activation_status_display }}
+                </span>
+              </td>
+
+              <td>
+                {% if channel.activation_requested_at %}
+                  {{ channel.activation_requested_at|date:"d/m/Y H:i" }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td>{{ channel.creditos_disponibles }}</td>
+
+              <td>
+                <a
+                  href="{% url 'owner:whatsapp_request_detail' channel.pk %}"
+                  class="wa-button secondary"
+                >
+                  Administrar
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8">
+                <div class="wa-empty">
+                  <strong>No se encontraron canales</strong>
+                  Ajusta los filtros o espera una nueva solicitud.
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+{% endblock %}

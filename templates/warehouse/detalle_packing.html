@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+{% load wms_units %}
+
+{% block title %}Detalle Packing | PAKIVOX{% endblock %}
+
+{% block page_title %}Empaque{% endblock %}
+{% block page_subtitle %}Registro final de paquetes, peso y cierre operativo{% endblock %}
+
+{% block content %}
+<section class="packing-detail-page">
+  <div class="packing-header">
+    <div>
+      <span class="eyebrow">Empaque</span>
+      <h2>{{ packing_order.order.folio }}</h2>
+
+      <p>
+        Cliente:
+        {% if packing_order.order.customer %}
+          {{ packing_order.order.customer.full_name }}
+        {% else %}
+          Sin cliente
+        {% endif %}
+      </p>
+
+      <div class="packing-scope-tags">
+        <span>
+          <strong>Bodega:</strong>
+          {{ packing_order.picking_order.warehouse.name }}
+        </span>
+
+        <span class="fulfillment">
+          <strong>Cumplimiento:</strong>
+
+          {% if packing_order.fulfillment %}
+            {{ packing_order.fulfillment.code }}
+          {% else %}
+            Flujo histórico
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <a class="ghost-btn" href="{% url 'sales:detalle_pedido' packing_order.order.id %}">
+          Ver pedido
+        </a>
+
+        <a class="ghost-btn" href="{% url 'warehouse:timeline_pedido' packing_order.order.id %}">
+          Ver timeline
+        </a>
+
+        {% if packing_order.picking_order %}
+          <a class="ghost-btn" href="{% url 'warehouse:detalle_picking' packing_order.picking_order.id %}">
+            Ver picking
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <span class="status-pill {{ packing_order.status }}">
+        {{ packing_order.get_status_display }}
+      </span>
+    </div>
+  </div>
+
+  {% if warehouse_read_only %}
+    <div class="locked-alert readonly packing-readonly-alert">
+      <strong>Modo de consulta global</strong>
+      <p>
+        Estás visualizando este packing desde “Todas las bodegas”.
+        Selecciona {{ packing_order.picking_order.warehouse.name }}
+        para completar el empaque o generar su envío.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if packing_order.status == "cancelled" %}
+    <div class="locked-alert warning">
+      <strong>Packing cancelado</strong>
+      <p>Este packing fue cancelado y ya no puede continuar a envío.</p>
+
+      {% if packing_order.cancel_reason %}
+        <p>
+          <strong>Motivo:</strong> {{ packing_order.cancel_reason }}
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if packing_order.status == "packed" %}
+    <div class="locked-alert success">
+      {% if packing_order.order.status == "packed" %}
+        <strong>Pedido completamente empacado</strong>
+        <p>
+          Todas las bodegas terminaron su packing.
+          El pedido puede continuar a envío.
+        </p>
+      {% else %}
+        <strong>Cumplimiento empacado</strong>
+        <p>
+          {{ packing_order.picking_order.warehouse.name }}
+          terminó su empaque.
+          El pedido continúa esperando otras bodegas.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="packing-grid">
+    <article class="info-card">
+      <span>Pedido</span>
+      <strong>{{ packing_order.order.folio }}</strong>
+      <small>Estado venta: {{ packing_order.order.get_status_display }}</small>
+    </article>
+
+    <article class="info-card">
+      <span>Picking</span>
+      {% if packing_order.picking_order %}
+        <strong>{{ packing_order.picking_order.get_status_display }}</strong>
+        <small>
+          <a href="{% url 'warehouse:detalle_picking' packing_order.picking_order.id %}">
+            Ver ruta de picking
+          </a>
+        </small>
+      {% else %}
+        <strong>Sin picking</strong>
+        <small>No ligado</small>
+      {% endif %}
+    </article>
+
+    <article class="info-card">
+      <span>Empacador</span>
+      <strong>
+        {% if packing_order.packed_by %}
+          {{ packing_order.packed_by.username }}
+        {% else %}
+          Pendiente
+        {% endif %}
+      </strong>
+      <small>
+        {% if packing_order.packed_at %}
+          {{ packing_order.packed_at|date:"d/m/Y H:i" }}
+        {% else %}
+          Sin fecha
+        {% endif %}
+      </small>
+    </article>
+  </div>
+
+  {% if packing_order.picking_order %}
+    <section class="packing-items-card">
+      <div class="section-title">
+        <div>
+          <span>Contenido del empaque</span>
+          <h3>Productos recolectados</h3>
+        </div>
+
+        <small>
+          Picking #{{ packing_order.picking_order.id }}
+        </small>
+      </div>
+
+      <div class="packing-items-list">
+        {% for item in traceability_items %}
+          <article class="packing-item">
+            <div class="packing-item-main">
+              <div class="packing-item-title">
+                <strong>{{ item.variant.sku }}</strong>
+
+                {% if item.variant|is_bulk_variant %}
+                  <span class="unit-badge bulk">
+                    Producto por volumen ·
+                    1 {{ item.variant|commercial_unit }} =
+                    {{ item.variant|conversion_factor_label }}
+                    {{ item.variant|base_unit }}
+                  </span>
+                {% else %}
+                  <span class="unit-badge unit">
+                    Producto unitario
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if item.variant.product %}
+                <p>{{ item.variant.product.name }}</p>
+              {% endif %}
+
+              {% if item.location %}
+                <small>
+                  Ubicación origen:
+                  <strong>{{ item.location.bin_code }}</strong>
+                </small>
+              {% endif %}
+              {% if item.trace_allocation %}
+                <small class="lt1d-lot-line">
+                  Lote:
+                  <strong>{{ item.trace_allocation.lot.lot_number }}</strong>
+                  {% if item.trace_allocation.lot.expiration_date %}
+                    · Caduca {{ item.trace_allocation.lot.expiration_date|date:"d/m/Y" }}
+                  {% endif %}
+                  · {{ item.trace_allocation.get_status_display }}
+                </small>
+              {% endif %}
+            </div>
+
+            <div class="packing-qty-grid">
+              <div>
+                <span>Empacar</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.required_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Recolectado</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.picked_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Estado</span>
+                <strong>{{ item.get_status_display }}</strong>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-items">
+            No hay productos ligados al picking.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="packing-form-card">
+    {% if warehouse_read_only %}
+      <div class="readonly-panel">
+        <div class="readonly-panel-icon">
+          <i class="bi bi-eye"></i>
+        </div>
+
+        <div>
+          <h3>Solo consulta</h3>
+          <p>
+            Selecciona la bodega
+            <strong>{{ packing_order.picking_order.warehouse.name }}</strong>
+            para modificar este packing.
+          </p>
+        </div>
+      </div>
+
+    {% elif packing_order.status != "packed" and packing_order.status != "cancelled" %}
+      <form method="post" action="{% url 'warehouse:completar_packing' packing_order.id %}">
+        {% csrf_token %}
+
+        <div class="form-grid">
+          <label>
+            Número de paquetes
+            <input
+              type="number"
+              name="package_count"
+              min="1"
+              value="{{ packing_order.package_count }}"
+              required
+            >
+          </label>
+
+          <label>
+            Peso total kg
+            <input
+              type="number"
+              name="weight_kg"
+              min="0"
+              step="0.01"
+              value="{{ packing_order.weight_kg }}"
+              required
+            >
+          </label>
+        </div>
+
+        <label>
+          Notas de empaque
+          <textarea
+            name="notes"
+            rows="4"
+            placeholder="Ej. Caja reforzada, mercancía frágil, envío por paquetería..."
+          >{% if packing_order.notes %}{{ packing_order.notes }}{% endif %}</textarea>
+        </label>
+
+        <button type="submit" class="complete-btn">
+          Marcar como empacado
+        </button>
+      </form>
+    {% elif packing_order.status == "packed" %}
+      <div class="packed-summary">
+        <div class="packed-summary-header">
+          <div>
+            {% if packing_order.order.status == "packed" %}
+              <h3>Pedido completamente empacado</h3>
+              <p>
+                Todas las bodegas terminaron su proceso de empaque.
+              </p>
+            {% else %}
+              <h3>Cumplimiento empacado</h3>
+              <p>
+                El packing de
+                {{ packing_order.picking_order.warehouse.name }}
+                quedó cerrado correctamente.
+              </p>
+            {% endif %}
+          </div>
+          {% if can_generate_shipping %}
+            <a class="shipping-btn" href="{% url 'warehouse:generar_shipping' packing_order.id %}">
+              Preparar envío y consultar tarifas
+            </a>
+          {% else %}
+            <div class="shipping-btn-disabled">
+              <i class="bi bi-info-circle"></i>
+              <div>
+                <strong>Empaque completado.</strong>
+                <span>El siguiente paso (generar envío) lo gestiona el equipo de Envíos.</span>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="packed-data-grid">
+          <div>
+            <span>Paquetes</span>
+            <strong>{{ packing_order.package_count }}</strong>
+          </div>
+
+          <div>
+            <span>Peso total</span>
+            <strong>{{ packing_order.weight_kg }} kg</strong>
+          </div>
+
+          <div>
+            <span>Fecha empacado</span>
+            <strong>
+              {% if packing_order.packed_at %}
+                {{ packing_order.packed_at|date:"d/m/Y H:i" }}
+              {% else %}
+                Sin fecha
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        {% if packing_order.notes %}
+          <div class="notes-box">
+            <span>Notas</span>
+            <p>{{ packing_order.notes }}</p>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="packed-summary">
+        <h3>Packing cancelado</h3>
+        <p>Este packing ya no puede modificarse.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+    .shipping-btn-disabled {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(100, 116, 139, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: #94a3b8;
+  font-size: 12px;
+}
+.shipping-btn-disabled strong {
+  display: block;
+  color: #cbd5e1;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+  .packing-detail-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .packing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 800;
+  }
+
+  .packing-header h2 {
+    color: #f8fafc;
+    font-size: 34px;
+    margin: 6px 0;
+  }
+
+  .packing-header p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .ghost-btn {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid rgba(148, 163, 184, .28);
+    color: #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ghost-btn:hover {
+    color: #f8fafc;
+    background: rgba(148, 163, 184, .12);
+  }
+
+  .status-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .status-pill.pending {
+    background: rgba(148, 163, 184, .18);
+    color: #cbd5e1;
+  }
+
+  .status-pill.in_progress {
+    background: rgba(250, 204, 21, .18);
+    color: #fde68a;
+  }
+
+  .status-pill.packed {
+    background: rgba(34, 197, 94, .18);
+    color: #86efac;
+  }
+
+  .status-pill.cancelled {
+    background: rgba(239, 68, 68, .16);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, .35);
+  }
+
+  .packing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .info-card,
+  .packing-form-card,
+  .packing-items-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .info-card span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .06em;
+  }
+
+  .info-card strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 22px;
+    margin: 8px 0;
+  }
+
+  .info-card small,
+  .info-card a {
+    color: #94a3b8;
+  }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .section-title span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 900;
+  }
+
+  .section-title h3 {
+    color: #f8fafc;
+    margin: 6px 0 0;
+  }
+
+  .section-title small {
+    color: #94a3b8;
+    font-weight: 800;
+  }
+
+  .packing-items-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .packing-item {
+    display: grid;
+    grid-template-columns: 1fr minmax(360px, .8fr);
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .packing-item-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .packing-item-title strong {
+    color: #f8fafc;
+    font-size: 16px;
+  }
+
+  .packing-item-main p {
+    margin: 8px 0;
+    color: #94a3b8;
+  }
+
+  .packing-item-main small {
+    color: #94a3b8;
+  }
+
+  .packing-item-main small strong {
+    color: #7dd3fc;
+  }
+
+  .unit-badge {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .unit-badge.bulk {
+    background: rgba(245, 158, 11, .12);
+    border: 1px solid rgba(245, 158, 11, .28);
+    color: #fef3c7;
+  }
+
+  .unit-badge.unit {
+    background: rgba(56, 189, 248, .10);
+    border: 1px solid rgba(56, 189, 248, .24);
+    color: #bae6fd;
+  }
+
+  .packing-qty-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .packing-qty-grid div {
+    background: rgba(15, 23, 42, .95);
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .packing-qty-grid span {
+    display: block;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .06em;
+  }
+
+  .packing-qty-grid strong {
+    display: block;
+    color: #f8fafc;
+    margin-top: 6px;
+  }
+
+  .packing-qty-grid small {
+    display: block;
+    margin-top: 4px;
+    color: #fbbf24;
+    font-weight: 800;
+  }
+
+  .empty-items {
+    padding: 18px;
+    border-radius: 12px;
+    background: #020617;
+    border: 1px dashed rgba(148, 163, 184, .3);
+    color: #94a3b8;
+  }
+
+  .packing-form-card form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-weight: 700;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .complete-btn {
+    justify-self: start;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .complete-btn:hover {
+    filter: brightness(1.08);
+  }
+
+  .packed-summary {
+    color: #cbd5e1;
+  }
+
+  .packed-summary-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .packed-summary h3 {
+    color: #22c55e;
+    margin: 0 0 8px;
+  }
+
+  .packed-summary p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .shipping-btn {
+    display: inline-block;
+    text-decoration: none;
+    background: #38bdf8;
+    color: #020617;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .shipping-btn:hover {
+    color: #020617;
+    filter: brightness(1.08);
+  }
+
+  .packed-data-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .packed-data-grid div {
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .packed-data-grid span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .packed-data-grid strong {
+    display: block;
+    color: #f8fafc;
+    margin-top: 8px;
+  }
+
+  .notes-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, .08);
+    border: 1px solid rgba(56, 189, 248, .2);
+  }
+
+  .notes-box span {
+    display: block;
+    color: #7dd3fc;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 8px;
+  }
+
+  .notes-box p {
+    color: #e0f2fe;
+  }
+
+  .locked-alert {
+    padding: 16px 18px;
+    border-radius: 16px;
+  }
+
+  .locked-alert.warning {
+    background: rgba(245, 158, 11, .10);
+    border: 1px solid rgba(245, 158, 11, .30);
+    color: #fde68a;
+  }
+
+  .locked-alert.success {
+    background: rgba(34, 197, 94, .10);
+    border: 1px solid rgba(34, 197, 94, .30);
+    color: #bbf7d0;
+  }
+
+  .locked-alert strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .locked-alert p {
+    margin: 0;
+  }
+
+  @media (max-width: 1000px) {
+    .packing-item {
+      grid-template-columns: 1fr;
+    }
+
+    .packing-qty-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .packing-header {
+      display: grid;
+    }
+
+    .packing-grid,
+    .form-grid,
+    .packed-data-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .packed-summary-header,
+    .section-title {
+      display: grid;
+    }
+
+    .shipping-btn,
+    .ghost-btn,
+    .complete-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+
+  /* =====================================================
+     MULTIBODEGA / SOLO CONSULTA
+  ====================================================== */
+
+  .packing-scope-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 13px;
+  }
+
+  .packing-scope-tags span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border: 1px solid rgba(56, 189, 248, .25);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, .08);
+    color: #bae6fd;
+    font-size: 12px;
+  }
+
+  .packing-scope-tags span.fulfillment {
+    border-color: rgba(167, 139, 250, .28);
+    background: rgba(139, 92, 246, .09);
+    color: #ddd6fe;
+  }
+
+  .locked-alert.readonly {
+    background: rgba(250, 204, 21, .08);
+    border: 1px solid rgba(250, 204, 21, .32);
+    color: #fef3c7;
+  }
+
+  .readonly-panel {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid rgba(250, 204, 21, .3);
+    border-radius: 12px;
+    background: rgba(250, 204, 21, .07);
+  }
+
+  .readonly-panel-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    flex: 0 0 42px;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(250, 204, 21, .16);
+    color: #facc15;
+    font-size: 19px;
+  }
+
+  .readonly-panel h3 {
+    margin: 0 0 6px;
+    color: #fef9c3;
+  }
+
+  .readonly-panel p {
+    margin: 0;
+    color: #d6d3d1;
+  }
+
+.lt1d-lot-line{display:block;margin-top:6px;color:#7dd3fc}.lt1d-lot-line strong{color:#e0f2fe}
+</style>
+{% endblock %}

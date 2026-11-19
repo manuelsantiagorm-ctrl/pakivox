@@ -1,0 +1,2487 @@
+{% extends "base.html" %} {% block title %} {{ job.folio }} | PAKIVOX {% endblock %} {% block page_title %} Análisis de importación {% endblock %} {% block page_subtitle %} Desglose completo del archivo antes de crear registros en CRM
+{% endblock %} {% block content %}
+<section class="analysis-page">
+
+  <!-- =========================================================
+       CABECERA
+  ========================================================== -->
+
+  <header class="analysis-header">
+
+    <div>
+
+      <span class="analysis-eyebrow">
+        <i class="bi bi-file-earmark-bar-graph"></i>
+        Análisis del archivo
+      </span>
+
+      <h2>
+        {{ job.original_filename }}
+      </h2>
+
+      <p>
+        Folio {{ job.folio }}
+        · Hoja {{ job.sheet_name|default:"Sin seleccionar" }}
+        · Política: {{ job.get_duplicate_policy_display }}
+      </p>
+
+    </div>
+
+
+    <div class="analysis-actions">
+
+      {% if job.status != "completed" %}
+
+        <!-- ===================================================
+             AJUSTAR COLUMNAS
+        ==================================================== -->
+
+        {% if is_product_import %}
+
+          <a
+            href="{% url 'data_imports:product_mapping' job.pk %}"
+            class="analysis-secondary"
+          >
+            <i class="bi bi-diagram-3"></i>
+            Ajustar columnas
+          </a>
+
+        {% elif is_supplier_import %}
+
+          <a
+            href="{% url 'data_imports:supplier_mapping' job.pk %}"
+            class="analysis-secondary"
+          >
+            <i class="bi bi-diagram-3"></i>
+            Ajustar columnas
+          </a>
+
+        {% elif is_inventory_import %}
+
+          <a
+            href="{% url 'data_imports:inventory_mapping' job.pk %}"
+            class="analysis-secondary"
+          >
+            <i class="bi bi-diagram-3"></i>
+            Ajustar columnas
+          </a>
+
+        {% elif is_customer_import %}
+
+          <a
+            href="{% url 'data_imports:customer_mapping' job.pk %}"
+            class="analysis-secondary"
+          >
+            <i class="bi bi-diagram-3"></i>
+            Ajustar columnas
+          </a>
+
+        {% endif %}
+
+
+        <!-- ===================================================
+             EJECUTAR ANÁLISIS
+        ==================================================== -->
+
+        {% if is_product_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:validate_products' job.pk %}"
+          >
+            {% csrf_token %}
+
+            <button
+              type="submit"
+              class="analysis-primary"
+            >
+              <i class="bi bi-shield-check"></i>
+              Ejecutar análisis
+            </button>
+          </form>
+
+        {% elif is_supplier_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:validate_suppliers' job.pk %}"
+          >
+            {% csrf_token %}
+
+            <button
+              type="submit"
+              class="analysis-primary"
+            >
+              <i class="bi bi-shield-check"></i>
+              Ejecutar análisis
+            </button>
+          </form>
+
+        {% elif is_inventory_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:validate_inventory' job.pk %}"
+          >
+            {% csrf_token %}
+
+            <button
+              type="submit"
+              class="analysis-primary"
+            >
+              <i class="bi bi-shield-check"></i>
+              Ejecutar análisis
+            </button>
+          </form>
+
+        {% elif is_customer_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:validate_customers' job.pk %}"
+          >
+            {% csrf_token %}
+
+            <button
+              type="submit"
+              class="analysis-primary"
+            >
+              <i class="bi bi-shield-check"></i>
+              Ejecutar análisis
+            </button>
+          </form>
+
+        {% endif %}
+
+      {% endif %}
+
+    </div>
+
+  </header>
+
+
+  <!-- =========================================================
+       ERROR GENERAL
+  ========================================================== -->
+
+  {% if job.error_summary %}
+
+    <div class="analysis-alert danger">
+
+      <i class="bi bi-exclamation-triangle"></i>
+
+      {{ job.error_summary }}
+
+    </div>
+
+  {% endif %}
+
+
+  <!-- =========================================================
+       IMPORTACIÓN COMPLETADA
+  ========================================================== -->
+
+  {% if job.status == "completed" %}
+
+    <section class="completed-banner completed-banner-final">
+
+      <i class="bi bi-check-circle-fill"></i>
+
+      <div class="completed-banner-copy">
+
+        <strong>
+          Importación completada
+        </strong>
+
+        <p>
+
+          {% if is_product_import %}
+
+            El lote de productos fue procesado correctamente.
+
+          {% elif is_supplier_import %}
+
+            {{ job.created_count }} proveedores creados,
+            {{ job.updated_count }} actualizados y
+            {{ job.skipped_count }} omitidos.
+
+          {% elif is_inventory_import %}
+
+            El inventario fue registrado correctamente
+            en
+            <strong>
+              {{ inventory_warehouse_name|default:"la bodega seleccionada" }}
+            </strong>.
+
+          {% elif is_customer_import %}
+
+            {{ job.created_count }} clientes creados,
+            {{ job.updated_count }} actualizados y
+            {{ job.skipped_count }} omitidos.
+            {% if job.error_rows %}
+              {{ job.error_rows }} filas necesitan revisión.
+            {% endif %}
+
+          {% endif %}
+
+        </p>
+
+      </div>
+
+      <div class="completed-banner-actions">
+
+        {% if is_customer_import and job.error_rows %}
+          <a
+            href="{% url 'data_imports:pending_customers' job.pk %}"
+            class="completed-banner-secondary"
+          >
+            <i class="bi bi-exclamation-circle"></i>
+            Revisar {{ job.error_rows }} no importados
+          </a>
+        {% endif %}
+
+        <a
+          href="{% url 'data_imports:dashboard' %}"
+          class="completed-banner-primary"
+        >
+          Finalizar y volver a importaciones
+          <i class="bi bi-arrow-right"></i>
+        </a>
+
+      </div>
+
+    </section>
+
+  {% endif %}
+
+
+  <!-- =========================================================
+       DUPLICADOS
+       SOLO CLIENTES Y PROVEEDORES
+  ========================================================== -->
+
+  {% if has_duplicate_rows and not is_product_import and not is_inventory_import %}
+
+    {% if duplicate_pending_count > 0 %}
+
+      <section class="duplicate-attention-card" role="alert">
+
+        <div class="duplicate-attention-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+
+        <div class="duplicate-attention-content">
+
+          <span class="duplicate-attention-kicker">
+            Necesitamos tu atención antes de continuar
+          </span>
+
+          <h3>
+            PAKIVOX encontró
+            {{ duplicate_pending_count }}
+            {% if duplicate_pending_count == 1 %}
+              posible duplicado pendiente.
+            {% else %}
+              posibles duplicados pendientes.
+            {% endif %}
+          </h3>
+
+          <p class="duplicate-attention-lead">
+            Algunas filas del Excel podrían corresponder a clientes que ya
+            existen. Antes de importar necesitamos saber qué hacer con esos
+            registros para evitar crear clientes repetidos.
+          </p>
+
+          {% if is_customer_import %}
+
+            {% if duplicate_pending_count > 30 %}
+              <div class="duplicate-attention-recommendation">
+                <i class="bi bi-lightning-charge-fill"></i>
+
+                <div>
+                  <strong>
+                    No necesitas revisar los {{ duplicate_pending_count }} uno por uno.
+                  </strong>
+
+                  <span>
+                    En la siguiente pantalla puedes comenzar con la
+                    <b>Resolución rápida</b> para grupos de coincidencias
+                    y dejar la revisión manual para los casos que realmente
+                    necesiten una decisión individual.
+                  </span>
+                </div>
+              </div>
+            {% else %}
+              <div class="duplicate-attention-recommendation">
+                <i class="bi bi-info-circle-fill"></i>
+
+                <div>
+                  <strong>Tú decides cómo resolverlos.</strong>
+
+                  <span>
+                    En la siguiente pantalla puedes usar resolución rápida
+                    o comparar cada caso manualmente.
+                  </span>
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="duplicate-attention-options">
+
+              <div>
+                <i class="bi bi-stars"></i>
+                <span>
+                  <strong>Resolución rápida</strong>
+                  Útil cuando tienes muchos duplicados.
+                </span>
+              </div>
+
+              <div>
+                <i class="bi bi-person-check"></i>
+                <span>
+                  <strong>Revisión manual</strong>
+                  Compara el Excel con el cliente existente caso por caso.
+                </span>
+              </div>
+
+            </div>
+
+          {% endif %}
+
+          <div class="duplicate-attention-safety">
+            <i class="bi bi-shield-lock-fill"></i>
+
+            <span>
+              Nada se resolverá automáticamente desde esta pantalla.
+              Primero entrarás a revisar las opciones disponibles.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div class="duplicate-attention-actions">
+
+          {% if is_supplier_import %}
+
+            <a
+              href="{% url 'data_imports:supplier_duplicates' job.pk %}"
+              class="duplicate-attention-primary"
+            >
+              <i class="bi bi-people"></i>
+
+              {% if job.status == "completed" %}
+                Resolver duplicados omitidos
+              {% else %}
+                Revisar duplicados
+              {% endif %}
+            </a>
+
+          {% elif is_customer_import %}
+
+            <a
+              href="{% url 'data_imports:resolve_duplicates' job.pk %}"
+              class="duplicate-attention-primary"
+            >
+              <i class="bi bi-arrow-right-circle"></i>
+
+              {% if job.status == "completed" %}
+                Resolver duplicados omitidos
+              {% else %}
+                Ver opciones para resolver
+              {% endif %}
+            </a>
+
+          {% endif %}
+
+          <small>
+            {{ duplicate_resolved_count }} ya resueltos
+          </small>
+
+        </div>
+
+      </section>
+
+    {% else %}
+
+      <section class="duplicate-attention-card duplicate-attention-card--done" role="status">
+
+        <div class="duplicate-attention-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+
+        <div class="duplicate-attention-content">
+          <span class="duplicate-attention-kicker">
+            Duplicados resueltos
+          </span>
+
+          <h3>
+            Los {{ duplicate_resolved_count }} duplicados ya tienen una decisión.
+          </h3>
+
+          <p class="duplicate-attention-lead">
+            No quedan duplicados pendientes en este lote. Puedes continuar
+            con el siguiente paso de la importación.
+          </p>
+        </div>
+
+      </section>
+
+    {% endif %}
+
+  {% endif %}
+
+
+  <!-- =========================================================
+       KPIS
+  ========================================================== -->
+
+  <section class="analysis-summary-grid">
+
+    <article>
+
+      <span>
+        Total de filas
+      </span>
+
+      <strong>
+        {{ job.total_rows }}
+      </strong>
+
+      <small>
+        Registros encontrados
+      </small>
+
+    </article>
+
+
+    <article class="success">
+
+      <span>
+        Listas para importar
+      </span>
+
+      <strong>
+        {{ importable_rows }}
+      </strong>
+
+      <small>
+        {{ quality_percentage }}% del archivo
+      </small>
+
+    </article>
+
+
+    <article class="warning">
+
+      <span>
+        Advertencias
+      </span>
+
+      <strong>
+        {{ job.warning_rows }}
+      </strong>
+
+      <small>
+        Requieren atención o contienen datos parciales
+      </small>
+
+    </article>
+
+
+    <article class="duplicate">
+
+      <span>
+        Duplicados
+      </span>
+
+      <strong>
+        {{ job.duplicate_rows }}
+      </strong>
+
+      <small>
+        {{ duplicate_percentage }}% del archivo
+      </small>
+
+    </article>
+
+
+    <article class="danger">
+
+      <span>
+        Errores
+      </span>
+
+      <strong>
+        {{ job.error_rows }}
+      </strong>
+
+      <small>
+        {{ error_percentage }}% del archivo
+      </small>
+
+    </article>
+
+  </section>
+
+
+  <!-- =========================================================
+       ESTRUCTURA / COBERTURA
+  ========================================================== -->
+
+  <section class="analysis-grid">
+
+    <article class="analysis-card">
+
+      <header>
+
+        <div>
+
+          <span class="analysis-card-eyebrow">
+            Estructura detectada
+          </span>
+
+          <h3>
+            Relación de columnas
+          </h3>
+
+        </div>
+
+
+        <div class="analysis-mini-kpis">
+
+          <span>
+            {{ mapped_columns_count }} relacionadas
+          </span>
+
+          <span>
+            {{ ignored_columns_count }} ignoradas
+          </span>
+
+        </div>
+
+      </header>
+
+
+      <div class="mapping-list">
+
+        {% for item in mapping_summary %}
+
+          <div class="mapping-item">
+
+            <div>
+
+              <small>
+                Columna {{ item.source_index|add:"1" }}
+              </small>
+
+              <strong>
+                {{ item.source_column }}
+              </strong>
+
+            </div>
+
+
+            <i class="bi bi-arrow-right"></i>
+
+
+            <span
+              class="mapping-target {% if not item.is_mapped %}ignored{% endif %}"
+            >
+              {{ item.target_label }}
+            </span>
+
+          </div>
+
+        {% empty %}
+
+          <div class="analysis-empty-small">
+            No hay columnas relacionadas.
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </article>
+
+
+    <article class="analysis-card">
+
+      <header>
+
+        <div>
+
+          <span class="analysis-card-eyebrow">
+            Calidad de datos
+          </span>
+
+          <h3>
+            Cobertura de información
+          </h3>
+
+        </div>
+
+      </header>
+
+
+      {% if is_product_import %}
+
+        <div class="coverage-note">
+
+          <i class="bi bi-box-seam"></i>
+
+          <div>
+
+            <strong>
+              Análisis de catálogo de productos
+            </strong>
+
+            <p>
+              PAKIVOX está revisando nombres, SKUs, precios,
+              inventario y campos relacionados de cada fila.
+            </p>
+
+          </div>
+
+        </div>
+
+
+      {% elif is_inventory_import %}
+
+        <div class="coverage-note">
+
+          <i class="bi bi-boxes"></i>
+
+          <div>
+
+            <strong>
+              Análisis de inventario por bodega
+            </strong>
+
+            <p>
+              PAKIVOX está comprobando los SKUs del catálogo,
+              las cantidades y la bodega destino
+              <strong>
+                {{ inventory_warehouse_name }}
+              </strong>.
+            </p>
+
+          </div>
+
+        </div>
+
+
+      {% else %}
+
+        <div class="coverage-list">
+
+          {% for item in coverage_summary %}
+
+            <div class="coverage-item">
+
+              <div>
+
+                <strong>
+                  {{ item.label }}
+                </strong>
+
+                <span>
+                  {{ item.count }} de {{ analyzed_rows }}
+                </span>
+
+              </div>
+
+
+              <div class="coverage-track">
+                <span
+                  style="width: {{ item.percentage }}%;"
+                ></span>
+              </div>
+
+
+              <b>
+                {{ item.percentage }}%
+              </b>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+
+        <div class="coverage-note">
+
+          <i class="bi bi-person-lines-fill"></i>
+
+          <div>
+
+            <strong>
+              {{ rows_with_contact }} registros tienen un medio de contacto
+            </strong>
+
+            <p>
+              Se considera contacto cuando existe correo,
+              teléfono o WhatsApp.
+            </p>
+
+          </div>
+
+        </div>
+
+      {% endif %}
+
+    </article>
+
+  </section>
+
+
+  <!-- =========================================================
+       AQUÍ CONSERVA TU BLOQUE ACTUAL DE:
+       - RESUMEN DE OBSERVACIONES
+       - RESULTADO DEL LOTE
+       - FILTROS
+       - DESGLOSE DE FILAS
+       - MODAL DEL SOLUCIONADOR
+
+       NO NECESITAS CAMBIAR ESAS PARTES AHORA.
+  ========================================================== -->
+
+
+  <!-- =========================================================
+       LISTO PARA IMPORTAR
+  ========================================================== -->
+
+  {% if job.status == "ready" %}
+
+    {% if is_product_import or is_inventory_import or duplicate_pending_count == 0 %}
+
+      <section class="ready-banner">
+
+        <i class="bi bi-check-circle-fill"></i>
+
+
+        <div>
+
+          <strong>
+            El lote está listo para importar
+          </strong>
+
+          <p>
+
+            {% if is_product_import %}
+
+              Se procesarán
+              {{ importable_rows }}
+              filas de productos autorizadas.
+
+            {% elif is_supplier_import %}
+
+              Se crearán o actualizarán
+              {{ importable_rows }}
+              proveedores autorizados.
+
+            {% elif is_inventory_import %}
+
+              Se registrarán
+              {{ importable_rows }}
+              filas de inventario en
+              <strong>
+                {{ inventory_warehouse_name }}
+              </strong>.
+
+            {% elif is_customer_import %}
+
+              Se crearán o actualizarán
+              {{ importable_rows }}
+              clientes autorizados.
+
+            {% endif %}
+
+          </p>
+
+        </div>
+
+
+        {% if is_product_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:confirm_product_import' job.pk %}"
+            onsubmit="return confirmarYBloquear(this, '¿Confirmas la importación de productos? Esta acción quedará auditada.');"
+          >
+            {% csrf_token %}
+
+            <button type="submit">
+
+              <i class="bi bi-database-add"></i>
+
+              Confirmar importación
+
+            </button>
+
+          </form>
+
+
+        {% elif is_supplier_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:confirm_supplier_import' job.pk %}"
+            onsubmit="return confirmarYBloquear(this, '¿Confirmas la importación de proveedores? Esta acción quedará auditada.');"
+          >
+            {% csrf_token %}
+
+            <button type="submit">
+
+              <i class="bi bi-database-add"></i>
+
+              Confirmar importación
+
+            </button>
+
+          </form>
+
+
+        {% elif is_inventory_import %}
+
+          <form
+            method="post"
+            action="{% url 'data_imports:confirm_inventory_import' job.pk %}"
+            onsubmit="return confirmarYBloquear(this, '¿Confirmas la importación de inventario en {{ inventory_warehouse_name|escapejs }}? Se registrarán movimientos de stock.');"
+          >
+            {% csrf_token %}
+
+            <button type="submit">
+
+              <i class="bi bi-box-arrow-in-down"></i>
+
+              Confirmar inventario
+
+            </button>
+
+          </form>
+
+
+        {% elif is_customer_import %}
+
+        <form
+            id="customer-confirm-import-form"
+            method="post"
+            action="{% url 'data_imports:confirm_customer_import' job.pk %}"
+            data-job-pk="{{ job.pk }}"
+            data-total-rows="{{ job.total_rows }}"
+            onsubmit="return iniciarImportacionConModal(this, '¿Confirmas la importación de clientes? Esta acción quedará auditada.');"
+          >
+            {% csrf_token %}
+
+            <button type="submit">
+
+              <i class="bi bi-database-add"></i>
+
+              Confirmar importación
+
+            </button>
+
+        </form>
+
+        {% endif %}
+
+      </section>
+
+    {% endif %}
+
+  {% endif %}
+
+</section>
+
+<script>
+  function actualizarValorFila(rowId) {
+    const select = document.getElementById(`resolver-column-${rowId}`);
+    const input = document.getElementById(`resolver-value-${rowId}`);
+    const option = select.options[select.selectedIndex];
+    input.value = option ? option.dataset.current || "" : "";
+    input.focus();
+    input.select();
+  }
+
+  function abrirResolverFila(rowId) {
+    const dialog = document.getElementById(`resolver-${rowId}`);
+    actualizarValorFila(rowId);
+    dialog.showModal();
+  }
+    function confirmarYBloquear(formEl, mensaje) {
+    if (!confirm(mensaje)) {
+      return false;
+    }
+    const boton = formEl.querySelector("button[type=submit]");
+    if (boton) {
+      boton.disabled = true;
+      boton.dataset.originalHtml = boton.innerHTML;
+      boton.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+    }
+    return true;
+  }
+
+  let importPollTimer = null;
+
+  function iniciarImportacionConModal(formEl, mensaje) {
+    if (!confirm(mensaje)) {
+      return false;
+    }
+
+    const jobPk = formEl.dataset.jobPk;
+    const totalRows = parseInt(formEl.dataset.totalRows, 10) || 0;
+
+    abrirModalImportacion(totalRows);
+
+    fetch(formEl.action, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": formEl.querySelector(
+          "input[name=csrfmiddlewaretoken]"
+        ).value,
+      },
+      body: new FormData(formEl),
+    })
+      .then(() => {
+        iniciarPollingImportacion(jobPk);
+      })
+      .catch(() => {
+        mostrarErrorModalImportacion();
+      });
+
+    return false;
+  }
+
+  function abrirModalImportacion(totalRows) {
+    const modal = document.getElementById("import-progress-modal");
+    modal.classList.add("open");
+    document.getElementById("import-progress-total").textContent = totalRows;
+    document.getElementById("import-progress-current").textContent = "0";
+    document.getElementById("import-progress-bar").style.width = "0%";
+    document.getElementById("import-progress-status").textContent =
+      "Procesando tu importación...";
+    document.getElementById("import-progress-subtitle").textContent =
+      "Esto puede tardar unos momentos dependiendo del tamaño del archivo. No cierres esta ventana.";
+    document.getElementById("import-progress-footer").textContent =
+      "Por favor espera, estamos trabajando en tu importación.";
+    document.getElementById("import-progress-close-btn").style.display = "none";
+    document.getElementById("import-progress-spinner").style.display = "block";
+    document.getElementById("import-progress-counter").style.display = "";
+    document.getElementById("import-progress-track").style.display = "";
+    document.getElementById("import-progress-footer").style.display = "";
+    document.getElementById("import-progress-background-btn").style.display = "";
+    document.getElementById("import-progress-x").style.display = "";
+    document.getElementById("post-duplicate-summary").style.display = "none";
+    document.getElementById("post-duplicate-actions").style.display = "none";
+    document.getElementById("final-import-actions").style.display = "none";
+  }
+
+  function cerrarModalImportacion() {
+    const modal = document.getElementById("import-progress-modal");
+    modal.classList.remove("open");
+    if (importPollTimer) {
+      clearTimeout(importPollTimer);
+      importPollTimer = null;
+    }
+    location.reload();
+  }
+
+  function iniciarPollingImportacion(jobPk) {
+    const consultar = () => {
+      fetch(`/importaciones/${jobPk}/estado/`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.ok) {
+            mostrarErrorModalImportacion();
+            return;
+          }
+
+          const total = data.total_rows || 1;
+          const processed = data.processed_count || 0;
+          const pct = Math.min(100, Math.round((processed / total) * 100));
+
+          document.getElementById("import-progress-current").textContent =
+            processed;
+          document.getElementById("import-progress-total").textContent =
+            total;
+          document.getElementById("import-progress-bar").style.width =
+            pct + "%";
+
+          if (data.status === "completed" || data.status === "failed") {
+            mostrarResultadoModalImportacion(data);
+            return;
+          }
+
+          importPollTimer = setTimeout(consultar, 2000);
+        })
+        .catch(() => {
+          mostrarErrorModalImportacion();
+        });
+    };
+    consultar();
+  }
+
+  function mostrarResultadoModalImportacion(data) {
+    document.getElementById("import-progress-spinner").style.display = "none";
+    document.getElementById("import-progress-bar").style.width = "100%";
+
+    if (data.status === "completed") {
+      document.getElementById("import-progress-status").textContent =
+        "Importación completada";
+      document.getElementById("import-progress-subtitle").textContent =
+        `${data.created_count} creados, ${data.updated_count} actualizados, ` +
+        `${data.skipped_count} omitidos` +
+        (data.failed_count ? `, ${data.failed_count} con error.` : ".");
+
+      document.getElementById("import-progress-background-btn").style.display = "none";
+      document.getElementById("import-progress-close-btn").style.display = "none";
+      document.getElementById("import-progress-x").style.display = "none";
+      document.getElementById("final-import-actions").style.display = "flex";
+
+      const failedAction = document.getElementById("final-import-errors-action");
+      if (failedAction) {
+        if (data.failed_count) {
+          failedAction.style.display = "inline-flex";
+          const failedCount = document.getElementById("final-import-failed-count");
+          if (failedCount) {
+            failedCount.textContent = data.failed_count;
+          }
+        } else {
+          failedAction.style.display = "none";
+        }
+      }
+    } else {
+      document.getElementById("import-progress-status").textContent =
+        "No fue posible completar la importación";
+      document.getElementById("import-progress-subtitle").textContent =
+        "Contacta a soporte si el problema persiste.";
+      document.getElementById("import-progress-footer").textContent = "";
+      document.getElementById("import-progress-close-btn").style.display =
+        "inline-flex";
+    }
+  }
+
+  function mostrarErrorModalImportacion() {
+    document.getElementById("import-progress-spinner").style.display = "none";
+    document.getElementById("import-progress-status").textContent =
+      "No fue posible verificar el avance";
+    document.getElementById("import-progress-subtitle").textContent =
+      "La importación puede seguir procesándose. Cierra esta ventana y " +
+      "revisa el estado en unos momentos.";
+        document.getElementById("import-progress-footer").textContent = "";
+    document.getElementById("import-progress-close-btn").style.display =
+      "inline-flex";
+  }
+    function prepararModalPostDuplicados() {
+      document.getElementById("import-progress-spinner").style.display = "none";
+      document.getElementById("import-progress-status").textContent =
+        "Duplicados resueltos";
+      document.getElementById("import-progress-subtitle").textContent =
+        "Los {{ duplicate_resolved_count }} posibles duplicados ya tienen una decisión. Tu archivo está listo para continuar.";
+      document.getElementById("import-progress-counter").style.display = "none";
+      document.getElementById("import-progress-track").style.display = "none";
+      document.getElementById("import-progress-footer").style.display = "none";
+      document.getElementById("import-progress-background-btn").style.display = "none";
+      document.getElementById("import-progress-close-btn").style.display = "none";
+      document.getElementById("import-progress-x").style.display = "none";
+      document.getElementById("post-duplicate-summary").style.display = "grid";
+      document.getElementById("post-duplicate-actions").style.display = "flex";
+    }
+
+    function continuarImportacionDesdeDuplicados() {
+      cerrarModalImportacion();
+
+      const confirmForm = document.getElementById("customer-confirm-import-form");
+      if (!confirmForm) {
+        return;
+      }
+
+      confirmForm.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      window.setTimeout(function () {
+        const button = confirmForm.querySelector("button[type='submit']");
+        if (button) {
+          button.focus();
+        }
+      }, 450);
+    }
+
+    function mostrarResultadosSiVieneDeResolucion() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("resolved") !== "1") {
+      return;
+    }
+
+    const outcome = params.get("outcome");
+    abrirModalImportacion({{ job.total_rows|default:0 }});
+
+    if (outcome === "ready") {
+      prepararModalPostDuplicados();
+    } else {
+      mostrarResultadoModalImportacion({
+        status: "{{ job.status }}",
+        created_count: {{ job.created_count|default:0 }},
+        updated_count: {{ job.updated_count|default:0 }},
+        skipped_count: {{ job.skipped_count|default:0 }},
+        failed_count: {{ job.failed_count|default:0 }},
+      });
+    }
+
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    mostrarResultadosSiVieneDeResolucion
+  );
+  </script>
+
+<div id="import-progress-modal" class="import-progress-overlay">
+  <div class="import-progress-box">
+    <button
+      type="button"
+      id="import-progress-x"
+      class="import-progress-x"
+      onclick="cerrarModalImportacion()"
+      title="Cerrar y seguir en segundo plano"
+    >
+      &times;
+    </button>
+
+    <div id="import-progress-spinner" class="import-progress-spinner"></div>
+
+    <h3 id="import-progress-status">Procesando tu importación...</h3>
+    <p id="import-progress-subtitle">
+      Esto puede tardar unos momentos dependiendo del tamaño del archivo.
+      No cierres esta ventana.
+    </p>
+
+    <div id="import-progress-counter" class="import-progress-counter">
+      <i class="bi bi-file-earmark-text"></i>
+      <span id="import-progress-current">0</span>
+      de
+      <span id="import-progress-total">0</span>
+      filas procesadas...
+    </div>
+
+    <div id="import-progress-track" class="import-progress-track">
+      <div id="import-progress-bar" class="import-progress-fill"></div>
+    </div>
+
+    <div id="post-duplicate-summary" class="post-duplicate-summary" style="display:none;">
+      <div>
+        <strong>{{ importable_rows }}</strong>
+        <span>listas para importar</span>
+      </div>
+      <div>
+        <strong>{{ duplicate_resolved_count }}</strong>
+        <span>duplicados resueltos</span>
+      </div>
+      <div>
+        <strong>{{ job.error_rows|default:0 }}</strong>
+        <span>filas con errores</span>
+      </div>
+    </div>
+
+    <p id="import-progress-footer" class="import-progress-footer">
+      Por favor espera, estamos trabajando en tu importación.
+    </p>
+
+    <button
+      type="button"
+      id="import-progress-background-btn"
+      class="import-progress-bg-btn"
+      onclick="cerrarModalImportacion()"
+    >
+      Seguir en segundo plano
+    </button>
+
+    <button
+      type="button"
+      id="import-progress-close-btn"
+      class="import-progress-close-btn"
+      onclick="cerrarModalImportacion()"
+      style="display: none;"
+    >
+      Ver resultado
+    </button>
+
+    <div id="post-duplicate-actions" class="post-duplicate-actions" style="display:none;">
+      <button
+        type="button"
+        class="post-duplicate-secondary"
+        onclick="cerrarModalImportacion()"
+      >
+        Volver al análisis
+      </button>
+
+      <button
+        type="button"
+        class="post-duplicate-primary"
+        onclick="continuarImportacionDesdeDuplicados()"
+      >
+        Continuar con la importación
+        <i class="bi bi-arrow-right"></i>
+      </button>
+    </div>
+
+    <div id="final-import-actions" class="final-import-actions" style="display:none;">
+      {% if is_customer_import %}
+        <a
+          id="final-import-errors-action"
+          href="{% url 'data_imports:pending_customers' job.pk %}"
+          class="final-import-secondary"
+          style="display:none;"
+        >
+          <i class="bi bi-exclamation-circle"></i>
+          Revisar <span id="final-import-failed-count">{{ job.error_rows|default:0 }}</span> no importados
+        </a>
+      {% endif %}
+
+      <a
+        href="{% url 'data_imports:dashboard' %}"
+        class="final-import-primary"
+      >
+        Finalizar y volver a importaciones
+        <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .analysis-page {
+    display: grid;
+    gap: 16px;
+  }
+  .analysis-header,
+  .analysis-card,
+  .analysis-table-card,
+  .analysis-summary-grid article,
+  .ready-banner,
+  .completed-banner {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    background: #0f172a;
+  }
+  .analysis-header {
+    padding: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+  }
+  .analysis-eyebrow,
+  .analysis-card-eyebrow {
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .analysis-header h2 {
+    margin: 7px 0 4px;
+    color: #f8fafc;
+  }
+  .analysis-header p {
+    margin: 0;
+    color: #94a3b8;
+  }
+  .analysis-actions {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+  .analysis-primary,
+  .analysis-secondary {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-weight: 900;
+  }
+  .analysis-primary {
+    border: 0;
+    background: #22c55e;
+    color: #052e16;
+    cursor: pointer;
+  }
+  .analysis-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: #cbd5e1;
+    text-decoration: none;
+  }
+  .analysis-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .analysis-summary-grid article {
+    padding: 17px;
+  }
+  .analysis-summary-grid span,
+  .analysis-summary-grid small {
+    display: block;
+    color: #94a3b8;
+  }
+  .analysis-summary-grid strong {
+    display: block;
+    margin: 7px 0;
+    color: #f8fafc;
+    font-size: 26px;
+  }
+  .analysis-summary-grid .success strong {
+    color: #4ade80;
+  }
+  .analysis-summary-grid .warning strong {
+    color: #facc15;
+  }
+  .analysis-summary-grid .duplicate strong {
+    color: #c4b5fd;
+  }
+  .analysis-summary-grid .danger strong {
+    color: #f87171;
+  }
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .analysis-card {
+    padding: 19px;
+  }
+  .analysis-card > header,
+  .analysis-table-card > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .analysis-card h3,
+  .analysis-table-card h3 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+  }
+  .analysis-mini-kpis {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .analysis-mini-kpis span {
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: #bae6fd;
+    background: rgba(14, 116, 144, 0.12);
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .mapping-list,
+  .coverage-list,
+  .issue-list,
+  .next-step-list {
+    display: grid;
+    gap: 9px;
+    margin-top: 16px;
+  }
+  .mapping-item {
+    padding: 11px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr);
+    gap: 10px;
+    align-items: center;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.3);
+  }
+  .mapping-item small,
+  .mapping-item strong {
+    display: block;
+  }
+  .mapping-item small {
+    color: #64748b;
+  }
+  .mapping-item strong {
+    color: #e2e8f0;
+  }
+  .mapping-item > i {
+    color: #475569;
+  }
+  .mapping-target {
+    padding: 6px 9px;
+    border-radius: 9px;
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.08);
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .mapping-target.ignored {
+    color: #94a3b8;
+    background: rgba(71, 85, 105, 0.14);
+  }
+  .coverage-item {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr) 52px;
+    gap: 10px;
+    align-items: center;
+  }
+  .coverage-item strong,
+  .coverage-item span {
+    display: block;
+  }
+  .coverage-item strong {
+    color: #e2e8f0;
+  }
+  .coverage-item span {
+    color: #64748b;
+    font-size: 10px;
+  }
+  .coverage-track {
+    height: 9px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #020617;
+  }
+  .coverage-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #06b6d4, #22c55e);
+  }
+  .coverage-item b {
+    color: #f8fafc;
+    text-align: right;
+  }
+  .coverage-note {
+    margin-top: 16px;
+    padding: 13px;
+    display: flex;
+    gap: 10px;
+    border: 1px solid rgba(56, 189, 248, 0.16);
+    border-radius: 12px;
+    background: rgba(14, 116, 144, 0.08);
+  }
+  .coverage-note > i {
+    color: #38bdf8;
+  }
+  .coverage-note strong {
+    color: #e0f2fe;
+  }
+  .coverage-note p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+  .issue-item {
+    padding: 11px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 11px;
+    background: rgba(120, 53, 15, 0.12);
+    color: #fde68a;
+  }
+  .issue-item > div {
+    display: flex;
+    gap: 8px;
+  }
+  .next-step-list > div {
+    display: flex;
+    gap: 9px;
+    color: #cbd5e1;
+  }
+  .next-step-list i {
+    color: #67e8f9;
+  }
+  .next-step-list p {
+    margin: 0;
+  }
+  .analysis-alert {
+    padding: 13px 15px;
+    display: flex;
+    gap: 9px;
+    border-radius: 12px;
+  }
+  .analysis-alert.info {
+    margin-top: 15px;
+    color: #bae6fd;
+    background: rgba(14, 116, 144, 0.1);
+  }
+  .analysis-alert.danger {
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.22);
+  }
+  .analysis-filters {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .analysis-filters a {
+    padding: 7px 11px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 999px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .analysis-filters a.active {
+    color: #e0f2fe;
+    border-color: rgba(56, 189, 248, 0.38);
+    background: rgba(14, 116, 144, 0.13);
+  }
+  .analysis-table-card {
+    overflow: hidden;
+  }
+  .analysis-table-card > header {
+    padding: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+  .analysis-table-card > header small {
+    color: #64748b;
+  }
+  .analysis-table-wrap {
+    overflow-x: auto;
+  }
+  .analysis-table {
+    width: 100%;
+    min-width: 1450px;
+    border-collapse: collapse;
+  }
+  .analysis-table th,
+  .analysis-table td {
+    padding: 13px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+  }
+  .analysis-table th {
+    color: #64748b;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .analysis-table small,
+  .analysis-table strong {
+    display: block;
+  }
+  .analysis-table small {
+    margin-top: 3px;
+    color: #94a3b8;
+  }
+  .raw-data-list {
+    display: grid;
+    gap: 5px;
+  }
+  .raw-data-list > div {
+    padding: 6px 7px;
+    border-radius: 7px;
+    background: rgba(2, 6, 23, 0.36);
+  }
+  .raw-data-list small {
+    color: #64748b;
+  }
+  .raw-data-list span {
+    display: block;
+    margin-top: 2px;
+    color: #e2e8f0;
+  }
+  .row-status {
+    display: inline-flex;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #bae6fd;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .row-status.status-valid,
+  .row-status.status-imported {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.1);
+  }
+  .row-status.status-warning {
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.1);
+  }
+  .row-status.status-duplicate {
+    color: #ddd6fe;
+    background: rgba(139, 92, 246, 0.1);
+  }
+  .row-status.status-error {
+    color: #fecaca;
+    background: rgba(239, 68, 68, 0.1);
+  }
+  .row-status.status-skipped {
+    color: #cbd5e1;
+    background: rgba(71, 85, 105, 0.16);
+  }
+  .row-message {
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 11px;
+    text-align: left;
+  }
+  .row-message + .row-message {
+    margin-top: 5px;
+  }
+  .row-message.error {
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.2);
+  }
+  .row-message.warning {
+    color: #fde68a;
+    background: rgba(120, 53, 15, 0.2);
+  }
+  .row-message.success {
+    color: #bbf7d0;
+    background: rgba(20, 83, 45, 0.18);
+  }
+  .row-message.actionable {
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+  .row-message.actionable:hover {
+    filter: brightness(1.2);
+  }
+  .row-message.actionable small {
+    margin: 4px 0 0 20px;
+    color: currentColor;
+    opacity: 0.72;
+  }
+  .resolver-dialog {
+    width: min(680px, calc(100vw - 28px));
+    padding: 0;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 18px;
+    color: #e2e8f0;
+    background: #0f172a;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  }
+  .resolver-dialog::backdrop {
+    background: rgba(2, 6, 23, 0.82);
+  }
+  .resolver-form {
+    padding: 20px;
+    display: grid;
+    gap: 13px;
+  }
+  .resolver-form > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .resolver-form > header span {
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  .resolver-form > header h3 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+  }
+  .resolver-close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 9px;
+    color: #cbd5e1;
+    background: #1e293b;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  .resolver-explanation,
+  .resolver-help {
+    padding: 12px;
+    border-radius: 11px;
+    background: rgba(2, 6, 23, 0.42);
+  }
+  .resolver-explanation strong {
+    color: #fecaca;
+  }
+  .resolver-explanation p,
+  .resolver-help p {
+    margin: 5px 0 0;
+    color: #cbd5e1;
+  }
+  .resolver-help strong {
+    color: #bae6fd;
+  }
+  .resolver-form label {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .resolver-form select,
+  .resolver-form input {
+    width: 100%;
+    min-height: 43px;
+    padding: 9px 11px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    color: #f8fafc;
+    background: #020617;
+  }
+  .resolver-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .resolver-actions button,
+  .resolver-link {
+    min-height: 40px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+    font-weight: 850;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .resolver-primary {
+    border: 0;
+    color: #052e16;
+    background: #22c55e;
+  }
+  .resolver-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+    background: #334155;
+  }
+  .resolver-danger {
+    border: 0;
+    color: #fff;
+    background: #dc2626;
+  }
+  .resolver-link {
+    border: 1px solid rgba(34, 211, 238, 0.28);
+    color: #a5f3fc;
+    background: rgba(8, 145, 178, 0.12);
+  }
+  .address-badge {
+    display: inline-flex;
+    margin-top: 7px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 900;
+  }
+  .address-badge.complete {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.1);
+  }
+  .address-badge.incomplete {
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.1);
+  }
+  .analysis-empty,
+  .analysis-empty-small {
+    text-align: center;
+    color: #94a3b8;
+  }
+  .analysis-empty {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 7px;
+  }
+  .analysis-empty i {
+    font-size: 32px;
+    color: #475569;
+  }
+  .analysis-empty strong {
+    color: #e2e8f0;
+  }
+  .analysis-empty p {
+    margin: 0;
+  }
+  .analysis-empty-small {
+    padding: 20px;
+    border-radius: 11px;
+    background: rgba(2, 6, 23, 0.28);
+  }
+  .analysis-empty-small.success {
+    color: #bbf7d0;
+  }
+  .analysis-table-card > footer {
+    padding: 12px;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .ready-banner,
+  .completed-banner {
+    padding: 17px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .ready-banner > i,
+  .completed-banner > i {
+    color: #22c55e;
+    font-size: 25px;
+  }
+  .ready-banner > div,
+  .completed-banner > div {
+    flex: 1;
+  }
+  .ready-banner strong,
+  .completed-banner strong {
+    color: #bbf7d0;
+  }
+  .ready-banner p,
+  .completed-banner p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+  .ready-banner button {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 11px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .duplicate-review-banner {
+    padding: 17px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    border: 1px solid rgba(167, 139, 250, 0.28);
+    border-radius: 18px;
+    background: rgba(91, 33, 182, 0.09);
+  }
+  .duplicate-review-banner > div {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .duplicate-review-banner > div > i {
+    color: #c4b5fd;
+    font-size: 24px;
+  }
+  .duplicate-review-banner strong {
+    color: #ede9fe;
+  }
+  .duplicate-review-banner p {
+    margin: 4px 0 0;
+    color: #a5b4fc;
+  }
+  .duplicate-review-banner a {
+    min-height: 42px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid rgba(167, 139, 250, 0.38);
+    border-radius: 11px;
+    color: #ede9fe;
+    background: rgba(124, 58, 237, 0.16);
+    text-decoration: none;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .duplicate-attention-card {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+    border: 1px solid rgba(233, 168, 46, 0.34);
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgba(233, 168, 46, 0.08), transparent 56%),
+      rgba(9, 24, 42, 0.96);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.14);
+  }
+
+  .duplicate-attention-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(233, 168, 46, 0.28);
+    border-radius: 14px;
+    background: rgba(233, 168, 46, 0.10);
+    color: #f6c85f;
+    font-size: 20px;
+  }
+
+  .duplicate-attention-kicker {
+    display: block;
+    color: #f6c85f;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .duplicate-attention-content h3 {
+    margin: 5px 0 7px;
+    color: #f1f5f9;
+    font-size: 21px;
+    line-height: 1.25;
+  }
+
+  .duplicate-attention-lead {
+    margin: 0;
+    color: #9fb3c8;
+    line-height: 1.6;
+  }
+
+  .duplicate-attention-recommendation {
+    margin-top: 14px;
+    padding: 12px 13px;
+    display: flex;
+    gap: 10px;
+    border: 1px solid rgba(37, 194, 215, 0.22);
+    border-radius: 12px;
+    background: rgba(37, 194, 215, 0.06);
+    color: #25c2d7;
+  }
+
+  .duplicate-attention-recommendation strong,
+  .duplicate-attention-recommendation span {
+    display: block;
+  }
+
+  .duplicate-attention-recommendation span {
+    margin-top: 3px;
+    color: #9fb3c8;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .duplicate-attention-options {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .duplicate-attention-options > div {
+    padding: 11px 12px;
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border: 1px solid rgba(23, 53, 80, 0.90);
+    border-radius: 11px;
+    background: rgba(6, 17, 31, 0.58);
+    color: #25c2d7;
+  }
+
+  .duplicate-attention-options span {
+    color: #8fa4ba;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .duplicate-attention-options strong {
+    display: block;
+    margin-bottom: 2px;
+    color: #f1f5f9;
+    font-size: 11px;
+  }
+
+  .duplicate-attention-safety {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    color: #71879e;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .duplicate-attention-safety i {
+    margin-top: 1px;
+    color: #24d99b;
+  }
+
+  .duplicate-attention-actions {
+    min-width: 210px;
+    display: grid;
+    gap: 9px;
+    justify-items: stretch;
+  }
+
+  .duplicate-attention-primary {
+    min-height: 44px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid rgba(233, 168, 46, 0.40);
+    border-radius: 11px;
+    background: #e9a82e;
+    color: #06111f;
+    text-decoration: none;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .duplicate-attention-actions small {
+    color: #71879e;
+    text-align: center;
+  }
+
+  .duplicate-attention-card--done {
+    grid-template-columns: auto minmax(0, 1fr);
+    border-color: rgba(36, 217, 155, 0.28);
+    background:
+      linear-gradient(135deg, rgba(36, 217, 155, 0.07), transparent 56%),
+      rgba(9, 24, 42, 0.96);
+  }
+
+  .duplicate-attention-card--done .duplicate-attention-icon {
+    border-color: rgba(36, 217, 155, 0.24);
+    background: rgba(36, 217, 155, 0.08);
+    color: #24d99b;
+  }
+
+  .duplicate-attention-card--done .duplicate-attention-kicker {
+    color: #24d99b;
+  }
+
+  @media (max-width: 900px) {
+    .duplicate-attention-card {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .duplicate-attention-actions {
+      grid-column: 1 / -1;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .duplicate-attention-card {
+      grid-template-columns: 1fr;
+    }
+
+    .duplicate-attention-options {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 1050px) {
+    .analysis-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .analysis-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 720px) {
+    .analysis-header,
+    .ready-banner,
+    .completed-banner {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .analysis-summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+<!-- =========================================================
+     PASO 5 - CLIENTES NO CREADOS
+     SOLO APLICA A IMPORTACIONES DE CLIENTES
+========================================================== -->
+
+{% if is_customer_import %}
+
+  {% if job.status == "completed" or job.error_rows or job.duplicate_rows %}
+
+    <section class="pending-resolution-banner">
+
+      <div>
+        <strong>
+          Revisa los clientes que no fueron creados
+        </strong>
+
+        <p>
+          Consulta errores, clientes ya existentes,
+          direcciones omitidas y correcciones pendientes.
+        </p>
+      </div>
+
+      <div class="pending-resolution-actions">
+
+        <a
+          href="{% url 'data_imports:pending_customers' job.pk %}"
+        >
+          Resolver clientes no importados
+        </a>
+
+        <a
+          href="{% url 'data_imports:download_pending_report' job.pk %}"
+          class="secondary"
+        >
+          Descargar reporte
+        </a>
+
+      </div>
+
+    </section>
+
+  {% endif %}
+
+{% endif %}
+
+<style>
+    .import-progress-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.78);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.import-progress-overlay.open {
+  display: flex;
+}
+.import-progress-box {
+  position: relative;
+  width: min(480px, 92vw);
+  padding: 32px 28px 26px;
+  border-radius: 20px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.import-progress-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.import-progress-x:hover {
+  color: #f8fafc;
+}
+.import-progress-spinner {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 20px;
+  border-radius: 50%;
+  border: 5px solid rgba(103, 232, 249, 0.18);
+  border-top-color: #67e8f9;
+  animation: import-progress-spin 0.9s linear infinite;
+}
+@keyframes import-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#import-progress-status {
+  margin: 0 0 8px;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+}
+#import-progress-subtitle {
+  margin: 0 0 22px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.import-progress-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.import-progress-counter i {
+  color: #67e8f9;
+}
+.import-progress-counter span {
+  color: #67e8f9;
+  font-weight: 800;
+}
+.import-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.import-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee, #67e8f9);
+  transition: width 0.4s ease;
+}
+.import-progress-footer {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+.import-progress-bg-btn {
+  margin-top: 16px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.import-progress-bg-btn:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+.import-progress-close-btn {
+  margin-top: 18px;
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 11px;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+  .pending-resolution-banner {
+    padding: 17px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid rgba(248, 113, 113, 0.22);
+    border-radius: 18px;
+    background: rgba(127, 29, 29, 0.12);
+  }
+  .pending-resolution-banner strong {
+    color: #fecaca;
+  }
+  .pending-resolution-banner p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+  .pending-resolution-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pending-resolution-actions a {
+    min-height: 40px;
+    padding: 0 13px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #dc2626;
+    text-decoration: none;
+    font-weight: 900;
+  }
+  .pending-resolution-actions a.secondary {
+    color: #cbd5e1;
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+  }
+  @media (max-width: 780px) {
+    .pending-resolution-banner {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+
+  .post-duplicate-summary {
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:10px;
+    width:100%;
+    margin:18px 0 4px;
+  }
+
+  .post-duplicate-summary > div {
+    padding:14px 10px;
+    border:1px solid rgba(47,198,218,.18);
+    border-radius:12px;
+    background:rgba(5,18,32,.52);
+    text-align:center;
+  }
+
+  .post-duplicate-summary strong {
+    display:block;
+    color:#f8fafc;
+    font-size:20px;
+    font-weight:900;
+    line-height:1;
+  }
+
+  .post-duplicate-summary span {
+    display:block;
+    margin-top:7px;
+    color:#8fa8bf;
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .post-duplicate-actions {
+    width:100%;
+    gap:10px;
+    justify-content:center;
+    margin-top:18px;
+  }
+
+  .post-duplicate-actions button {
+    min-height:42px;
+    padding:0 16px;
+    border-radius:10px;
+    font-weight:900;
+    cursor:pointer;
+  }
+
+  .post-duplicate-secondary {
+    border:1px solid #334155;
+    background:#0f172a;
+    color:#e2e8f0;
+  }
+
+  .post-duplicate-primary {
+    border:1px solid #22c55e;
+    background:#22c55e;
+    color:#03120a;
+  }
+
+  @media (max-width: 680px) {
+    .post-duplicate-summary {
+      grid-template-columns:1fr;
+    }
+
+    .post-duplicate-actions {
+      flex-direction:column;
+    }
+
+    .post-duplicate-actions button {
+      width:100%;
+    }
+  }
+
+
+  .completed-banner-final {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    gap:14px;
+    align-items:center;
+  }
+
+  .completed-banner-copy {
+    min-width:0;
+  }
+
+  .completed-banner-actions {
+    display:flex;
+    gap:9px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .completed-banner-actions a,
+  .final-import-actions a {
+    min-height:42px;
+    padding:0 14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border-radius:10px;
+    text-decoration:none;
+    font-weight:900;
+  }
+
+  .completed-banner-primary,
+  .final-import-primary {
+    border:1px solid #22c55e;
+    background:#22c55e;
+    color:#03120a;
+  }
+
+  .completed-banner-secondary,
+  .final-import-secondary {
+    border:1px solid rgba(248,113,113,.30);
+    background:rgba(127,29,29,.15);
+    color:#fecaca;
+  }
+
+  .final-import-actions {
+    width:100%;
+    gap:10px;
+    justify-content:center;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width: 900px) {
+    .completed-banner-final {
+      grid-template-columns:auto minmax(0,1fr);
+    }
+
+    .completed-banner-actions {
+      grid-column:1 / -1;
+      justify-content:stretch;
+    }
+
+    .completed-banner-actions a {
+      flex:1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .completed-banner-final {
+      grid-template-columns:1fr;
+    }
+
+    .completed-banner-actions,
+    .final-import-actions {
+      flex-direction:column;
+    }
+
+    .completed-banner-actions a,
+    .final-import-actions a {
+      width:100%;
+    }
+  }
+
+</style>
+
+{% endblock %}

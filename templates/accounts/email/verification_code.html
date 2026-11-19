@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f6fa;font-family:Arial,Helvetica,sans-serif;color:#172033;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fa;padding:34px 14px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #e5eaf1;border-radius:18px;overflow:hidden;box-shadow:0 12px 34px rgba(16,24,40,.08);">
+        <tr><td style="padding:22px 28px;background:#071425;color:#fff;">
+          <div style="font-size:21px;font-weight:800;letter-spacing:-.4px;">PAKI<span style="color:#69aaff;">VOX</span></div>
+          <div style="margin-top:4px;color:#8fa4bc;font-size:11px;">Vende, opera y escala.</div>
+        </td></tr>
+        <tr><td style="padding:34px 28px 8px;">
+          <div style="display:inline-block;padding:7px 10px;border-radius:999px;background:#eaf8f0;color:#17864b;font-size:10px;font-weight:700;text-transform:uppercase;">Verificación segura</div>
+          <h1 style="margin:18px 0 8px;font-size:28px;line-height:1.15;color:#111827;">Tu código de verificación</h1>
+          <p style="margin:0;color:#667085;font-size:14px;line-height:1.7;">Hola {{ owner_name }}, recibimos una solicitud para registrar <strong>{{ company_name }}</strong> en PAKIVOX.</p>
+        </td></tr>
+        <tr><td style="padding:20px 28px;">
+          <div style="border:1px solid #d9e7fb;border-radius:16px;background:#f7faff;padding:24px;text-align:center;">
+            <div style="font-size:11px;color:#667085;font-weight:700;text-transform:uppercase;letter-spacing:.7px;">Código PAKIVOX</div>
+            <div style="margin-top:10px;font-size:38px;letter-spacing:9px;font-weight:800;color:#1765ca;">{{ raw_code }}</div>
+            <div style="margin-top:11px;color:#667085;font-size:12px;">Vence en 10 minutos · Máximo 5 intentos</div>
+          </div>
+        </td></tr>
+        <tr><td style="padding:2px 28px 30px;">
+          <p style="margin:0;color:#667085;font-size:13px;line-height:1.65;">{{ action }}</p>
+          <p style="margin:16px 0 0;color:#98a2b3;font-size:12px;line-height:1.6;">No compartas este código. Si no realizaste esta solicitud, puedes ignorar este mensaje.</p>
+        </td></tr>
+        <tr><td style="padding:18px 28px;border-top:1px solid #edf0f4;background:#fafbfc;color:#98a2b3;font-size:11px;">
+          PAKIVOX · soporte@pakivox.com
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

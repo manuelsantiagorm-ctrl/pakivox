@@ -1,0 +1,23 @@
+<section class="ps6a-next-step tone-{{ simple_order_step.tone }}" data-ps6a-primary="order">
+    <div class="ps6a-next-step-copy">
+      <div class="ps6a-next-step-icon">
+        <i class="bi {{ simple_order_step.icon }}"></i>
+      </div>
+      <div>
+        <small>Qué sigue</small>
+        <strong>{{ simple_order_step.title }}</strong>
+        <p>{{ simple_order_step.description }}</p>
+      </div>
+    </div>
+        {% if simple_order_step.action_modal %}
+      <button type="button" class="ps6a-next-step-action" onclick="{{ simple_order_step.action_modal }}">
+        {{ simple_order_step.action_label }}
+        <i class="bi bi-arrow-right"></i>
+      </button>
+    {% elif simple_order_step.action_url %}
+      <a class="ps6a-next-step-action" href="{{ simple_order_step.action_url }}">
+        {{ simple_order_step.action_label }}
+        <i class="bi bi-arrow-right"></i>
+      </a>
+    {% endif %}
+  </section>

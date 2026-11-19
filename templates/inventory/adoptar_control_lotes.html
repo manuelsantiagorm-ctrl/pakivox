@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Adoptar lotes | {{ variant.sku }} | PAKIVOX{% endblock %}
+{% block page_title %}Activar control por lotes{% endblock %}
+{% block page_subtitle %}Clasifica el 100% del stock existente antes de cambiar el SKU{% endblock %}
+
+{% block content %}
+<style>
+  .lot-adopt { max-width: 1180px; margin: 0 auto; display:grid; gap:18px; }
+  .card { background:#111827; border:1px solid #263244; border-radius:18px; padding:22px; }
+  .head { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; flex-wrap:wrap; }
+  .head h2 { margin:0; color:#f8fafc; }
+  .head p, .muted { color:#94a3b8; }
+  .mode-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .mode { border:1px solid #334155; border-radius:14px; padding:16px; color:#e2e8f0; background:#0b1220; }
+  .stock-table { width:100%; border-collapse:collapse; }
+  .stock-table th,.stock-table td { padding:10px; border-bottom:1px solid #263244; text-align:left; color:#cbd5e1; }
+  .alloc-row { display:grid; grid-template-columns:1.2fr 1fr .65fr 1fr 1fr auto; gap:10px; align-items:end; margin-top:10px; }
+  label { display:grid; gap:6px; color:#cbd5e1; font-size:.83rem; font-weight:800; }
+  input,select { min-height:44px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#f8fafc; padding:8px 10px; }
+  .btn { min-height:44px; border:0; border-radius:11px; padding:0 16px; font-weight:900; cursor:pointer; }
+  .primary { background:#22c55e; color:#052e16; }
+  .ghost { background:#1e293b; color:#f8fafc; text-decoration:none; display:inline-flex; align-items:center; }
+  .danger { background:rgba(239,68,68,.13); color:#fecaca; border:1px solid rgba(239,68,68,.3); }
+  .warning { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); color:#fde68a; border-radius:14px; padding:14px; }
+  .ok { background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3); color:#bbf7d0; border-radius:14px; padding:14px; }
+  @media(max-width:900px){ .alloc-row,.mode-grid{grid-template-columns:1fr;} }
+</style>
+
+<section class="lot-adopt">
+  <div class="card head">
+    <div>
+      <h2>{{ variant.sku }} · {{ product.name }}</h2>
+      <p>
+        Modo actual: <strong>{{ variant.get_inventory_control_display }}</strong>.
+        Esta operación es transaccional y no permite clasificación parcial.
+      </p>
+    </div>
+    <a class="btn ghost" href="{% url 'inventory:detalle_producto' product.id %}">Volver</a>
+  </div>
+
+  {% if variant.inventory_control != "normal" %}
+    <div class="ok">
+      Este SKU ya tiene control por lotes activo. No se requiere adopción.
+    </div>
+  {% else %}
+    {% if blocked_warehouse_ids %}
+      <div class="warning">
+        El SKU tiene stock en una bodega que tu usuario no puede operar.
+        La adopción debe cubrir todas las bodegas con stock.
+      </div>
+    {% endif %}
+
+    {% if has_reserved_or_committed %}
+      <div class="warning">
+        Hay stock reservado o comprometido. Finaliza o libera esas operaciones
+        antes de clasificar el inventario por lote.
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <h3 style="color:#f8fafc;margin-top:0;">Snapshot actual</h3>
+      <table class="stock-table">
+        <thead>
+          <tr><th>Bodega</th><th>Físico</th><th>Reservado</th><th>Comprometido</th></tr>
+        </thead>
+        <tbody>
+          {% for stock in stock_rows %}
+            <tr>
+              <td>{{ stock.warehouse.name }}</td>
+              <td>{{ stock.physical_stock }}</td>
+              <td>{{ stock.reserved_stock }}</td>
+              <td>{{ stock.committed_stock }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">Sin filas de Stock.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted">
+        Si existe reservado o comprometido, PAKIVOX bloqueará la adopción hasta que esas operaciones terminen.
+      </p>
+    </div>
+
+    <form method="post" class="card" id="adoption-form">
+      {% csrf_token %}
+      <h3 style="color:#f8fafc;margin-top:0;">1. Selecciona el modo</h3>
+
+      <div class="mode-grid">
+        <label class="mode">
+          <span><input type="radio" name="target_mode" value="lot" checked> Control por lote</span>
+          <small class="muted">Número de lote obligatorio; caducidad opcional.</small>
+        </label>
+        <label class="mode">
+          <span><input type="radio" name="target_mode" value="lot_expiry"> Lote + caducidad</span>
+          <small class="muted">Número de lote y caducidad obligatorios.</small>
+        </label>
+      </div>
+
+      <h3 style="color:#f8fafc;">2. Clasifica cada ubicación</h3>
+      <p class="muted">
+        Puedes dividir una ubicación en varios lotes. La suma por ubicación debe coincidir exactamente con su cantidad actual.
+      </p>
+
+      <div id="allocation-rows">
+        {% for row in location_rows %}
+          <div class="alloc-row" data-allocation-row>
+            <label>
+              Ubicación
+              <select data-field="location_id" required>
+                <option value="{{ row.location.id }}" selected>
+                  {{ row.location.warehouse.name }} · {{ row.location.bin_code }} · {{ row.quantity }} pzas.
+                </option>
+              </select>
+            </label>
+            <label>
+              Lote
+              <input data-field="lot_number" type="text" required>
+            </label>
+            <label>
+              Cantidad
+              <input data-field="quantity" type="number" min="1" max="{{ row.quantity }}" value="{{ row.quantity }}" required>
+            </label>
+            <label>
+              Fabricación
+              <input data-field="manufactured_date" type="date">
+            </label>
+            <label>
+              Caducidad
+              <input data-field="expiration_date" type="date">
+            </label>
+            <button class="btn danger" type="button" data-clone-row>Dividir</button>
+          </div>
+        {% empty %}
+          <div class="ok">
+            El SKU no tiene stock ubicado. Puedes activar el modo sin clasificar existencias.
+          </div>
+        {% endfor %}
+      </div>
+
+      <input type="hidden" name="allocations_json" id="allocations-json" value="[]">
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+        <button class="btn primary" type="submit" {% if not can_adopt %}disabled{% endif %}>
+          Validar 100% y activar lotes
+        </button>
+      </div>
+    </form>
+  {% endif %}
+</section>
+
+<script>
+(function () {
+  const form = document.getElementById("adoption-form");
+  if (!form) return;
+
+  document.addEventListener("click", function (event) {
+    const button = event.target.closest("[data-clone-row]");
+    if (!button) return;
+
+    const row = button.closest("[data-allocation-row]");
+    const clone = row.cloneNode(true);
+    clone.querySelector('[data-field="lot_number"]').value = "";
+    clone.querySelector('[data-field="quantity"]').value = "";
+    clone.querySelector('[data-field="manufactured_date"]').value = "";
+    clone.querySelector('[data-field="expiration_date"]').value = "";
+    button.textContent = "Dividir";
+    row.after(clone);
+  });
+
+  form.addEventListener("submit", function () {
+    const payload = [];
+    form.querySelectorAll("[data-allocation-row]").forEach(function (row) {
+      const read = function (name) {
+        const input = row.querySelector('[data-field="' + name + '"]');
+        return input ? input.value : "";
+      };
+      payload.push({
+        location_id: read("location_id"),
+        lot_number: read("lot_number"),
+        quantity: read("quantity"),
+        manufactured_date: read("manufactured_date"),
+        expiration_date: read("expiration_date")
+      });
+    });
+    document.getElementById("allocations-json").value = JSON.stringify(payload);
+  });
+})();
+</script>
+{% endblock %}

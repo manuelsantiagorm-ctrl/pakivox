@@ -1,0 +1,1980 @@
+{% extends "base.html" %}
+{% load static %}
+{% load wms_units %}
+
+{% block title %}Pedido {{ order.folio }} | PAKIVOX{% endblock %}
+
+{% block page_title %}
+Pedido {{ order.folio }}
+{% endblock %}
+
+{% block page_subtitle %}
+Consulta el pedido y continúa únicamente con la tarea que corresponde.
+{% endblock %}
+
+</style>
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/detalle_pedido.css' %}">
+<link rel="stylesheet" href="{% static 'css/order_chat_widget.css' %}">
+<link rel="stylesheet" href="{% static 'style/avisos_cliente.css' %}">
+<style id="pakivox-ps6b-header-style">
+.ps6b-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:18px}
+.ps6b-header-main{display:flex;gap:14px;align-items:flex-start}
+.ps6b-header-icon{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:rgba(56,189,248,.12);color:#7dd3fc;font-size:19px}
+.ps6b-header-stepper{display:flex;flex-direction:column;gap:8px}
+.ps6b-header-stepper-label{color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.ps6b-stepper-track{display:flex;align-items:center;gap:6px}
+.ps6b-stepper-step{display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.45}
+.ps6b-stepper-step.is-done,.ps6b-stepper-step.is-current{opacity:1}
+.ps6b-stepper-dot{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#1e293b;color:#64748b;border:2px solid rgba(148,163,184,.2)}
+.ps6b-stepper-step.is-done .ps6b-stepper-dot{background:rgba(34,197,94,.16);color:#86efac;border-color:rgba(34,197,94,.4)}
+.ps6b-stepper-step.is-current .ps6b-stepper-dot{background:#38bdf8;color:#082f49;border-color:#38bdf8}
+.ps6b-stepper-step small{color:#94a3b8;font-size:10px;font-weight:800}
+.ps6b-stepper-step.is-current small{color:#7dd3fc}
+.ps6b-stepper-step:not(:last-child)::after{content:"";display:none}
+
+.ps6b-body-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start}
+.ps6b-kpi{display:flex;align-items:center;gap:12px}
+.ps6b-kpi-icon{flex:none;width:38px;height:38px;display:grid;place-items:center;border-radius:11px;font-size:16px}
+.ps6b-kpi.purple .ps6b-kpi-icon{background:rgba(168,85,247,.14);color:#d8b4fe}
+.ps6b-kpi.blue .ps6b-kpi-icon{background:rgba(56,189,248,.14);color:#7dd3fc}
+.ps6b-kpi.green .ps6b-kpi-icon{background:rgba(34,197,94,.14);color:#86efac}
+.ps6b-kpi.amber .ps6b-kpi-icon{background:rgba(245,158,11,.14);color:#fcd34d}
+.ps6b-kpi div span{display:block;color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+.ps6b-kpi div strong{display:block;margin-top:3px;color:#f8fafc;font-size:18px}
+
+.ps6b-sidebar{display:grid;gap:14px}
+.ps6b-side-card{padding:16px;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:#0b1322}
+.ps6b-side-card h4{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#f8fafc;font-size:13px}
+.ps6b-side-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid rgba(148,163,184,.1);font-size:12px;color:#94a3b8}
+.ps6b-side-row:first-of-type{border-top:0}
+.ps6b-side-row strong{color:#e2e8f0;text-align:right}
+.ps6b-check{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:#94a3b8}
+.ps6b-check.ok i{color:#86efac}
+.ps6b-check.bad i{color:#fca5a5}
+
+@media(max-width:960px){.ps6b-body-grid{grid-template-columns:1fr}.ps6b-header{flex-direction:column}}
+@media(max-width:680px){.ps6b-header-main{width:100%}.ps6b-stepper-track{overflow-x:auto}}
+</style>
+<style id="pakivox-cs1a-safe-cancel-style">
+
+.safe-cancel-box{position:relative}.safe-cancel-box>summary{list-style:none;cursor:pointer}.safe-cancel-box>summary::-webkit-details-marker{display:none}.safe-cancel-form{position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(380px,90vw);display:grid;gap:10px;padding:14px;border:1px solid rgba(239,68,68,.28);border-radius:14px;background:#0b1322;box-shadow:0 18px 50px rgba(0,0,0,.35)}.safe-cancel-form label{display:grid;gap:6px;color:#cbd5e1;font-size:12px;font-weight:800}.safe-cancel-form select,.safe-cancel-form textarea{width:100%;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:10px 12px}.safe-cancel-note{margin:0;color:#94a3b8;font-size:11px;line-height:1.45}@media(max-width:680px){.safe-cancel-box{width:100%}.safe-cancel-box>summary{width:100%;text-align:center}.safe-cancel-form{position:fixed;left:12px;right:12px;top:auto;bottom:84px;width:auto;max-height:72vh;overflow:auto}}
+.cs1b-recovery-card{display:grid;gap:10px;padding:14px;border:1px solid rgba(34,197,94,.30);border-radius:14px;background:rgba(34,197,94,.06)}.cs1b-recovery-card strong{color:#86efac}.cs1b-recovery-card p{margin:0;color:#cbd5e1;font-size:12px;line-height:1.5}.cs1b-recovery-form{display:grid;gap:9px}.cs1b-recovery-form textarea{width:100%;min-height:72px;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:10px 12px;resize:vertical}.cs1b-recovery-btn{border:0;border-radius:10px;padding:11px 14px;background:#22c55e;color:#052e16;font-weight:900;cursor:pointer}.cs1b-recovery-btn:hover{background:#86efac}@media(max-width:680px){.cs1b-recovery-card{grid-column:1/-1}}
+.cs1c2-commercial-card{display:grid;gap:10px;padding:14px;border:1px solid rgba(245,158,11,.34);border-radius:14px;background:rgba(245,158,11,.06);max-width:440px}.cs1c2-commercial-card strong{color:#fcd34d}.cs1c2-commercial-card p{margin:0;color:#cbd5e1;font-size:12px;line-height:1.5}.cs1c2-commercial-form{display:grid;gap:9px}.cs1c2-commercial-form textarea{width:100%;min-height:72px;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:10px 12px;resize:vertical}.cs1c2-commercial-btn{border:0;border-radius:10px;padding:11px 14px;background:#f59e0b;color:#451a03;font-weight:950;cursor:pointer}.cs1c2-commercial-btn:hover{background:#fbbf24}.cs1c2-commercial-warning{padding:9px 10px;border-radius:10px;background:rgba(239,68,68,.08);color:#fca5a5;font-size:11px;line-height:1.45}@media(max-width:680px){.cs1c2-commercial-card{grid-column:1/-1;max-width:none}}
+.cs1c4-credit-card{margin-top:14px;padding:14px;border:1px solid rgba(168,85,247,.28);border-radius:14px;background:rgba(88,28,135,.08);display:grid;gap:12px}.cs1c4-credit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.cs1c4-credit-head strong{color:#d8b4fe}.cs1c4-credit-head span{color:#c4b5fd;font-weight:900}.cs1c4-credit-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cs1c4-credit-summary div{padding:10px;border-radius:10px;background:rgba(15,23,42,.65)}.cs1c4-credit-summary small{display:block;color:#94a3b8}.cs1c4-credit-summary b{display:block;margin-top:4px;color:#f8fafc}.cs1c4-credit-row{display:grid;grid-template-columns:minmax(0,1fr) 130px auto;gap:9px;align-items:end;padding-top:10px;border-top:1px solid rgba(148,163,184,.12)}.cs1c4-credit-row label{display:grid;gap:5px;color:#94a3b8;font-size:11px;font-weight:800}.cs1c4-credit-row input{width:100%;min-width:0;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:9px;padding:10px}.cs1c4-credit-row button{border:0;border-radius:9px;padding:10px 13px;background:#a855f7;color:#fff;font-weight:900;cursor:pointer}.cs1c4-credit-note{margin:0;color:#94a3b8;font-size:11px;line-height:1.45}@media(max-width:680px){.cs1c4-credit-head{display:grid}.cs1c4-credit-summary{grid-template-columns:1fr}.cs1c4-credit-row{grid-template-columns:1fr}.cs1c4-credit-row button{width:100%}}
+
+.ps6a-summary-actions{align-items:flex-start}.ps6a-secondary-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:11px 15px;background:rgba(37,211,102,.12);color:#86efac;text-decoration:none;font-weight:900;border:1px solid rgba(37,211,102,.24)}.ps6a-more-actions{position:relative}.ps6a-more-actions>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(148,163,184,.22);border-radius:12px;padding:11px 15px;color:#cbd5e1;background:rgba(15,23,42,.72);font-weight:900}.ps6a-more-actions>summary::-webkit-details-marker{display:none}.ps6a-more-actions-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(460px,92vw);display:grid;gap:12px;padding:14px;border:1px solid rgba(148,163,184,.20);border-radius:16px;background:#07111f;box-shadow:0 20px 55px rgba(0,0,0,.42)}.ps6a-more-actions .safe-cancel-form{position:static;width:100%;box-shadow:none;margin-top:10px}.ps6a-next-step{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:20px;border:1px solid rgba(37,194,215,.28);border-radius:18px;background:linear-gradient(135deg,rgba(37,194,215,.10),rgba(9,24,42,.88));box-shadow:0 14px 36px rgba(0,0,0,.16)}.ps6a-next-step-copy{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;align-items:flex-start}.ps6a-next-step-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:rgba(37,194,215,.14);color:#67e8f9;font-size:20px}.ps6a-next-step small{display:block;color:#67e8f9;font-weight:950;text-transform:uppercase;letter-spacing:.08em}.ps6a-next-step strong{display:block;margin-top:4px;color:#f8fafc;font-size:18px}.ps6a-next-step p{margin:6px 0 0;color:#cbd5e1;line-height:1.5}.ps6a-next-step-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;background:#25c2d7;color:#03131a;text-decoration:none;font-weight:950;white-space:nowrap}.ps6a-next-step.tone-success{border-color:rgba(36,217,155,.32);background:linear-gradient(135deg,rgba(36,217,155,.10),rgba(9,24,42,.88))}.ps6a-next-step.tone-success .ps6a-next-step-icon,.ps6a-next-step.tone-success small{color:#86efac}.ps6a-next-step.tone-warning{border-color:rgba(233,168,46,.34);background:linear-gradient(135deg,rgba(233,168,46,.10),rgba(9,24,42,.88))}.ps6a-next-step.tone-warning .ps6a-next-step-icon,.ps6a-next-step.tone-warning small{color:#fcd34d}.ps6a-next-step.tone-muted{border-color:rgba(148,163,184,.25)}.ps6a-manual-controls>summary{cursor:pointer;font-weight:900;color:#cbd5e1}.ps6a-manual-controls form{margin-top:14px}.ps6a-readonly-note{margin:0;padding:11px 12px;border-radius:12px;background:rgba(148,163,184,.08);color:#94a3b8;line-height:1.5}@media(max-width:760px){.ps6a-next-step{grid-template-columns:1fr}.ps6a-next-step-action{width:100%}.ps6a-more-actions{width:100%}.ps6a-more-actions>summary{width:100%}.ps6a-more-actions-panel{position:static;width:100%;margin-top:8px}.ps6a-summary-actions{width:100%}.ps6a-secondary-action{width:100%}}
+</style>
+
+<style id="pakivox-order-detail-premium-v2">
+/* =========================================================
+   PAKIVOX — DETALLE DE PEDIDO PREMIUM V2
+   Capa visual: conserva formularios, permisos, URLs e IDs.
+   ========================================================= */
+.product-search-loader{width:16px;height:16px;border:2px solid rgba(56,189,248,.25);border-top-color:#38bdf8;border-radius:50%;display:none;margin-left:auto}
+.product-search-loader.is-active{display:block;animation:pakivox-product-search-spin .65s linear infinite}
+@keyframes pakivox-product-search-spin{to{transform:rotate(360deg)}}
+.order-detail-page,
+.order-detail-page *{box-sizing:border-box}
+
+.order-detail-page{
+  width:100%;
+  max-width:1600px;
+  min-width:0;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+  color:#e5edf8;
+}
+
+/* ---------- HERO ---------- */
+.order-detail-page .order-summary.ps6b-header{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(330px,430px);
+  align-items:center;
+  gap:30px;
+  width:100%;
+  min-width:0;
+  padding:26px 28px;
+  overflow:hidden;
+  border:1px solid rgba(96,165,250,.17);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 0 0,rgba(37,99,235,.13),transparent 36%),
+    linear-gradient(135deg,#111c33 0%,#0c162b 58%,#081124 100%);
+  box-shadow:0 20px 55px rgba(0,0,0,.18);
+}
+.order-detail-page .order-summary.ps6b-header::before{
+  content:"";
+  position:absolute;inset:0 auto auto 0;
+  width:100%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(56,189,248,.72),transparent);
+}
+.ps6b-header-main{display:flex;align-items:flex-start;gap:17px;min-width:0}
+.ps6b-header-icon{
+  width:54px;height:54px;flex:0 0 54px;
+  display:grid;place-items:center;
+  border:1px solid rgba(59,130,246,.27);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(37,99,235,.20),rgba(14,165,233,.07));
+  color:#60a5fa;font-size:23px;
+  box-shadow:0 12px 30px rgba(37,99,235,.08);
+}
+.ps6b-header-main .eyebrow{
+  display:block;margin-bottom:6px;
+  color:#7dd3fc;font-size:10px;font-weight:950;
+  letter-spacing:.14em;text-transform:uppercase;
+}
+.ps6b-header-main h2{
+  margin:0;color:#f8fafc;
+  font-size:clamp(27px,3vw,38px);
+  line-height:1.08;letter-spacing:-.035em;
+}
+.ps6b-header-main p{margin:9px 0 0;color:#94a3b8;font-size:13px}
+.order-status-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+
+/* ---------- STEPPER ---------- */
+.ps6b-header-stepper{display:grid;gap:11px;min-width:0}
+.ps6b-header-stepper-label{
+  color:#94a3b8;font-size:10px;font-weight:850;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.ps6b-stepper-track{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(66px,1fr));
+  gap:8px;
+  min-width:0;
+}
+.ps6b-stepper-track::before{
+  content:"";
+  position:absolute;left:11%;right:11%;top:17px;
+  border-top:1px dashed rgba(148,163,184,.24);
+}
+.ps6b-stepper-step{
+  position:relative;z-index:1;
+  display:grid;justify-items:center;gap:7px;
+  min-width:0;opacity:.5;
+}
+.ps6b-stepper-dot{
+  width:36px;height:36px;display:grid;place-items:center;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:50%;
+  background:#111a2e;color:#64748b;
+}
+.ps6b-stepper-step.is-current,.ps6b-stepper-step.is-done{opacity:1}
+.ps6b-stepper-step.is-current .ps6b-stepper-dot{
+  border-color:#3b82f6;
+  background:linear-gradient(145deg,#2563eb,#3b82f6);
+  color:#fff;
+  box-shadow:0 0 0 5px rgba(37,99,235,.10),0 9px 25px rgba(37,99,235,.24);
+}
+.ps6b-stepper-step.is-done .ps6b-stepper-dot{
+  border-color:rgba(34,197,94,.38);
+  background:rgba(34,197,94,.12);
+  color:#4ade80;
+}
+.ps6b-stepper-step small{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#7f8ca0;font-size:10px;font-weight:800;
+}
+.ps6b-stepper-step.is-current small{color:#60a5fa}
+
+/* ---------- ACTION BAR ---------- */
+.ps6b-premium-actions{
+  width:100%;min-width:0;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px 14px;
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:16px;
+  background:rgba(15,23,42,.82);
+  box-shadow:0 10px 28px rgba(0,0,0,.12);
+}
+.ps6b-action-left,.ps6b-action-right{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0
+}
+.ps6b-action-right{justify-content:flex-end}
+.ps6b-action-product,.ps6b-action-payment{
+  min-height:43px;display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;padding:0 16px;border-radius:11px;
+  font-size:12px;font-weight:900;text-decoration:none;
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+.ps6b-action-product{
+  border:1px solid rgba(59,130,246,.48);
+  background:rgba(37,99,235,.08);color:#7dd3fc;
+}
+.ps6b-action-payment{
+  border:1px solid rgba(96,165,250,.46);
+  background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;
+  box-shadow:0 10px 25px rgba(37,99,235,.20);
+}
+.ps6b-action-product:hover,.ps6b-action-payment:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.ps6b-premium-actions .ghost-action,
+.ps6b-premium-actions .ps6a-secondary-action,
+.ps6b-premium-actions .ps6a-more-actions>summary{min-height:43px}
+
+/* ---------- MASTER LAYOUT ---------- */
+.ps6b-premium-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 300px;
+  align-items:start;
+  gap:18px;
+  width:100%;min-width:0;
+}
+.ps6b-main-column{
+  min-width:0;
+  display:grid;
+  gap:18px;
+}
+.ps6b-main-column>*{min-width:0}
+
+/* ---------- KPIs ---------- */
+.ps6b-premium-kpis{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+  width:100%;min-width:0;
+}
+.ps6b-premium-kpis .kpi-card{
+  min-width:0;min-height:116px;
+  display:flex;align-items:center;gap:13px;
+  padding:18px;
+  border:1px solid rgba(148,163,184,.15);
+  border-radius:16px;
+  background:linear-gradient(145deg,#111b31,#0d172a);
+  box-shadow:0 13px 35px rgba(0,0,0,.11);
+}
+.ps6b-premium-kpis .ps6b-kpi-icon{
+  width:44px;height:44px;flex:0 0 44px;border-radius:12px;font-size:18px;
+}
+.ps6b-premium-kpis .ps6b-kpi div{min-width:0}
+.ps6b-premium-kpis .ps6b-kpi div>span{
+  color:#94a3b8;font-size:10px;font-weight:850;
+  text-transform:none;letter-spacing:.02em;
+}
+.ps6b-premium-kpis .ps6b-kpi div>strong{
+  display:block;margin-top:5px;color:#fff;
+  font-size:clamp(18px,1.7vw,24px);
+  line-height:1.15;letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+}
+.ps6b-premium-kpis .ps6b-kpi small{
+  display:block;margin-top:4px;color:#64748b;font-size:9px;line-height:1.35
+}
+
+/* ---------- QUÉ SIGUE ---------- */
+.order-detail-page .ps6a-next-step{
+  position:relative;
+  grid-template-columns:minmax(0,1fr) auto;
+  min-height:160px;padding:23px 24px;
+  border:1px solid rgba(96,165,250,.17);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 5% 50%,rgba(99,102,241,.10),transparent 30%),
+    linear-gradient(135deg,#101a30,#0c162a);
+  box-shadow:0 15px 40px rgba(0,0,0,.12);
+}
+.order-detail-page .ps6a-next-step strong{font-size:20px}
+.order-detail-page .ps6a-next-step p{max-width:720px;color:#94a3b8}
+
+/* ---------- SIDEBAR ---------- */
+.ps6b-premium-sidebar{
+  position:sticky;top:18px;
+  display:grid;gap:13px;min-width:0;
+}
+.ps6b-premium-sidebar .ps6b-side-card{
+  min-width:0;padding:17px;
+  border:1px solid rgba(148,163,184,.15);
+  border-radius:15px;
+  background:linear-gradient(145deg,#111a2d,#0d1628);
+  box-shadow:0 12px 32px rgba(0,0,0,.10);
+}
+.ps6b-premium-sidebar .ps6b-side-card h4{
+  margin:0 0 13px;color:#f1f5f9;font-size:13px
+}
+.ps6b-premium-sidebar .ps6b-side-row{
+  align-items:flex-start;padding:8px 0;min-width:0
+}
+.ps6b-premium-sidebar .ps6b-side-row span{min-width:0}
+.ps6b-premium-sidebar .ps6b-side-row strong{
+  max-width:55%;overflow-wrap:anywhere
+}
+.ps6b-tip{
+  display:grid;grid-template-columns:34px minmax(0,1fr);
+  align-items:start;gap:9px;padding:9px 0;
+}
+.ps6b-tip>i{
+  width:32px;height:32px;display:grid;place-items:center;border-radius:9px
+}
+.ps6b-tip.blue>i{background:rgba(59,130,246,.12);color:#60a5fa}
+.ps6b-tip.green>i{background:rgba(34,197,94,.12);color:#4ade80}
+.ps6b-tip.amber>i{background:rgba(245,158,11,.12);color:#fbbf24}
+.ps6b-tip p{margin:0;color:#94a3b8;font-size:11px;line-height:1.48}
+.ps6b-security-card{border-color:rgba(56,189,248,.16)!important}
+.ps6b-security-card p{margin:0;color:#94a3b8;font-size:11px;line-height:1.5}
+
+/* ---------- PANELS FINANCE / PRODUCTS ---------- */
+.order-detail-page .panel,
+.order-detail-page .finance-panel,
+.order-detail-page #productos-pedido{
+  min-width:0;
+  border:1px solid rgba(148,163,184,.15);
+  border-radius:18px;
+  background:linear-gradient(145deg,#111a2d,#0d1628);
+  box-shadow:0 12px 34px rgba(0,0,0,.09);
+}
+.order-detail-page .payment-layout{
+  display:grid;
+  grid-template-columns:minmax(220px,.36fr) minmax(0,1fr);
+  gap:14px;
+  align-items:stretch;
+}
+.order-detail-page .finance-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.order-detail-page .finance-grid>div{min-width:0}
+
+/* ---------- EMPTY STATE PRODUCTS ---------- */
+.ps6b-products-empty{
+  min-height:180px;
+  display:flex;align-items:center;justify-content:center;
+  gap:28px;padding:28px;
+  border:1px dashed rgba(96,165,250,.21);
+  border-radius:15px;
+  background:linear-gradient(135deg,rgba(37,99,235,.04),rgba(15,23,42,.38));
+}
+.ps6b-empty-visual{
+  width:82px;height:82px;flex:0 0 82px;
+  display:grid;place-items:center;
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(79,70,229,.23),rgba(37,99,235,.09));
+  color:#818cf8;font-size:37px;
+  box-shadow:0 15px 35px rgba(79,70,229,.08);
+}
+.ps6b-empty-content span{
+  color:#60a5fa;font-size:9px;font-weight:950;letter-spacing:.1em
+}
+.ps6b-empty-content h4{margin:5px 0 7px;color:#f8fafc;font-size:19px}
+.ps6b-empty-content p{max-width:560px;margin:0;color:#94a3b8;font-size:12px;line-height:1.5}
+.ps6b-empty-action{
+  min-height:40px;display:inline-flex;align-items:center;gap:8px;
+  margin-top:14px;padding:0 15px;border-radius:10px;
+  background:linear-gradient(135deg,#2563eb,#3b82f6);
+  color:#fff;text-decoration:none;font-size:11px;font-weight:900;
+}
+
+/* ---------- PRODUCT COMPOSER ---------- */
+.ps6b-product-composer{
+  min-width:0;padding:18px;
+  border:1px solid rgba(148,163,184,.15);
+  border-radius:18px;
+  background:linear-gradient(145deg,#111a2d,#0c1527);
+  box-shadow:0 14px 38px rgba(0,0,0,.10);
+}
+.ps6b-composer-heading{
+  display:flex;align-items:center;gap:12px;margin-bottom:17px
+}
+.ps6b-composer-icon{
+  width:40px;height:40px;flex:0 0 40px;
+  display:grid;place-items:center;border-radius:11px;
+  background:rgba(59,130,246,.12);color:#60a5fa;font-size:17px
+}
+.ps6b-composer-heading h3{margin:0;color:#f8fafc;font-size:16px}
+.ps6b-composer-heading p{margin:4px 0 0;color:#64748b;font-size:11px}
+.ps6b-premium-product-form{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.55fr) minmax(130px,.55fr) minmax(160px,.7fr) minmax(185px,.75fr)!important;
+  gap:13px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.ps6b-premium-product-form>label{min-width:0}
+.ps6b-premium-product-form>label:first-of-type{grid-column:1/3}
+.ps6b-premium-product-form>label:nth-of-type(2){grid-column:3}
+.ps6b-premium-product-form>label:nth-of-type(3){grid-column:4}
+.ps6b-premium-product-form .selected-product-box{grid-column:1/-1}
+.ps6b-premium-product-form .live-subtotal-card{grid-column:1/4;min-width:0}
+.ps6b-premium-product-form #addProductSubmitBtn{
+  grid-column:4;align-self:stretch;min-height:48px
+}
+
+/* ---------- SAFETY ---------- */
+.ps6b-main-column .profitability-section{min-width:0}
+.ps6b-main-column .locked-alert{min-width:0}
+.ps6b-main-column .item-row{min-width:0}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:1220px){
+  .order-detail-page .order-summary.ps6b-header{
+    grid-template-columns:minmax(0,1fr) minmax(300px,390px)
+  }
+  .ps6b-premium-layout{grid-template-columns:minmax(0,1fr) 270px}
+  .ps6b-premium-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .ps6b-premium-product-form{
+    grid-template-columns:minmax(0,1fr) minmax(130px,.45fr) minmax(160px,.55fr)!important
+  }
+  .ps6b-premium-product-form>label:first-of-type{grid-column:1}
+  .ps6b-premium-product-form>label:nth-of-type(2){grid-column:2}
+  .ps6b-premium-product-form>label:nth-of-type(3){grid-column:3}
+  .ps6b-premium-product-form .live-subtotal-card{grid-column:1/3}
+  .ps6b-premium-product-form #addProductSubmitBtn{grid-column:3}
+}
+@media(max-width:1000px){
+  .order-detail-page .order-summary.ps6b-header{grid-template-columns:1fr}
+  .ps6b-premium-layout{grid-template-columns:1fr}
+  .ps6b-premium-sidebar{
+    position:static;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .order-detail-page .payment-layout{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .order-detail-page{gap:13px}
+  .order-detail-page .order-summary.ps6b-header{padding:20px;border-radius:16px}
+  .ps6b-header-main{gap:12px}
+  .ps6b-header-icon{width:46px;height:46px;flex-basis:46px}
+  .ps6b-header-main h2{font-size:25px}
+  .ps6b-stepper-track{overflow-x:auto;grid-template-columns:repeat(4,minmax(78px,1fr));padding-bottom:4px}
+  .ps6b-premium-actions{display:grid}
+  .ps6b-action-left,.ps6b-action-right{display:grid;grid-template-columns:1fr;width:100%}
+  .ps6b-action-left>*,.ps6b-action-right>*{width:100%}
+  .ps6b-premium-sidebar{grid-template-columns:1fr}
+  .ps6b-premium-product-form{grid-template-columns:1fr!important}
+  .ps6b-premium-product-form>label:first-of-type,
+  .ps6b-premium-product-form>label:nth-of-type(2),
+  .ps6b-premium-product-form>label:nth-of-type(3),
+  .ps6b-premium-product-form .live-subtotal-card,
+  .ps6b-premium-product-form #addProductSubmitBtn{grid-column:1!important}
+  .order-detail-page .finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ps6b-products-empty{display:grid;justify-items:center;text-align:center}
+}
+@media(max-width:460px){
+  .ps6b-premium-kpis{grid-template-columns:1fr!important}
+  .order-detail-page .finance-grid{grid-template-columns:1fr}
+  .ps6b-stepper-track{min-width:350px}
+}
+</style>
+
+<style id="pakivox-ready-capture-modals">
+.ps6-simple-modal{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.ps6-simple-modal[hidden]{display:none}
+.ps6-simple-modal-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.72);backdrop-filter:blur(2px)}
+.ps6-simple-modal-card{position:relative;z-index:1;width:min(560px,100%);max-height:85vh;overflow:auto;background:#0b1322;border:1px solid rgba(148,163,184,.18);border-radius:16px;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.ps6-simple-modal-card h3{margin:0 0 6px;color:#f8fafc}
+.ps6-simple-modal-card p{margin:0 0 16px;color:#94a3b8;font-size:12px}
+.ps6-simple-modal-close{position:absolute;top:16px;right:16px;background:transparent;border:0;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1}
+.ready-confirm-list{display:grid;gap:8px;margin-bottom:14px;max-height:280px;overflow:auto}
+.ready-confirm-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid rgba(148,163,184,.14);border-radius:10px;background:rgba(15,23,42,.6);font-size:12px}
+.ready-confirm-row strong{display:block;color:#f8fafc}
+.ready-confirm-row small{color:#64748b}
+.ready-confirm-qty{color:#94a3b8;white-space:nowrap}
+.ready-confirm-line-total{color:#f8fafc;font-weight:800;white-space:nowrap}
+.ready-confirm-total{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:10px;background:rgba(37,99,235,.1);border:1px solid rgba(59,130,246,.3);margin-bottom:16px;font-weight:900;color:#f8fafc}
+.ready-confirm-actions{display:flex;justify-content:flex-end;gap:10px}
+.ps6-simple-modal textarea{font-family:inherit;font-size:13px;width:100%;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:10px 12px}
+.ps6-simple-modal label{display:grid;gap:6px;margin-bottom:14px;color:#cbd5e1;font-size:12px;font-weight:800}
+.ps6b-action-ready,
+.ps6b-action-return{
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  font-family:inherit;
+  min-height:43px;display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;padding:0 16px;border-radius:11px;
+  font-size:12px;font-weight:900;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+.ps6b-action-ready{
+  border:1px solid rgba(37,194,215,.5);
+  background:linear-gradient(135deg,rgba(37,194,215,.16),rgba(37,194,215,.06));
+  color:#67e8f9;
+}
+.ps6b-action-ready:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.1);
+  box-shadow:0 8px 20px rgba(37,194,215,.18);
+}
+.ps6b-action-return{
+  border:1px solid rgba(245,158,11,.5);
+  background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(245,158,11,.05));
+  color:#fcd34d;
+}
+.ps6b-action-return:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.1);
+  box-shadow:0 8px 20px rgba(245,158,11,.16);
+}
+/* =========================================================
+   PAKIVOX — BARRA DE ACCIONES EN UNA SOLA LÍNEA
+   ========================================================= */
+
+.ps6b-premium-actions{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0;
+
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+
+  align-items:center!important;
+  justify-content:flex-start!important;
+
+  gap:10px!important;
+
+  padding:12px 14px!important;
+
+  overflow-x:auto;
+  overflow-y:visible;
+
+  scrollbar-width:thin;
+
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(15,23,42,.94),
+      rgba(10,20,36,.94)
+    );
+
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.12);
+}
+
+
+/* Convierte izquierda + derecha en una sola fila visual */
+.ps6b-premium-actions .ps6b-action-left,
+.ps6b-premium-actions .ps6b-action-right{
+  display:contents!important;
+}
+
+
+/* =========================================================
+   TODOS LOS BOTONES CON LA MISMA ALTURA
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action,
+.ps6b-premium-actions .ps6a-secondary-action,
+.ps6b-premium-actions .ps6b-action-product,
+.ps6b-premium-actions .ps6b-action-payment,
+.ps6b-premium-actions .ps6b-action-ready,
+.ps6b-premium-actions .ps6b-action-return,
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  box-sizing:border-box!important;
+
+  min-width:max-content;
+  height:44px!important;
+  min-height:44px!important;
+
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+
+  gap:8px;
+
+  margin:0!important;
+
+  padding:0 16px!important;
+
+  border-radius:11px!important;
+
+  white-space:nowrap;
+
+  font-family:inherit;
+  font-size:12px;
+  line-height:1;
+  font-weight:900;
+
+  text-decoration:none;
+
+  flex:0 0 auto;
+}
+
+
+/* =========================================================
+   VOLVER
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action{
+  border:1px solid rgba(148,163,184,.24)!important;
+
+  background:
+    rgba(15,23,42,.72)!important;
+
+  color:#e2e8f0!important;
+}
+
+.ps6b-premium-actions .ghost-action:hover{
+  border-color:rgba(148,163,184,.42)!important;
+
+  background:
+    rgba(30,41,59,.95)!important;
+}
+
+
+/* =========================================================
+   CONTACTAR CLIENTE
+   ========================================================= */
+
+.ps6b-premium-actions .ps6a-secondary-action{
+  border:1px solid rgba(34,197,94,.34)!important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(34,197,94,.15),
+      rgba(22,163,74,.08)
+    )!important;
+
+  color:#86efac!important;
+
+  box-shadow:none!important;
+}
+
+.ps6b-premium-actions .ps6a-secondary-action:hover{
+  border-color:rgba(34,197,94,.55)!important;
+
+  background:
+    rgba(34,197,94,.19)!important;
+}
+
+
+/* =========================================================
+   AGREGAR PRODUCTOS
+   ========================================================= */
+
+.ps6b-premium-actions .ps6b-action-product{
+  border:1px solid rgba(59,130,246,.48)!important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(37,99,235,.14),
+      rgba(14,165,233,.07)
+    )!important;
+
+  color:#7dd3fc!important;
+}
+
+
+/* =========================================================
+   MARCAR LISTO PARA COBRO
+   ========================================================= */
+
+.ps6b-premium-actions .ps6b-action-ready{
+  border:1px solid rgba(34,211,238,.44)!important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(6,182,212,.15),
+      rgba(14,116,144,.08)
+    )!important;
+
+  color:#67e8f9!important;
+}
+
+
+/* =========================================================
+   REGISTRAR PAGO
+   ========================================================= */
+
+.ps6b-premium-actions .ps6b-action-payment{
+  border:1px solid rgba(96,165,250,.50)!important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #3b82f6
+    )!important;
+
+  color:#fff!important;
+
+  box-shadow:
+    0 8px 22px rgba(37,99,235,.21)!important;
+}
+
+
+/* =========================================================
+   REGRESAR A CAPTURA
+   ========================================================= */
+
+.ps6b-premium-actions .ps6b-action-return{
+  border:1px solid rgba(245,158,11,.45)!important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(245,158,11,.14),
+      rgba(217,119,6,.07)
+    )!important;
+
+  color:#fcd34d!important;
+}
+
+
+/* =========================================================
+   MÁS OPCIONES
+   ========================================================= */
+
+.ps6b-premium-actions .ps6a-more-actions{
+  flex:0 0 auto;
+  margin:0!important;
+}
+
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  border:1px solid rgba(148,163,184,.24)!important;
+
+  background:
+    rgba(15,23,42,.72)!important;
+
+  color:#cbd5e1!important;
+}
+
+
+/* =========================================================
+   EFECTO HOVER UNIFICADO
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action,
+.ps6b-premium-actions .ps6a-secondary-action,
+.ps6b-premium-actions .ps6b-action-product,
+.ps6b-premium-actions .ps6b-action-payment,
+.ps6b-premium-actions .ps6b-action-ready,
+.ps6b-premium-actions .ps6b-action-return,
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    background .16s ease,
+    box-shadow .16s ease,
+    filter .16s ease;
+}
+
+.ps6b-premium-actions .ghost-action:hover,
+.ps6b-premium-actions .ps6a-secondary-action:hover,
+.ps6b-premium-actions .ps6b-action-product:hover,
+.ps6b-premium-actions .ps6b-action-payment:hover,
+.ps6b-premium-actions .ps6b-action-ready:hover,
+.ps6b-premium-actions .ps6b-action-return:hover,
+.ps6b-premium-actions .ps6a-more-actions > summary:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.07);
+}
+
+
+/* =========================================================
+   TABLET
+   Mantiene fila horizontal mientras haya espacio.
+   ========================================================= */
+
+@media(max-width:900px){
+
+  .ps6b-premium-actions{
+    overflow-x:auto!important;
+    justify-content:flex-start!important;
+  }
+
+}
+
+
+/* =========================================================
+   MÓVIL
+   Aquí SÍ cambiamos a grid para no destruir usabilidad.
+   ========================================================= */
+
+@media(max-width:680px){
+
+  .ps6b-premium-actions{
+    display:grid!important;
+
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+
+    gap:9px!important;
+
+    overflow:visible;
+  }
+
+  .ps6b-premium-actions .ps6b-action-left,
+  .ps6b-premium-actions .ps6b-action-right{
+    display:contents!important;
+  }
+
+  .ps6b-premium-actions .ghost-action,
+  .ps6b-premium-actions .ps6a-secondary-action,
+  .ps6b-premium-actions .ps6b-action-product,
+  .ps6b-premium-actions .ps6b-action-payment,
+  .ps6b-premium-actions .ps6b-action-ready,
+  .ps6b-premium-actions .ps6b-action-return,
+  .ps6b-premium-actions .ps6a-more-actions,
+  .ps6b-premium-actions .ps6a-more-actions > summary{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+}
+
+
+/* =========================================================
+   TELÉFONOS PEQUEÑOS
+   ========================================================= */
+
+@media(max-width:430px){
+
+  .ps6b-premium-actions{
+    grid-template-columns:1fr;
+  }
+
+}
+
+/* =========================================================
+   PAKIVOX — BARRA DE ACCIONES GRANDE Y DE ANCHO COMPLETO
+   ========================================================= */
+
+.ps6b-premium-actions{
+  width:100%!important;
+  min-width:0;
+
+  display:grid!important;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(0,1fr);
+
+  align-items:stretch!important;
+  gap:12px!important;
+
+  padding:14px 16px!important;
+
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(15,23,42,.94),
+      rgba(10,20,36,.94)
+    );
+
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.12);
+}
+
+
+/* Hace que los dos grupos se comporten como si no existieran
+   y todos los botones entren al mismo grid */
+.ps6b-premium-actions .ps6b-action-left,
+.ps6b-premium-actions .ps6b-action-right{
+  display:contents!important;
+}
+
+
+/* =========================================================
+   TODOS LOS BOTONES GRANDES Y EXPANDIDOS
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action,
+.ps6b-premium-actions .ps6a-secondary-action,
+.ps6b-premium-actions .ps6b-action-product,
+.ps6b-premium-actions .ps6b-action-payment,
+.ps6b-premium-actions .ps6b-action-ready,
+.ps6b-premium-actions .ps6b-action-return,
+.ps6b-premium-actions .ps6a-more-actions,
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+
+  height:48px!important;
+  min-height:48px!important;
+
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px;
+
+  padding:0 18px!important;
+  margin:0!important;
+
+  border-radius:12px!important;
+
+  white-space:nowrap;
+  text-align:center;
+
+  font-size:13px!important;
+  font-weight:900!important;
+  line-height:1;
+
+  box-sizing:border-box!important;
+}
+
+
+/* =========================================================
+   ESTILOS VISUALES
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action{
+  border:1px solid rgba(148,163,184,.24)!important;
+  background:rgba(15,23,42,.72)!important;
+  color:#e2e8f0!important;
+}
+
+.ps6b-premium-actions .ghost-action:hover{
+  border-color:rgba(148,163,184,.42)!important;
+  background:rgba(30,41,59,.95)!important;
+}
+
+.ps6b-premium-actions .ps6a-secondary-action{
+  border:1px solid rgba(34,197,94,.34)!important;
+  background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(22,163,74,.08))!important;
+  color:#86efac!important;
+}
+
+.ps6b-premium-actions .ps6a-secondary-action:hover{
+  border-color:rgba(34,197,94,.55)!important;
+  background:rgba(34,197,94,.19)!important;
+}
+
+.ps6b-premium-actions .ps6b-action-product{
+  border:1px solid rgba(59,130,246,.48)!important;
+  background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(14,165,233,.07))!important;
+  color:#7dd3fc!important;
+}
+
+.ps6b-premium-actions .ps6b-action-ready{
+  border:1px solid rgba(34,211,238,.44)!important;
+  background:linear-gradient(135deg,rgba(6,182,212,.15),rgba(14,116,144,.08))!important;
+  color:#67e8f9!important;
+}
+
+.ps6b-premium-actions .ps6b-action-payment{
+  border:1px solid rgba(96,165,250,.50)!important;
+  background:linear-gradient(135deg,#2563eb,#3b82f6)!important;
+  color:#fff!important;
+  box-shadow:0 8px 22px rgba(37,99,235,.21)!important;
+}
+
+.ps6b-premium-actions .ps6b-action-return{
+  border:1px solid rgba(245,158,11,.45)!important;
+  background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(217,119,6,.07))!important;
+  color:#fcd34d!important;
+}
+
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  border:1px solid rgba(148,163,184,.24)!important;
+  background:rgba(15,23,42,.72)!important;
+  color:#cbd5e1!important;
+}
+
+
+/* =========================================================
+   HOVER GENERAL
+   ========================================================= */
+
+.ps6b-premium-actions .ghost-action,
+.ps6b-premium-actions .ps6a-secondary-action,
+.ps6b-premium-actions .ps6b-action-product,
+.ps6b-premium-actions .ps6b-action-payment,
+.ps6b-premium-actions .ps6b-action-ready,
+.ps6b-premium-actions .ps6b-action-return,
+.ps6b-premium-actions .ps6a-more-actions > summary{
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    background .16s ease,
+    box-shadow .16s ease,
+    filter .16s ease;
+}
+
+.ps6b-premium-actions .ghost-action:hover,
+.ps6b-premium-actions .ps6a-secondary-action:hover,
+.ps6b-premium-actions .ps6b-action-product:hover,
+.ps6b-premium-actions .ps6b-action-payment:hover,
+.ps6b-premium-actions .ps6b-action-ready:hover,
+.ps6b-premium-actions .ps6b-action-return:hover,
+.ps6b-premium-actions .ps6a-more-actions > summary:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.06);
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media(max-width:980px){
+  .ps6b-premium-actions{
+    grid-auto-columns:minmax(180px,1fr);
+    overflow-x:auto;
+  }
+}
+
+
+/* =========================================================
+   MÓVIL
+   ========================================================= */
+
+@media(max-width:680px){
+  .ps6b-premium-actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-auto-flow:row;
+    grid-auto-columns:auto;
+    overflow:visible;
+  }
+
+  .ps6b-premium-actions .ghost-action,
+  .ps6b-premium-actions .ps6a-secondary-action,
+  .ps6b-premium-actions .ps6b-action-product,
+  .ps6b-premium-actions .ps6b-action-payment,
+  .ps6b-premium-actions .ps6b-action-ready,
+  .ps6b-premium-actions .ps6b-action-return,
+  .ps6b-premium-actions .ps6a-more-actions,
+  .ps6b-premium-actions .ps6a-more-actions > summary{
+    width:100%!important;
+  }
+}
+
+@media(max-width:430px){
+  .ps6b-premium-actions{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<section class="order-detail-page">
+
+  <div class="order-summary ps6b-header">
+    <div class="ps6b-header-main">
+      <div class="ps6b-header-icon">
+        <i class="bi bi-file-earmark-text"></i>
+      </div>
+
+      <div>
+        <span class="eyebrow">Pedido</span>
+        <h2>{{ order.folio }}</h2>
+
+        <p>
+          Cliente:
+          {% if order.customer %}
+            {{ order.customer.full_name }}
+          {% else %}
+            Sin cliente
+          {% endif %}
+        </p>
+
+        <div class="order-status-row">
+          <span class="status-pill status-{{ order.status }}">
+            {{ order.get_status_display }}
+          </span>
+
+          {% if order_has_picking %}
+            <span class="operation-pill active">Picking activo</span>
+          {% elif order_has_any_picking %}
+            <span class="operation-pill warning">Picking cancelado / histórico</span>
+          {% else %}
+            <span class="operation-pill">Sin picking</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="ps6b-header-stepper" aria-label="Flujo del pedido">
+      <span class="ps6b-header-stepper-label">Flujo del pedido</span>
+
+      <div class="ps6b-stepper-track">
+        <div class="ps6b-stepper-step {% if order_stepper.borrador_done %}is-done{% endif %} {% if order_stepper.borrador_current %}is-current{% endif %}">
+          <span class="ps6b-stepper-dot"><i class="bi bi-file-earmark"></i></span>
+          <small>Borrador</small>
+        </div>
+
+        <div class="ps6b-stepper-step {% if order_stepper.picking_done %}is-done{% endif %} {% if order_stepper.picking_current %}is-current{% endif %}">
+          <span class="ps6b-stepper-dot"><i class="bi bi-box-seam"></i></span>
+          <small>Picking</small>
+        </div>
+
+        <div class="ps6b-stepper-step {% if order_stepper.cobro_done %}is-done{% endif %} {% if order_stepper.cobro_current %}is-current{% endif %}">
+          <span class="ps6b-stepper-dot"><i class="bi bi-credit-card"></i></span>
+          <small>Cobro</small>
+        </div>
+
+        <div class="ps6b-stepper-step {% if order_stepper.completed_done %}is-done is-current{% endif %}">
+          <span class="ps6b-stepper-dot"><i class="bi bi-check-lg"></i></span>
+          <small>Completado</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-actions ps6a-summary-actions ps6b-premium-actions">
+    <div class="ps6b-action-left">
+      <a class="ghost-action" href="{% url 'sales:lista_pedidos' %}">
+        <i class="bi bi-arrow-left"></i>
+        Volver
+      </a>
+
+      <a href="{% url 'sales:abrir_chat_flotante_pedido' order.id %}" class="ps6a-secondary-action">
+        <i class="bi bi-whatsapp"></i>
+        Contactar cliente
+      </a>
+    </div>
+
+    <div class="ps6b-action-right">
+              {% if can_edit_products %}
+        <a href="#agregar-productos-pedido" class="ps6b-action-product">
+          <i class="bi bi-plus-circle"></i>
+          Agregar productos
+        </a>
+      {% endif %}
+      {% if can_edit_products and order.status == "draft" and order_has_items %}
+        <button type="button" class="ps6b-action-ready" onclick="openMarkReadyModal()">
+          <i class="bi bi-send-check"></i>
+          Marcar listo para cobro
+        </button>
+      {% endif %}
+
+      {% if can_approve_order_payment and order.status == "pending_payment" %}
+        <button type="button" class="ps6b-action-return" onclick="openReturnToCaptureModal()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          Regresar a captura
+        </button>
+      {% endif %}
+
+      {% if can_edit_payment %}
+        <a href="{% url 'payments:pagos_pedido' order.id %}" class="ps6b-action-payment">
+          <i class="bi bi-credit-card"></i>
+          Registrar pago
+        </a>
+      {% elif can_view_payments %}
+        <a href="{% url 'payments:pagos_pedido' order.id %}" class="ps6b-action-product">
+          <i class="bi bi-credit-card"></i>
+          Ver pagos
+        </a>
+      {% endif %}
+
+      {% if can_cancel_order or order_commercial_cancel_candidate or order_recovery_candidate %}
+        <details class="ps6a-more-actions">
+          <summary>
+            <i class="bi bi-three-dots"></i>
+            Más opciones
+          </summary>
+
+          <div class="ps6a-more-actions-panel">
+            {% if can_cancel_order and order.status != "cancelled" and order.status != "delivered" %}
+              <details class="safe-cancel-box">
+                <summary class="cancel-order-btn">Cancelar / corregir pedido</summary>
+
+                <form method="post" action="{% url 'sales:cancelar_pedido' order.id %}" class="safe-cancel-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="idempotency_key" value="{{ order_cancel_token }}">
+
+                  <label>
+                    Motivo
+                    <select name="reason_code" required>
+                      <option value="">Selecciona...</option>
+                      <option value="human_error">Error humano / operativo</option>
+                      <option value="customer_cancelled">Cliente canceló la compra</option>
+                      <option value="duplicate">Pedido duplicado</option>
+                      <option value="data_entry_error">Error de captura</option>
+                      <option value="out_of_stock">Imposibilidad de surtir</option>
+                      <option value="other">Otro</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Explicación
+                    <textarea name="reason_text" rows="3" minlength="5" required placeholder="Describe brevemente qué ocurrió"></textarea>
+                  </label>
+
+                  <p class="safe-cancel-note">
+                    Si el pedido tiene dinero recibido o ya avanzó operativamente,
+                    PAKIVOX lo enviará a resolución segura.
+                  </p>
+
+                  <button type="submit" class="cancel-order-btn" data-submit-once>
+                    Confirmar solicitud
+                  </button>
+                </form>
+              </details>
+            {% endif %}
+
+            {% if can_commercial_cancel and order_commercial_cancel_candidate %}
+              <div class="cs1c2-commercial-card">
+                <strong>Cancelación comercial con dinero recibido</strong>
+
+                <p>
+                  Úsala solo cuando la venta realmente se canceló.
+                  Los pagos seguirán aprobados hasta confirmar una devolución real.
+                </p>
+
+                <div class="cs1c2-commercial-warning">
+                  Esta acción no marca dinero como devuelto.
+                </div>
+
+                <form
+                  method="post"
+                  action="{% url 'sales:cancelar_pedido_comercialmente' order.id %}"
+                  class="cs1c2-commercial-form"
+                  onsubmit="return confirm('¿La venta realmente fue cancelada? Esta acción cerrará la operación warehouse y generará solicitudes de reembolso, pero NO marcará el dinero como devuelto.')"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="idempotency_key" value="{{ order_commercial_cancel_token }}">
+
+                  <textarea
+                    name="reason_text"
+                    minlength="5"
+                    required
+                    placeholder="Describe por qué el cliente cancela realmente la venta"
+                  ></textarea>
+
+                  <button type="submit" class="cs1c2-commercial-btn" data-submit-once>
+                    Cancelar venta y preparar reembolso
+                  </button>
+                </form>
+              </div>
+            {% endif %}
+
+            {% if can_recover_order and order_recovery_candidate %}
+              <div class="cs1b-recovery-card">
+                <strong>Pedido pagado recuperable</strong>
+
+                <p>
+                  Recupera el mismo folio y la misma cobertura financiera sin crear otro cobro.
+                </p>
+
+                <form
+                  method="post"
+                  action="{% url 'sales:recuperar_pedido_error_humano' order.id %}"
+                  class="cs1b-recovery-form"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="idempotency_key" value="{{ order_recovery_token }}">
+
+                  <textarea
+                    name="reason_text"
+                    minlength="5"
+                    required
+                    placeholder="Describe el error humano u operativo que originó la cancelación"
+                  ></textarea>
+
+                  <button type="submit" class="cs1b-recovery-btn" data-submit-once>
+                    Recuperar mismo pedido
+                  </button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ps6b-premium-layout">
+    <main class="ps6b-main-column">
+        <div class="kpi-grid ps6b-premium-kpis" id="orderKpisGrid">
+            {% include "sales/partials/_order_kpis.html" %}
+        </div>
+        <div id="nextStepContainer">
+            {% include "sales/partials/_next_step.html" %}
+        </div>
+
+{% if can_view_costs %}
+  <section class="profitability-section">
+    <div class="profit-card">
+      <span>Venta total</span>
+      <strong>${{ order.total|floatformat:2 }}</strong>
+      <small>Total del pedido</small>
+    </div>
+
+    <div class="profit-card warning">
+      <span>Costo total</span>
+      <strong>${{ order.total_cost|floatformat:2 }}</strong>
+      <small>Costo estimado de mercancía</small>
+    </div>
+
+    <div class="profit-card success">
+      <span>Utilidad bruta</span>
+      <strong>${{ order.gross_profit|floatformat:2 }}</strong>
+      <small>Venta menos costo</small>
+    </div>
+
+    <div class="profit-card purple">
+      <span>Margen</span>
+      <strong>{{ order.margin_percent|floatformat:2 }}%</strong>
+      <small>Rentabilidad del pedido</small>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if order.status == "paid" and not order_has_picking %}
+    <div class="locked-alert success">
+      <strong>Pedido cubierto</strong>
+      <p>
+        El pago ya está confirmado. Almacén puede continuar con la preparación.
+        {% if can_edit_products %}Todavía puedes corregir productos antes de que inicie picking.{% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if not can_edit_products %}
+    <div class="locked-alert">
+      <strong>Pedido bloqueado para edición de productos</strong>
+
+      {% if not can_operate_sales %}
+        <p>Tu acceso es de consulta. Un vendedor con permiso para trabajar pedidos puede editar los productos.</p>
+      {% elif order_has_picking %}
+        <p>
+          Este pedido ya tiene picking activo. No puedes agregar, editar ni eliminar productos.
+        </p>
+      {% elif order.status == "cancelled" %}
+        <p>Este pedido está cancelado. No puedes modificar productos.</p>
+      {% elif order.status == "delivered" %}
+        <p>Este pedido ya fue entregado. No puedes modificar productos.</p>
+      {% elif order.status == "packed" or order.status == "shipped" %}
+        <p>Este pedido ya avanzó operativamente. No puedes modificar productos.</p>
+      {% else %}
+        <p>Este pedido no está disponible para edición.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if can_approve_order_payment and not can_edit_payment %}
+    <div class="locked-alert warning">
+      <strong>Pago bloqueado</strong>
+
+      {% if order_has_picking %}
+        <p>
+          Este pedido ya avanzó en almacén. No puedes modificar pagos, descuentos, IVA o costo de envío.
+        </p>
+      {% elif order.status == "cancelled" %}
+        <p>Este pedido está cancelado. No puedes modificar pagos.</p>
+      {% elif order.status == "delivered" %}
+        <p>Este pedido ya fue entregado. No puedes modificar pagos.</p>
+      {% else %}
+        <p>El pago ya no está disponible para edición.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if order_has_any_picking and not order_has_picking %}
+    <div class="locked-alert info">
+      <strong>Preparación anterior cancelada</strong>
+      <p>
+        El pedido conserva el historial del picking cancelado.
+        {% if can_edit_products %}Puedes corregir productos antes de que Almacén retome la preparación.{% else %}Almacén podrá retomarlo desde su propia cola de trabajo.{% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="payment-layout">
+    {% if can_operate_sales %}
+      <details class="panel form-panel ps6a-manual-controls">
+        <summary>Control manual del estado</summary>
+        <p class="ps6a-readonly-note">Úsalo solo cuando necesites corregir el estado comercial. El flujo normal debe avanzar desde la acción principal.</p>
+        <form method="post" action="{% url 'sales:actualizar_estado_pedido' order.id %}">
+          {% csrf_token %}
+          <label>
+            Estado
+            <select
+              name="status"
+              required
+              {% if order_has_picking or order.status == "cancelled" or order.status == "delivered" %}disabled{% endif %}
+            >
+              {% for value, label in order.STATUS_CHOICES %}
+                <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <button
+            type="submit"
+            {% if order_has_picking or order.status == "cancelled" or order.status == "delivered" %}disabled{% endif %}
+          >
+            Guardar estado
+          </button>
+        </form>
+      </details>
+    {% endif %}
+        <div class="panel finance-panel">
+      <div class="finance-panel-header">
+        <div>
+          <h3>Cobro del pedido</h3>
+          <p>La cobertura combina pagos aprobados y saldo a favor aplicado; el efectivo real se conserva separado en Pagos.</p>
+        </div>
+
+        <span class="finance-status">
+          {{ order.get_status_display }}
+        </span>
+      </div>
+
+      <div id="financePanelDynamic">
+        {% include "sales/partials/_finance_dynamic.html" %}
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="productos-pedido">
+    <h3>Productos del pedido</h3>
+    <div id="productosPedidoList">
+      {% include "sales/partials/_productos_pedido_items.html" %}
+    </div>
+  </div>
+    <section class="ps6b-product-composer" id="agregar-productos-pedido">
+        <div class="ps6b-composer-heading">
+            <div class="ps6b-composer-icon">
+                <i class="bi bi-bag-plus"></i>
+            </div>
+            <div>
+                <h3>Agregar productos al pedido</h3>
+                <p>Busca el producto, confirma disponibilidad, cantidad y precio antes de agregarlo.</p>
+            </div>
+        </div>
+
+  {% if can_edit_products %}
+    <form
+      method="post"
+      action="{% url 'sales:agregar_producto_pedido' order.id %}"
+      class="add-product-form ps6b-premium-product-form"
+      id="addProductForm"
+    >
+      {% csrf_token %}
+
+      {% if chat_conversation %}
+        <input
+          type="hidden"
+          name="conversation_id"
+          value="{{ chat_conversation.id }}"
+        />
+      {% endif %}
+
+      <input
+        type="hidden"
+        name="variant"
+        id="selectedVariantInput"
+        required
+      />
+
+      <input type="hidden" id="selectedVariantStock" value="0" />
+      <input type="hidden" id="selectedVariantSku" value="" />
+      <input type="hidden" id="selectedVariantName" value="" />
+      <input type="hidden" id="selectedVariantImage" value="" />
+
+      <label>
+        Variante / SKU
+
+        <button
+          type="button"
+          class="product-picker-btn"
+          onclick="openProductModal()"
+        >
+          <span id="selectedVariantText">Seleccionar producto</span>
+          <small id="selectedVariantHelp">
+            Buscar por SKU, nombre, talla, color o categoría
+          </small>
+        </button>
+      </label>
+
+      <div id="selectedProductBox" class="selected-product-box" hidden>
+        <div class="selected-product-image" id="selectedProductImageBox">
+          <i class="bi bi-box-seam"></i>
+        </div>
+
+        <div class="selected-product-info">
+          <span>Producto seleccionado</span>
+          <h3 id="selectedProductName">-</h3>
+          <p id="selectedProductSku">-</p>
+          <small id="selectedProductStock">Disponible: 0</small>
+        </div>
+
+        <div class="selected-product-price">
+          <small>Precio</small>
+          <strong id="selectedProductPrice">$0.00</strong>
+        </div>
+      </div>
+
+      <label>
+        Cantidad
+        <input
+          type="number"
+          name="quantity"
+          id="orderQuantityInput"
+          min="1"
+          value="1"
+          required
+          oninput="validateSelectedQuantity(); calculateLiveSubtotal();"
+        />
+
+        <small id="quantityStockHelp" class="stock-help">
+          Selecciona un producto para validar disponibilidad.
+        </small>
+      </label>
+
+      <label>
+        Precio unitario
+        <input
+          type="number"
+          name="unit_price"
+          id="unitPriceInput"
+          step="0.01"
+          min="0"
+          placeholder="Automático si lo dejas vacío"
+          oninput="calculateLiveSubtotal()"
+        />
+      </label>
+
+      <div class="live-subtotal-card">
+        <span>Subtotal estimado</span>
+        <strong id="liveSubtotalAmount">$0.00</strong>
+        <small id="liveSubtotalHelp">
+          Selecciona producto y cantidad para calcular.
+        </small>
+      </div>
+
+      <button type="submit" id="addProductSubmitBtn">
+        Agregar producto
+      </button>
+    </form>
+  {% else %}
+    <div class="disabled-panel">
+      <strong>No disponible</strong>
+      <p>
+        No puedes agregar productos porque el pedido está bloqueado por operación,
+        cancelación o entrega.
+      </p>
+    </div>
+  {% endif %}
+  </section>
+
+    </main>
+
+
+    <aside class="ps6b-sidebar ps6b-premium-sidebar">
+      {% include "customer_updates/_panel_pedido.html" %}
+      <div class="ps6b-side-card">
+        <h4>
+          <i class="bi bi-receipt"></i>
+          Resumen del pedido
+        </h4>
+
+        <div class="ps6b-side-row">
+          <span>Creado el</span>
+          <strong>{{ order.created_at|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div class="ps6b-side-row">
+          <span>Última actualización</span>
+          <strong>{{ order.updated_at|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div class="ps6b-side-row">
+          <span>Creado por</span>
+          <strong>{{ order.created_by.get_full_name|default:order.created_by.email|default:"—" }}</strong>
+        </div>
+        <div class="ps6b-side-row">
+            <span>Total de productos</span>
+            <strong id="sidebarOrderItemsCount">{{ order_items_count }}</strong>
+        </div>
+    </div>
+
+      <div class="ps6b-side-card">
+        <h4>
+          <i class="bi bi-lightbulb"></i>
+          Consejos rápidos
+        </h4>
+
+        <div class="ps6b-tip blue">
+          <i class="bi bi-search"></i>
+          <p>Usa el buscador para localizar productos rápidamente por SKU, nombre, talla o color.</p>
+        </div>
+
+        <div class="ps6b-tip green">
+          <i class="bi bi-currency-dollar"></i>
+          <p>Puedes dejar el precio vacío para usar automáticamente el precio configurado del producto.</p>
+        </div>
+
+        <div class="ps6b-tip amber">
+          <i class="bi bi-box-seam"></i>
+          <p>Después de agregar productos, continúa con la acción principal que PAKIVOX te indique.</p>
+        </div>
+      </div>
+      <div class="ps6b-side-card">
+        <h4>
+            <i class="bi bi-check2-circle"></i>
+            Validaciones y reglas
+        </h4>
+        <div id="sidebarValidationsBlock">
+          {% include "sales/partials/_order_validations.html" %}
+        </div>
+    </div>
+    <div class="ps6b-side-card ps6b-security-card">
+        <h4>
+          <i class="bi bi-shield-check"></i>
+          Seguridad
+        </h4>
+
+        <p>
+          Las acciones de este pedido siguen respetando los permisos y
+          el contexto autorizado de PAKIVOX.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+<div id="productModal" class="product-modal" data-search-url="{% url 'sales:order_variant_search_api' order.id %}">
+    <div class="product-modal-backdrop" onclick="closeProductModal()"></div>
+
+    <div class="product-modal-card">
+      <div class="product-modal-header">
+        <div>
+          <span class="eyebrow">Catálogo de productos</span>
+          <h3>Seleccionar producto</h3>
+          <p>Busca por SKU, producto, categoría, talla, color o corte.</p>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close-btn"
+          onclick="closeProductModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="product-search-box">
+        <i class="bi bi-search"></i>
+
+        <input
+          type="text"
+          id="productSearchInput"
+          placeholder="Buscar producto, SKU, talla, color..."
+          autocomplete="off"
+        />
+
+        <span id="productSearchLoader" class="product-search-loader" aria-hidden="true"></span>
+      </div>
+
+      <div class="product-modal-body" id="productModalBody">
+        <div class="empty-products" id="productModalEmpty" hidden>
+          No encontramos productos con esa búsqueda.
+        </div>
+      </div>
+    </div>
+  </div>
+    <div id="productToast" class="product-toast">
+    <strong id="productToastTitle">Aviso</strong>
+    <span id="productToastMessage">Mensaje</span>
+  </div>
+
+    <div id="markReadyModalContainer">
+    {% include "sales/partials/_mark_ready_modal.html" %}
+  </div>
+
+  <div id="returnToCaptureModal" class="ps6-simple-modal" hidden>
+    <div class="ps6-simple-modal-backdrop" onclick="closeReturnToCaptureModal()"></div>
+    <div class="ps6-simple-modal-card">
+      <button type="button" class="ps6-simple-modal-close" onclick="closeReturnToCaptureModal()">×</button>
+      <span class="eyebrow">Finanzas</span>
+      <h3>Regresar pedido a captura</h3>
+      <p>El vendedor podrá corregir los productos otra vez. El motivo es opcional, pero ayuda a que sepa exactamente qué corregir.</p>
+
+      <form method="post" action="{% url 'sales:regresar_pedido_a_captura' order.id %}">
+        {% csrf_token %}
+        <label>
+          Motivo (opcional)
+          <textarea name="reason_text" rows="3" placeholder="Ej. Falta un producto, precio incorrecto en la línea 2..."></textarea>
+        </label>
+        <div class="ready-confirm-actions">
+          <button type="button" class="ghost-action" onclick="closeReturnToCaptureModal()">Cancelar</button>
+          <button type="submit" class="cancel-order-btn" data-submit-once>Regresar a captura</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if chat_conversation %}
+    <aside
+      class="wms-order-chat-widget"
+      id="wmsOrderChatWidget"
+      data-storage-key="wms360_order_chat_v4_{{ order.id }}_{{ chat_conversation.id }}"
+    >
+      <div class="wms-order-chat-header" id="wmsOrderChatDragHandle">
+        <div>
+          <span class="wms-order-chat-mini-label">
+            WhatsApp conectado
+          </span>
+
+          <h4>
+            {{ chat_conversation.customer.name|default:chat_conversation.customer.phone }}
+          </h4>
+
+          <p>
+            {{ chat_conversation.customer.phone }} ·
+            {{ chat_conversation.whatsapp_number.channel_name }}
+          </p>
+        </div>
+
+        <div class="wms-order-chat-actions">
+          <a
+            href="{% url 'messaging:chat_detail' chat_conversation.pk %}"
+            title="Abrir chat completo"
+          >
+            Abrir
+          </a>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatToggleSize"
+            title="Agrandar / restaurar"
+          >
+            ⛶
+          </button>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatReset"
+            title="Restaurar posición"
+          >
+            ↺
+          </button>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatMinimize"
+            title="Minimizar"
+          >
+            —
+          </button>
+        </div>
+      </div>
+
+      <div class="wms-order-chat-body">
+        <div class="wms-order-chat-messages" id="wmsOrderChatMessages">
+          {% for chat_message in chat_messages %}
+            <div
+              class="wms-order-chat-bubble {% if chat_message.direction == 'inbound' %}inbound{% elif chat_message.direction == 'outbound' %}outbound{% else %}system{% endif %}"
+            >
+              {{ chat_message.body|default:chat_message.message_type }}
+
+              <small>
+                {% if chat_message.direction == "inbound" %}
+                  Cliente
+                {% elif chat_message.agent %}
+                  {{ chat_message.agent.username }}
+                {% else %}
+                  Sistema
+                {% endif %}
+                · {{ chat_message.created_at|date:"d/m/Y H:i" }}
+              </small>
+            </div>
+          {% empty %}
+            <div class="wms-order-chat-bubble system">
+              Sin mensajes todavía.
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if can_edit_products %}
+          <div class="wms-order-chat-product-box">
+            <div class="wms-order-chat-product-title">
+              <strong>Agregar producto rápido</strong>
+              <small>Desde WhatsApp al pedido {{ order.folio }}</small>
+            </div>
+
+            <form
+              method="post"
+              action="{% url 'sales:agregar_producto_pedido' order.id %}"
+              class="wms-order-chat-product-form"
+              id="wmsOrderChatProductForm"
+            >
+              {% csrf_token %}
+
+              <input
+                type="hidden"
+                name="conversation_id"
+                value="{{ chat_conversation.id }}"
+              />
+
+              <input
+                type="hidden"
+                name="variant"
+                id="wmsChatSelectedVariantInput"
+                required
+              />
+
+              <label>
+                Producto / SKU
+
+                <button
+                  type="button"
+                  class="wms-chat-product-picker-button"
+                  id="wmsOpenChatProductPicker"
+                >
+                  <span id="wmsChatSelectedVariantText">
+                    Seleccionar producto
+                  </span>
+                  <i class="bi bi-search"></i>
+                </button>
+              </label>
+
+              <div class="wms-order-chat-product-grid">
+                <label>
+                  Cantidad
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value="1"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Precio
+                  <input
+                    type="number"
+                    name="unit_price"
+                    min="0"
+                    step="0.01"
+                    placeholder="Auto"
+                    id="wmsChatQuickPrice"
+                  />
+                </label>
+              </div>
+
+              <button type="submit">
+                + Agregar al pedido
+              </button>
+            </form>
+          </div>
+
+          <div id="wmsChatProductPickerModal" class="wms-chat-product-modal" hidden>
+            <div
+              class="wms-chat-product-backdrop"
+              onclick="closeWmsChatProductPicker()"
+            ></div>
+
+            <div class="wms-chat-product-panel">
+              <div class="wms-chat-product-head">
+                <div>
+                  <span>Catálogo de productos</span>
+                  <h3>Seleccionar producto</h3>
+                  <p>Busca por SKU, producto, categoría, talla, color o corte.</p>
+                </div>
+
+                <button
+                  type="button"
+                  id="wmsCloseChatProductPicker"
+                  class="wms-chat-product-close"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <div class="wms-chat-product-search">
+                <i class="bi bi-search"></i>
+                <input
+                  type="text"
+                  id="wmsChatProductSearchInput"
+                  placeholder="Buscar producto, SKU, talla, color..."
+                  autocomplete="off"
+                />
+              </div>
+                            <div class="wms-chat-product-group-head">
+                <strong>Productos disponibles</strong>
+                <small id="wmsChatProductCount">Escribe para buscar</small>
+              </div>
+
+              <div class="wms-chat-product-grid" id="wmsChatProductGrid"></div>
+              <div id="wmsChatProductPickerEmpty" class="wms-chat-product-empty" hidden>
+                No encontramos productos con esa búsqueda.
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="wms-order-chat-product-box">
+            <div class="wms-order-chat-product-title">
+              <strong>Agregar producto rápido</strong>
+              <small>Este pedido ya no permite agregar productos.</small>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="wms-order-chat-reply">
+          {% if chat_reply_form %}
+            <form
+              method="post"
+              action="{% url 'messaging:chat_reply' chat_conversation.pk %}"
+            >
+              {% csrf_token %}
+
+              <input
+                type="hidden"
+                name="next"
+                value="{{ chat_return_url }}"
+              />
+
+              {{ chat_reply_form.body }}
+
+              <button type="submit">
+                Responder desde el pedido
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div
+        class="wms-order-chat-resize-handle"
+        id="wmsOrderChatResizeHandle"
+      ></div>
+    </aside>
+
+    <button
+      type="button"
+      class="wms-order-chat-minimized"
+      id="wmsOrderChatMinimized"
+    >
+      <i class="bi bi-whatsapp"></i>
+      WhatsApp
+    </button>
+  {% endif %}
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/detalle_pedido.js' %}"></script>
+<script src="{% static 'js/order_chat_widget.js' %}"></script>
+<script src="{% static 'js/avisos_cliente.js' %}"></script>
+<script>
+function openMarkReadyModal() {
+  document.getElementById("markReadyModal").hidden = false;
+}
+function closeMarkReadyModal() {
+  document.getElementById("markReadyModal").hidden = true;
+}
+function openReturnToCaptureModal() {
+  document.getElementById("returnToCaptureModal").hidden = false;
+}
+function closeReturnToCaptureModal() {
+  document.getElementById("returnToCaptureModal").hidden = true;
+}
+</script>
+{% endblock %}

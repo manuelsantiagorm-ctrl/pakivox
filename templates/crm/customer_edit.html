@@ -1,0 +1,446 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+{% if es_nuevo %}Nuevo cliente{% else %}Editar cliente{% endif %} | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+{% if es_nuevo %}Nuevo cliente{% else %}Editar cliente{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+{% if es_nuevo %}Da de alta un cliente sin salir del CRM{% else %}Actualiza los datos comerciales sin salir del CRM{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="customer-edit-page">
+  <header class="customer-edit-hero">
+    <div>
+      <span class="customer-edit-eyebrow">
+        {% if es_nuevo %}CRM / Cliente nuevo{% else %}CRM / Cliente #{{ customer.id }}{% endif %}
+      </span>
+
+      <h2>
+        {% if es_nuevo %}Nuevo cliente{% else %}{{ customer.full_name|default:"Cliente sin nombre" }}{% endif %}
+      </h2>
+
+      <p>
+        Empresa:
+        <strong>{{ company.name }}</strong>
+      </p>
+    </div>
+
+    <div class="customer-edit-actions">
+      {% if not es_nuevo %}
+      <a
+        href="{% url 'customer_smart_profile' customer.id %}"
+        class="customer-edit-button ghost"
+      >
+        <i class="bi bi-arrow-left"></i>
+        Volver al perfil
+      </a>
+      {% endif %}
+
+      <a
+        href="/crm/"
+        class="customer-edit-button ghost"
+      >
+        Ver todos los clientes
+      </a>
+    </div>
+  </header>
+
+  <div class="customer-edit-layout">
+    <form
+      method="post"
+      class="customer-edit-card"
+      novalidate
+    >
+      {% csrf_token %}
+
+      <header>
+        <span class="customer-edit-eyebrow">
+          Información del cliente
+        </span>
+
+        <h3>
+          Identidad, contacto y clasificación
+        </h3>
+
+        <p>
+          Los cambios se aplicarán únicamente al cliente de
+          {{ company.name }}.
+        </p>
+      </header>
+
+      {% if form.non_field_errors %}
+        <div class="customer-edit-alert danger">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="customer-edit-grid">
+        {% for field in form %}
+          <label
+            class="
+              customer-edit-field
+              {% if field.name == 'notes' %}
+                full
+              {% endif %}
+              {% if field.name == 'is_active' %}
+                checkbox-field
+              {% endif %}
+            "
+          >
+            {% if field.name == "is_active" %}
+              <div class="checkbox-row">
+                {{ field }}
+                <span>{{ field.label }}</span>
+              </div>
+            {% else %}
+              <span>{{ field.label }}</span>
+              {{ field }}
+            {% endif %}
+
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+
+            {% for error in field.errors %}
+              <small class="field-error">
+                {{ error }}
+              </small>
+            {% endfor %}
+          </label>
+        {% endfor %}
+      </div>
+
+      <footer>
+        <a
+          href="{% if es_nuevo %}{% url 'crm_home' %}{% else %}{% url 'customer_smart_profile' customer.id %}{% endif %}"
+          class="customer-edit-button ghost"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="customer-edit-button primary"
+        >
+          <i class="bi bi-check2-circle"></i>
+          {% if es_nuevo %}Crear cliente{% else %}Guardar cambios{% endif %}
+        </button>
+      </footer>
+    </form>
+
+    <aside class="customer-edit-side">
+      <article>
+        <span>Vista previa</span>
+
+        <strong>
+          {{ customer.full_name|default:"Sin nombre" }}
+        </strong>
+
+        <p>
+          {{ customer.business_name|default:"Sin nombre comercial" }}
+        </p>
+      </article>
+
+      <article>
+        <span>Contacto actual</span>
+
+        <p>
+          <b>Teléfono:</b>
+          {{ customer.phone|default:"-" }}
+        </p>
+
+        <p>
+          <b>WhatsApp:</b>
+          {{ customer.whatsapp|default:"-" }}
+        </p>
+
+        <p>
+          <b>Correo:</b>
+          {{ customer.email|default:"-" }}
+        </p>
+      </article>
+
+      <article class="security-card">
+        <span>
+          <i class="bi bi-shield-check"></i>
+          Seguridad multiempresa
+        </span>
+
+        <p>
+          Esta vista solo permite consultar y actualizar clientes
+          pertenecientes a la empresa actual.
+        </p>
+      </article>
+
+      <article class="warning-card">
+        <span>Importante</span>
+
+        <p>
+          Esta pantalla edita los datos principales del cliente.
+          Las direcciones se administrarán por separado para conservar
+          el historial de sucursales y entregas.
+        </p>
+      </article>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .customer-edit-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .customer-edit-hero,
+  .customer-edit-card,
+  .customer-edit-side article {
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 18px;
+    background: #0f172a;
+  }
+
+  .customer-edit-hero {
+    padding: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .customer-edit-eyebrow,
+  .customer-edit-side article > span {
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .customer-edit-hero h2 {
+    margin: 7px 0 4px;
+    color: #f8fafc;
+  }
+
+  .customer-edit-hero p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .customer-edit-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .customer-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .customer-edit-card {
+    overflow: hidden;
+  }
+
+  .customer-edit-card > header {
+    padding: 22px;
+    border-bottom: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .customer-edit-card > header h3 {
+    margin: 6px 0;
+    color: #f8fafc;
+  }
+
+  .customer-edit-card > header p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .customer-edit-alert {
+    margin: 18px 18px 0;
+    padding: 13px;
+    border-radius: 11px;
+  }
+
+  .customer-edit-alert.danger {
+    color: #fecaca;
+    border: 1px solid rgba(248, 113, 113, .25);
+    background: rgba(127, 29, 29, .18);
+  }
+
+  .customer-edit-alert p {
+    margin: 0;
+  }
+
+  .customer-edit-grid {
+    padding: 22px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .customer-edit-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .customer-edit-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .customer-edit-field > span {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .crm-edit-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, .2);
+    border-radius: 11px;
+    outline: none;
+    color: #f8fafc;
+    background: #020617;
+  }
+
+  textarea.crm-edit-input {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .crm-edit-input:focus {
+    border-color: rgba(34, 197, 94, .7);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .1);
+  }
+
+  .checkbox-field {
+    grid-column: 1 / -1;
+    padding: 13px;
+    border: 1px solid rgba(148, 163, 184, .12);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .35);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #e2e8f0;
+    font-weight: 800;
+  }
+
+  .crm-edit-checkbox {
+    width: 19px;
+    height: 19px;
+  }
+
+  .field-error {
+    color: #fca5a5;
+  }
+
+  .customer-edit-card footer {
+    padding: 17px 22px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    border-top: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .customer-edit-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .customer-edit-button.ghost {
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .22);
+    background: transparent;
+  }
+
+  .customer-edit-button.primary {
+    border: 0;
+    color: #052e16;
+    background: #22c55e;
+  }
+
+  .customer-edit-side {
+    display: grid;
+    gap: 12px;
+  }
+
+  .customer-edit-side article {
+    padding: 17px;
+  }
+
+  .customer-edit-side article strong {
+    display: block;
+    margin-top: 9px;
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  .customer-edit-side article p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+  }
+
+  .security-card {
+    border-color: rgba(56, 189, 248, .25) !important;
+    background: rgba(14, 116, 144, .08) !important;
+  }
+
+  .warning-card {
+    border-color: rgba(250, 204, 21, .2) !important;
+    background: rgba(113, 63, 18, .08) !important;
+  }
+
+  .warning-card > span {
+    color: #fde68a !important;
+  }
+
+  @media (max-width: 980px) {
+    .customer-edit-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .customer-edit-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .customer-edit-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .customer-edit-field.full,
+    .checkbox-field {
+      grid-column: auto;
+    }
+
+    .customer-edit-card footer {
+      display: grid;
+    }
+  }
+</style>
+{% endblock %}

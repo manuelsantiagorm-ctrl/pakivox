@@ -1,0 +1,262 @@
+<div class="modal-card">
+  <div class="modal-header-wms">
+    <div>
+      <h3>{{ deal.title }}</h3>
+      <p>🏢 {{ deal.customer.full_name }}</p>
+    </div>
+
+    <button class="modal-close" onclick="closeDealModal()">×</button>
+  </div>
+
+  <div class="modal-body-wms">
+    <div class="deal-modal-hero">
+      <span>Valor estimado</span>
+      <strong>${{ deal.amount|floatformat:0 }}</strong>
+    </div>
+
+    <div class="modal-metric">
+      <span>🎯 Etapa</span>
+      <strong>{{ deal.stage.name|default:"Sin etapa" }}</strong>
+    </div>
+
+    <div class="modal-metric">
+      <span>🔥 Probabilidad</span>
+      <strong>{{ deal.probability }}%</strong>
+    </div>
+
+    <div class="modal-metric">
+      <span>👤 Ejecutivo</span>
+      <div class="executive-row">
+        <div class="executive-avatar">
+          {% if deal.assigned_to %} {{ deal.assigned_to.username|first|upper }}
+          {% else %} W {% endif %}
+        </div>
+        <div>
+          <strong>{{ deal.assigned_to|default:"Sin asignar" }}</strong>
+          <small>Ejecutivo comercial</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-metric">
+      <span>📅 Cierre esperado</span>
+      <strong>{{ deal.expected_close_date|default:"Sin fecha" }}</strong>
+    </div>
+    <h4 class="modal-section-title">Edición rápida</h4>
+
+    <form
+      hx-post="{% url 'update_deal_quick' deal.id %}"
+      hx-target="#deal-modal-content"
+      hx-swap="innerHTML"
+      class="quick-edit-form"
+    >
+      {% csrf_token %}
+
+      <div class="form-grid-wms">
+        <div class="form-group-wms">
+          <label>Monto estimado</label>
+          <input
+            type="number"
+            name="amount"
+            value="{{ deal.amount }}"
+            class="form-control"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        <div class="form-group-wms">
+          <label>Probabilidad %</label>
+          <input
+            type="number"
+            name="probability"
+            value="{{ deal.probability }}"
+            class="form-control"
+            min="0"
+            max="100"
+          />
+        </div>
+
+        <div class="form-group-wms">
+          <label>Etapa</label>
+          <select name="stage" class="form-control">
+            {% for stage in stages %}
+            <option
+              value="{{ stage.id }}"
+              {% if deal.stage_id == stage.id %}selected{% endif %}
+            >
+              {{ stage.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group-wms">
+          <label>Cierre esperado</label>
+          <input
+            type="date"
+            name="expected_close_date"
+            value="{{ deal.expected_close_date|date:'Y-m-d' }}"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group-wms form-group-full">
+          <label>Notas</label>
+          <textarea name="notes" class="form-control" rows="3">
+{{ deal.notes }}</textarea
+          >
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-primary mt-2">
+        Guardar cambios
+      </button>
+    </form>
+
+    <hr />
+    <h4 class="modal-section-title">Próximo seguimiento</h4>
+
+    <form
+      hx-post="{% url 'add_deal_followup' deal.id %}"
+      hx-target="#deal-modal-content"
+      hx-swap="innerHTML"
+      class="quick-followup-form"
+    >
+      {% csrf_token %}
+
+      <div class="form-grid-wms">
+        <div class="form-group-wms">
+          <label>Tipo</label>
+          <select name="activity_type" class="form-control">
+            <option value="call">Llamada</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Correo</option>
+            <option value="meeting">Reunión</option>
+            <option value="quote">Cotización</option>
+          </select>
+        </div>
+
+        <div class="form-group-wms">
+          <label>Fecha y hora</label>
+          <input type="datetime-local" name="due_date" class="form-control" />
+        </div>
+
+        <div class="form-group-wms form-group-full">
+          <label>Título</label>
+          <input
+            type="text"
+            name="title"
+            class="form-control"
+            placeholder="Ej. Llamar para confirmar pedido"
+          />
+        </div>
+
+        <div class="form-group-wms form-group-full">
+          <label>Descripción</label>
+          <textarea
+            name="description"
+            class="form-control"
+            rows="2"
+            placeholder="Notas del seguimiento..."
+          ></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-primary mt-2">
+        Agendar seguimiento
+      </button>
+    </form>
+
+    {% if upcoming_activities %}
+    <div class="followup-list">
+      {% for activity in upcoming_activities %}
+      <div class="followup-item">
+        <strong>{{ activity.title }}</strong>
+        <span>{{ activity.get_activity_type_display }}</span>
+        <small>
+          {% if activity.due_date %} {{ activity.due_date|date:"d/m/Y H:i" }} {% else %} Sin fecha {% endif %}
+        </small>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <h4 class="modal-section-title">📝 Comentario rápido</h4>
+
+    <form
+      hx-post="{% url 'add_deal_comment' deal.id %}"
+      hx-target="#deal-modal-content"
+      hx-swap="innerHTML"
+      class="quick-comment-form"
+    >
+      {% csrf_token %}
+      <textarea
+        name="content"
+        placeholder="Escribir comentario rápido..."
+        required
+      ></textarea>
+
+      <button type="submit" class="btn btn-sm btn-primary">
+        Guardar comentario
+      </button>
+    </form>
+
+    <h4 class="modal-section-title">📌 Timeline</h4>
+
+    <div class="timeline-list">
+      {% for item in timeline %}
+      <div class="timeline-node">
+        <div class="timeline-dot"></div>
+
+        <div class="timeline-content">
+          {% if item.activity_type == "comment" %}
+          <strong>💬 Comentario</strong>
+          {% elif item.activity_type == "status_change" %}
+          <strong>🔄 Cambio de estado</strong>
+          {% elif item.activity_type == "created" %}
+          <strong>✨ Creación</strong>
+          {% elif item.activity_type == "call" %}
+          <strong>📞 Llamada</strong>
+          {% elif item.activity_type == "email" %}
+          <strong>✉️ Correo</strong>
+          {% elif item.activity_type == "meeting" %}
+          <strong>📅 Reunión</strong>
+          {% elif item.activity_type == "whatsapp" %}
+          <strong>💬 WhatsApp</strong>
+          {% elif item.activity_type == "quote" %}
+          <strong>📄 Cotización</strong>
+          {% else %}
+          <strong>{{ item.get_activity_type_display }}</strong>
+          {% endif %}
+
+          <p>{{ item.description }}</p>
+
+          <small>{{ item.created_at|timesince }} atrás</small>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">Sin actividades registradas.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="modal-actions-wms">
+    {% if request.user.is_staff %}
+    <a
+      href="/admin/crm/deal/{{ deal.id }}/change/"
+      class="btn btn-sm btn-outline-light"
+    >
+      Editar completo
+    </a>
+    {% endif %}
+
+    <button class="btn btn-sm btn-success" onclick="markWon({{ deal.id }})">
+      Marcar ganado
+    </button>
+
+    <button class="btn btn-sm btn-danger" onclick="markLost({{ deal.id }})">
+      Marcar perdido
+    </button>
+  </div>
+</div>

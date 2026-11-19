@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Incidencias de pedidos | PAKIVOX{% endblock %}
+{% block page_title %}Incidencias de pedidos{% endblock %}
+{% block page_subtitle %}Excepciones financieras y operativas que requieren una decisión segura{% endblock %}
+
+{% block content %}
+<section class="ci-page">
+  <header class="ci-hero">
+    <div>
+      <span class="ci-eyebrow">Control de excepciones</span>
+      <h1>Centro de incidencias</h1>
+      <p>PAKIVOX no inventa un estado paralelo: la incidencia desaparece cuando su causa real queda resuelta.</p>
+    </div>
+    <a class="ci-back" href="{% url 'sales:pedidos_en_curso' %}"><i class="bi bi-arrow-left"></i> Pedidos en curso</a>
+  </header>
+
+  <nav class="ci-kpis" aria-label="Filtros de incidencias">
+    <a href="?category=all{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if category == 'all' %}active{% endif %}">
+      <small>Todas</small><strong>{{ summary.total|default:0 }}</strong><span>Atenciones abiertas</span>
+    </a>
+    <a href="?category=financial{% if q %}&q={{ q|urlencode }}{% endif %}" class="financial {% if category == 'financial' %}active{% endif %}">
+      <small>Financieras</small><strong>{{ summary.financial|default:0 }}</strong><span>Dinero / reembolsos</span>
+    </a>
+    <a href="?category=operational{% if q %}&q={{ q|urlencode }}{% endif %}" class="operational {% if category == 'operational' %}active{% endif %}">
+      <small>Operativas</small><strong>{{ summary.operational|default:0 }}</strong><span>Ventas ↔ almacén</span>
+    </a>
+    <a href="?category=recovery{% if q %}&q={{ q|urlencode }}{% endif %}" class="recovery {% if category == 'recovery' %}active{% endif %}">
+      <small>Recuperación</small><strong>{{ summary.recovery|default:0 }}</strong><span>Cancelados con dinero</span>
+    </a>
+    <a href="?category=credit{% if q %}&q={{ q|urlencode }}{% endif %}" class="credit {% if category == 'credit' %}active{% endif %}">
+      <small>Saldo a favor</small><strong>{{ summary.credit|default:0 }}</strong><span>Crédito disponible</span>
+    </a>
+  </nav>
+
+  <form class="ci-search" method="get" autocomplete="off">
+    <input type="hidden" name="category" value="{{ category }}">
+    <label>
+      <i class="bi bi-search"></i>
+      <input id="incidentSearch" type="search" name="q" value="{{ q }}" placeholder="Buscar folio, cliente o teléfono..." aria-label="Buscar incidencias">
+    </label>
+    <button type="submit">Buscar</button>
+    {% if q %}<a href="?category={{ category }}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="ci-list">
+    {% for order in incidents %}
+      <article class="ci-card severity-{{ order.cs1f_severity }}" data-incident-type="{{ order.cs1f_type }}">
+        <div class="ci-main">
+          <div class="ci-icon"><i class="bi {{ order.cs1f_icon }}"></i></div>
+          <div class="ci-copy">
+            <div class="ci-topline">
+              <span class="ci-folio">{{ order.folio|default:"Sin folio" }}</span>
+              <span class="ci-status">{{ order.get_status_display }}</span>
+            </div>
+            <h2>{{ order.cs1f_title }}</h2>
+            <p>{{ order.cs1f_description }}</p>
+            <div class="ci-meta">
+              <span><i class="bi bi-person"></i>{{ order.customer.full_name }}</span>
+              <span><i class="bi bi-currency-dollar"></i>{{ order.total|floatformat:2 }}</span>
+              {% if order.cs1f_approved_amount > 0 %}<span>Pagos aprobados: ${{ order.cs1f_approved_amount|floatformat:2 }}</span>{% endif %}
+              {% if order.cs1f_pending_refund_amount > 0 %}<span>Reembolso pendiente: ${{ order.cs1f_pending_refund_amount|floatformat:2 }}</span>{% endif %}
+              {% if order.cs1f_active_credit_amount > 0 %}<span>Saldo disponible: ${{ order.cs1f_active_credit_amount|floatformat:2 }}</span>{% endif %}
+              <span><i class="bi bi-clock"></i>{{ order.updated_at|timesince }} atrás</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ci-actions">
+          <a class="ci-primary" href="{{ order.cs1f_primary_url }}"><i class="bi bi-arrow-right-circle"></i>{{ order.cs1f_primary_label }}</a>
+          {% if order.cs1f_payment_url %}<a class="ci-secondary" href="{{ order.cs1f_payment_url }}"><i class="bi bi-receipt"></i> Ver pago</a>{% endif %}
+
+          {% if order.cs1f_can_recover %}
+            <details class="ci-resolve">
+              <summary><i class="bi bi-arrow-repeat"></i> Recuperar pedido</summary>
+              <form method="post" action="{% url 'sales:recuperar_pedido_error_humano' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="idempotency_key" value="incident-recover-{{ order.id }}-{{ order.updated_at|date:'U' }}">
+                <label>Motivo de recuperación
+                  <textarea name="reason_text" required minlength="5" rows="2" placeholder="Ej. El pedido se canceló por error del operador"></textarea>
+                </label>
+                <button type="submit" onclick="return confirm('¿Recuperar el MISMO pedido sin crear otro cobro?')">Confirmar recuperación</button>
+              </form>
+            </details>
+          {% endif %}
+
+          {% if order.cs1f_can_confirm_refund %}
+            <details class="ci-resolve">
+              <summary><i class="bi bi-check2-circle"></i> Confirmar reembolso</summary>
+              <form method="post" action="{% url 'payments:confirmar_reembolso_pago' order.cs1f_pending_refund_id %}">
+                {% csrf_token %}
+                <input type="hidden" name="idempotency_key" value="incident-refund-confirm-{{ order.cs1f_pending_refund_id }}">
+                <label>Referencia de devolución real
+                  <input type="text" name="confirmation_reference" required minlength="4" placeholder="Transferencia / referencia / evidencia">
+                </label>
+                <button type="submit" onclick="return confirm('Confirma solo si el dinero YA fue devuelto realmente.')">Confirmar devolución real</button>
+              </form>
+            </details>
+          {% endif %}
+
+          {% if order.cs1f_can_convert_credit %}
+            <details class="ci-resolve">
+              <summary><i class="bi bi-wallet2"></i> Convertir a saldo</summary>
+              <form method="post" action="{% url 'payments:convertir_reembolso_saldo_favor' order.cs1f_pending_refund_id %}">
+                {% csrf_token %}
+                <input type="hidden" name="idempotency_key" value="incident-credit-{{ order.cs1f_pending_refund_id }}">
+                <label>Motivo / acuerdo con el cliente
+                  <textarea name="reason" required minlength="5" rows="2" placeholder="El cliente conservará el importe como saldo a favor"></textarea>
+                </label>
+                <button type="submit" onclick="return confirm('El dinero NO se marcará como devuelto; se conservará como saldo a favor.')">Crear saldo a favor</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="ci-empty">
+        <i class="bi bi-shield-check"></i>
+        <h2>Sin incidencias en esta vista</h2>
+        <p>No hay excepciones que coincidan con el filtro actual.</p>
+        <a href="{% url 'sales:pedidos_en_curso' %}">Volver a pedidos en curso</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="ci-pagination" aria-label="Paginación">
+      {% if page_obj.has_previous %}<a href="?{% if query_without_page %}{{ query_without_page }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?{% if query_without_page %}{{ query_without_page }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
+  {% endif %}
+</section>
+
+<style>
+.ci-page,.ci-page *{box-sizing:border-box}.ci-page{display:grid;gap:18px;min-width:0;color:#dbe7f5}.ci-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:18px}.ci-eyebrow{display:block;color:#f59e0b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}.ci-hero h1{margin:0;color:#f8fafc;font-size:30px}.ci-hero p{margin:7px 0 0;color:#94a3b8;max-width:780px}.ci-back{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.18);background:#111827;color:#cbd5e1;text-decoration:none;font-weight:800;white-space:nowrap}.ci-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.ci-kpis a{display:block;padding:14px;border:1px solid rgba(148,163,184,.15);border-radius:13px;background:linear-gradient(145deg,#111c2f,#0a1220);color:inherit;text-decoration:none}.ci-kpis a.active{border-color:#38bdf8;box-shadow:inset 0 3px 0 #38bdf8}.ci-kpis a.financial.active{box-shadow:inset 0 3px 0 #f59e0b}.ci-kpis a.operational.active{box-shadow:inset 0 3px 0 #ef4444}.ci-kpis a.recovery.active{box-shadow:inset 0 3px 0 #a78bfa}.ci-kpis a.credit.active{box-shadow:inset 0 3px 0 #22c55e}.ci-kpis small,.ci-kpis span{display:block;color:#94a3b8}.ci-kpis strong{display:block;color:#f8fafc;font-size:24px;margin:4px 0}.ci-kpis span{font-size:11px}.ci-search{display:flex;gap:9px}.ci-search label{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid rgba(148,163,184,.18);border-radius:11px;padding:0 12px}.ci-search input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:#f8fafc;padding:12px 0}.ci-search button,.ci-search>a{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:10px;padding:0 14px;background:#38bdf8;color:#082f49;font-weight:900;text-decoration:none}.ci-search>a{background:#1e293b;color:#cbd5e1}.ci-list{display:grid;gap:12px}.ci-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:17px;border:1px solid rgba(148,163,184,.15);border-left:4px solid #f59e0b;border-radius:14px;background:linear-gradient(145deg,#111827,#0b1220)}.ci-card.severity-critical{border-left-color:#ef4444}.ci-card.severity-high{border-left-color:#f97316}.ci-card.severity-info{border-left-color:#22c55e}.ci-main{display:flex;gap:13px;min-width:0}.ci-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:11px;background:rgba(245,158,11,.12);color:#fbbf24;font-size:18px}.ci-copy{min-width:0}.ci-topline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ci-folio{font-weight:1000;color:#f8fafc}.ci-status{font-size:11px;padding:4px 8px;border-radius:999px;background:#1e293b;color:#cbd5e1}.ci-copy h2{margin:7px 0 4px;font-size:17px;color:#f8fafc}.ci-copy p{margin:0;color:#94a3b8;font-size:13px;line-height:1.45}.ci-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;color:#64748b;font-size:11px}.ci-meta span{display:inline-flex;gap:5px;align-items:center}.ci-actions{display:flex;align-items:flex-start;justify-content:flex-end;gap:7px;flex-wrap:wrap;max-width:440px}.ci-primary,.ci-secondary,.ci-resolve summary{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 11px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:900;cursor:pointer}.ci-primary{background:#38bdf8;color:#082f49}.ci-secondary{background:#1e293b;color:#cbd5e1;border:1px solid rgba(148,163,184,.14)}.ci-resolve{position:relative}.ci-resolve summary{list-style:none;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.24);color:#fbbf24}.ci-resolve summary::-webkit-details-marker{display:none}.ci-resolve form{position:absolute;right:0;top:44px;z-index:15;width:min(330px,78vw);display:grid;gap:9px;padding:13px;border-radius:12px;background:#0b1220;border:1px solid rgba(148,163,184,.2);box-shadow:0 18px 40px rgba(0,0,0,.35)}.ci-resolve label{display:grid;gap:5px;color:#cbd5e1;font-size:11px;font-weight:800}.ci-resolve textarea,.ci-resolve input{width:100%;padding:9px;border-radius:8px;border:1px solid rgba(148,163,184,.2);background:#111827;color:#f8fafc}.ci-resolve button{border:0;border-radius:8px;padding:10px;background:#f59e0b;color:#111827;font-weight:1000;cursor:pointer}.ci-empty{padding:38px;text-align:center;border:1px dashed rgba(148,163,184,.2);border-radius:14px;background:#0b1220;color:#94a3b8}.ci-empty i{font-size:30px;color:#22c55e}.ci-empty h2{color:#f8fafc}.ci-empty a{color:#7dd3fc}.ci-pagination{display:flex;justify-content:center;align-items:center;gap:12px;color:#94a3b8}.ci-pagination a{color:#7dd3fc;text-decoration:none}
+@media(max-width:1050px){.ci-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.ci-card{grid-template-columns:1fr}.ci-actions{justify-content:flex-start;max-width:none}}
+@media(max-width:680px){.ci-page{gap:13px}.ci-hero{align-items:stretch;flex-direction:column}.ci-hero h1{font-size:24px}.ci-back{align-self:flex-start}.ci-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ci-search{display:grid;grid-template-columns:1fr auto}.ci-search label{grid-column:1/-1}.ci-search button,.ci-search>a{min-height:40px}.ci-card{padding:13px;gap:13px}.ci-main{align-items:flex-start}.ci-icon{flex-basis:36px;height:36px}.ci-actions{display:grid;grid-template-columns:1fr}.ci-primary,.ci-secondary,.ci-resolve summary{width:100%}.ci-resolve{width:100%}.ci-resolve form{position:static;width:100%;margin-top:7px}.ci-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ci-kpis a:last-child{grid-column:1/-1}}
+</style>
+{% endblock %}

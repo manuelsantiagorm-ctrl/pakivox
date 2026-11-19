@@ -1,0 +1,398 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Bandeja de conversaciones | PAKIVOX{% endblock %}
+
+{% block page_title %}Bandeja de conversaciones{% endblock %}
+{% block page_subtitle %}
+Atiende conversaciones de WhatsApp conectadas a tus canales asignados.
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .inbox-toolbar {
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 22px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+
+  .inbox-search-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .inbox-search {
+    flex: 1 1 260px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 14px;
+    padding: 10px 14px;
+    color: #94a3b8;
+  }
+
+  .inbox-search input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: #f8fafc;
+    font-size: 14px;
+  }
+
+  .inbox-new-btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 11px 16px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: 800;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .inbox-new-btn:hover { color: white; opacity: 0.92; }
+
+  .inbox-tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .inbox-tab {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #1e293b;
+    color: #cbd5e1;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .inbox-tab.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+  }
+
+  .inbox-tab .count {
+    opacity: 0.85;
+    margin-left: 4px;
+  }
+
+  .inbox-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .stat-card {
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    padding: 16px 18px;
+  }
+
+  .stat-card .label {
+    color: #94a3b8;
+    font-size: 12.5px;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .value {
+    color: #f8fafc;
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .chat-list-panel {
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+
+  .conversation-row {
+    display: grid;
+    grid-template-columns: 1.3fr 1.1fr 1.4fr 0.9fr 0.7fr auto;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .conversation-row:hover { background: rgba(56, 189, 248, 0.06); }
+
+  .conversation-row strong { color: #f8fafc; }
+
+  .conversation-row small,
+  .conversation-row span { color: #94a3b8; }
+
+  .customer-cell { display: flex; align-items: center; gap: 10px; }
+
+  .avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .badge-open {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .badge-pending {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(234, 179, 8, 0.16);
+    color: #fde047;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .badge-closed {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(100, 116, 139, 0.22);
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .badge-unassigned {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(249, 115, 22, 0.16);
+    color: #fdba74;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .unread-pill {
+    background: #2563eb;
+    color: white;
+    border-radius: 999px;
+    min-width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 0 6px;
+  }
+
+  .open-chat {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-weight: 800;
+  }
+
+  .empty-chat { padding: 42px; text-align: center; color: #94a3b8; }
+
+  @media (max-width: 1100px) {
+    .inbox-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 1000px) {
+    .conversation-row { grid-template-columns: 1fr; }
+    .inbox-stats { grid-template-columns: 1fr; }
+  }
+</style>
+
+<section class="inbox-toolbar">
+  <div class="inbox-search-row">
+    <div class="inbox-search">
+      <span>&#128269;</span>
+      <input type="text" id="inbox-search-input" placeholder="Buscar por cliente, teléfono o canal">
+    </div>
+
+    <form method="post" action="{% url 'messaging:create_demo_chat' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="inbox-new-btn">+ Nueva conversación</button>
+    </form>
+  </div>
+
+  <div class="inbox-tabs">
+    <button type="button" class="inbox-tab active" data-filter="all">
+      Todos <span class="count">{{ conversation_rows|length }}</span>
+    </button>
+    <button type="button" class="inbox-tab" data-filter="unread">
+      Sin responder <span class="count">{{ unread_total }}</span>
+    </button>
+    <button type="button" class="inbox-tab" data-filter="unassigned">
+      Sin asignar <span class="count">{{ unassigned_count }}</span>
+    </button>
+    <button type="button" class="inbox-tab" data-filter="mine">
+      Míos <span class="count">{{ mine_count }}</span>
+    </button>
+  </div>
+
+  <p style="color:#94a3b8; font-size:13px; margin:12px 0 0;">
+    Empresa: <strong style="color:#f8fafc;">{% if company %}{{ company.name }}{% else %}Sin empresa{% endif %}</strong>
+    · Canales asignados: {{ allowed_channels_count }}
+  </p>
+</section>
+
+<section class="inbox-stats">
+  <div class="stat-card">
+    <div class="label">Conversaciones abiertas</div>
+    <div class="value">{{ open_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Sin asignar</div>
+    <div class="value">{{ unassigned_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Pendientes de respuesta</div>
+    <div class="value">{{ unread_total }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total en bandeja</div>
+    <div class="value">{{ conversation_rows|length }}</div>
+  </div>
+</section>
+
+<section class="chat-list-panel" id="conversation-list">
+  {% if conversation_rows %}
+    {% for row in conversation_rows %}
+      {% with c=row.conversation %}
+      <a href="{% url 'messaging:chat_detail' c.pk %}"
+         class="conversation-row"
+         data-status="{{ c.status }}"
+         data-assigned="{% if c.assigned_agent_id %}1{% else %}0{% endif %}"
+         data-mine="{% if c.assigned_agent_id == request.user.id %}1{% else %}0{% endif %}"
+         data-unread="{{ row.unread_count }}"
+         data-search="{{ c.customer.name|default:'' }} {{ c.customer.phone }} {{ c.whatsapp_number.channel_name }}">
+
+        <div class="customer-cell">
+          <div class="avatar-circle" style="background:#2563eb;">
+            {{ c.customer.name|default:c.customer.phone|slice:":1"|upper }}
+          </div>
+          <div>
+            <strong>{{ c.customer.name|default:c.customer.phone }}</strong><br>
+            <small>{{ c.customer.phone }}</small>
+          </div>
+        </div>
+
+        <div>
+          <strong>{{ c.whatsapp_number.channel_name }}</strong><br>
+          <small>{{ c.whatsapp_number.display_number }}</small>
+        </div>
+
+        <div>
+          {% if row.last_message %}
+            <span>{{ row.last_message.body|default:row.last_message.message_type|truncatechars:60 }}</span><br>
+            <small>{{ row.last_message.created_at|date:"d/m/Y H:i" }}</small>
+          {% else %}
+            <span>Sin mensajes todavía</span>
+          {% endif %}
+        </div>
+
+        <div>
+          {% if c.assigned_agent %}
+            <strong>{{ c.assigned_agent.get_full_name|default:c.assigned_agent.username }}</strong>
+          {% else %}
+            <strong>—</strong><br>
+            <span class="badge-unassigned">Sin asignar</span>
+          {% endif %}
+        </div>
+
+        <div>
+          {% if c.status == "closed" %}
+            <span class="badge-closed">Cerrada</span>
+          {% elif c.status == "pending" %}
+            <span class="badge-pending">Pendiente</span>
+          {% else %}
+            <span class="badge-open">Abierta</span>
+          {% endif %}
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; justify-content:flex-end;">
+          {% if row.unread_count %}
+            <span class="unread-pill">{{ row.unread_count }}</span>
+          {% endif %}
+          <span class="open-chat">Abrir</span>
+        </div>
+      </a>
+      {% endwith %}
+    {% endfor %}
+  {% else %}
+    <div class="empty-chat">
+      Todavía no tienes conversaciones visibles.
+      <br>
+      Crea una conversación para probar la bandeja.
+    </div>
+  {% endif %}
+</section>
+
+<script>
+  (function () {
+    const tabs = document.querySelectorAll(".inbox-tab");
+    const rows = document.querySelectorAll(".conversation-row");
+    const searchInput = document.getElementById("inbox-search-input");
+    let activeFilter = "all";
+
+    function applyFilters() {
+      const term = (searchInput.value || "").toLowerCase().trim();
+
+      rows.forEach(function (row) {
+        let visible = true;
+
+        if (activeFilter === "unread") {
+          visible = parseInt(row.dataset.unread || "0", 10) > 0;
+        } else if (activeFilter === "unassigned") {
+          visible = row.dataset.assigned === "0";
+        } else if (activeFilter === "mine") {
+          visible = row.dataset.mine === "1";
+        }
+
+        if (visible && term) {
+          visible = row.dataset.search.toLowerCase().includes(term);
+        }
+
+        row.style.display = visible ? "grid" : "none";
+      });
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        tabs.forEach(function (t) { t.classList.remove("active"); });
+        tab.classList.add("active");
+        activeFilter = tab.dataset.filter;
+        applyFilters();
+      });
+    });
+
+    searchInput.addEventListener("input", applyFilters);
+  })();
+</script>
+
+{% endblock %}

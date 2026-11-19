@@ -1,0 +1,556 @@
+{% extends "base.html" %} {% block title %}Alertas de stock crítico | PAKIVOX{% endblock %} {% block page_title %}Alertas de stock crítico{% endblock %} {% block page_subtitle %} Control interno de productos en bajo inventario para
+evitar pérdida de ventas {% endblock %} {% block content %}
+
+<style>
+  .stock-alerts-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .stock-alerts-hero {
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(248, 113, 113, 0.18),
+        transparent 35%
+      ),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  .stock-alerts-hero h1 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
+
+  .stock-alerts-hero p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  .stock-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .stock-kpi {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.88);
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .stock-kpi span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+  }
+
+  .stock-kpi strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 30px;
+    font-weight: 950;
+  }
+
+  .stock-kpi.danger {
+    border-color: rgba(248, 113, 113, 0.32);
+    background: rgba(127, 29, 29, 0.18);
+  }
+
+  .stock-kpi.warning {
+    border-color: rgba(251, 191, 36, 0.32);
+    background: rgba(120, 53, 15, 0.18);
+  }
+
+  .stock-filter-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.92);
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .stock-filter-form {
+    display: grid;
+    grid-template-columns: 1.6fr 0.8fr 0.8fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .stock-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .stock-field input,
+  .stock-field select {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(2, 6, 23, 0.8);
+    color: #e5e7eb;
+    border-radius: 14px;
+    padding: 12px 14px;
+    outline: none;
+  }
+
+  .stock-btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-weight: 900;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .stock-btn.primary {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    color: #fff7ed;
+  }
+
+  .stock-btn.secondary {
+    background: rgba(148, 163, 184, 0.14);
+    color: #e5e7eb;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .stock-btn.success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #052e16;
+  }
+
+  .stock-btn.small {
+    padding: 9px 12px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+
+  .alerts-table-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.92);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+
+  .alerts-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .alerts-table th {
+    padding: 14px;
+    color: #94a3b8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(2, 6, 23, 0.55);
+  }
+
+  .alerts-table td {
+    padding: 14px;
+    color: #e5e7eb;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    font-size: 13px;
+  }
+
+  .alerts-table tr.unread {
+    background: rgba(251, 191, 36, 0.045);
+  }
+
+  .sku-title {
+    color: #f8fafc;
+    font-weight: 950;
+  }
+
+  .product-name {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .badge.active {
+    background: rgba(248, 113, 113, 0.15);
+    color: #fecaca;
+    border: 1px solid rgba(248, 113, 113, 0.25);
+  }
+
+  .badge.resolved {
+    background: rgba(34, 197, 94, 0.14);
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+  }
+
+  .badge.unread {
+    background: rgba(251, 191, 36, 0.14);
+    color: #fde68a;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+  }
+
+  .badge.read {
+    background: rgba(148, 163, 184, 0.12);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .message-box {
+    white-space: pre-line;
+    color: #cbd5e1;
+    line-height: 1.45;
+    max-width: 420px;
+  }
+
+  .stock-numbers {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stock-numbers strong {
+    color: #f8fafc;
+    font-size: 17px;
+  }
+
+  .stock-numbers small {
+    color: #94a3b8;
+  }
+
+  .alert-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .empty-state {
+    padding: 48px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .empty-state strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .pagination-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+
+  @media (max-width: 1000px) {
+    .stock-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stock-filter-form {
+      grid-template-columns: 1fr;
+    }
+
+    .alerts-table {
+      min-width: 950px;
+    }
+
+    .alerts-table-card {
+      overflow-x: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stock-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="stock-alerts-page">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+  <a class="stock-btn secondary" href="{% url 'inventory:lot_expiry_alerts' %}">
+    Ver caducidad de lotes →
+  </a>
+</div>
+
+<div class="stock-alerts-hero">
+    <h1>Alertas de stock crítico</h1>
+    <p>
+      Motor interno de PAKIVOX para detectar productos que llegaron a su mínimo
+      de inventario. Estas alertas no consumen WhatsApp ni API.
+    </p>
+
+    <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap">
+      <form
+        method="post"
+        action="{% url 'inventory:stock_critical_alerts_create_reorder' %}"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="scope" value="active_all" />
+
+        <button type="submit" class="stock-btn primary">
+          <i class="bi bi-lightning-charge-fill"></i>
+          Crear reorden de alertas activas
+        </button>
+      </form>
+
+      <a href="{% url 'purchases:lista_compras' %}" class="stock-btn secondary">
+        <i class="bi bi-bag-check-fill"></i>
+        Ver compras
+      </a>
+    </div>
+  </div>
+
+  <div class="stock-kpi-grid">
+    <div class="stock-kpi">
+      <span>Total alertas</span>
+      <strong>{{ total_alerts }}</strong>
+    </div>
+
+    <div class="stock-kpi danger">
+      <span>Activas</span>
+      <strong>{{ active_alerts }}</strong>
+    </div>
+
+    <div class="stock-kpi success">
+      <span>Resueltas</span>
+      <strong>{{ resolved_alerts }}</strong>
+    </div>
+
+    <div class="stock-kpi warning">
+      <span>No leídas</span>
+      <strong>{{ unread_alerts }}</strong>
+    </div>
+  </div>
+
+  <div class="stock-filter-card">
+    <form method="get" class="stock-filter-form">
+      <div class="stock-field">
+        <label>Buscar</label>
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          placeholder="SKU, producto, bodega, referencia..."
+        />
+      </div>
+
+      <div class="stock-field">
+        <label>Estado</label>
+        <select name="status">
+          <option value="">Todos</option>
+          <option
+            value="active"
+            {% if status == "active" %}selected{% endif %}
+          >
+            Activas
+          </option>
+          <option
+            value="resolved"
+            {% if status == "resolved" %}selected{% endif %}
+          >
+            Resueltas
+          </option>
+        </select>
+      </div>
+
+      <div class="stock-field">
+        <label>Lectura</label>
+        <select name="read">
+          <option value="">Todas</option>
+
+          <option value="unread" {% if read == "unread" %}selected{% endif %}>
+            No leídas
+          </option>
+
+          <option value="read" {% if read == "read" %}selected{% endif %}>
+            Leídas
+          </option>
+        </select>
+      </div>
+
+      <button type="submit" class="stock-btn primary">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="alerts-table-card">
+    {% if alerts %}
+    <table class="alerts-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Bodega</th>
+          <th>Inventario</th>
+          <th>Estado</th>
+          <th>Mensaje</th>
+          <th>Origen</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for alert in alerts %}
+        <tr class="{% if not alert.is_read %}unread{% endif %}">
+          <td>
+            <div class="sku-title">{{ alert.variant.sku }}</div>
+            <div class="product-name">{{ alert.variant.product.name }}</div>
+          </td>
+
+          <td>{{ alert.warehouse.name }}</td>
+
+          <td>
+            <div class="stock-numbers">
+              <strong>{{ alert.current_available }}</strong>
+              <small>Mínimo: {{ alert.min_stock }}</small>
+            </div>
+          </td>
+
+          <td>
+            {% if alert.status == "active" %}
+            <span class="badge active">Activa</span>
+            {% else %}
+            <span class="badge resolved">Resuelta</span>
+            {% endif %}
+
+            <br /><br />
+
+            {% if alert.is_read %}
+            <span class="badge read">Leída</span>
+            {% else %}
+            <span class="badge unread">No leída</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <div class="message-box">{{ alert.message }}</div>
+          </td>
+
+          <td>
+            <strong>{{ alert.source|default:"-" }}</strong>
+            <br />
+            <small>{{ alert.reference|default:"Sin referencia" }}</small>
+          </td>
+
+          <td>{{ alert.created_at|date:"d/m/Y H:i" }}</td>
+
+          <td>
+            <div class="alert-actions">
+              {% if alert.status == "active" %}
+              <form
+                method="post"
+                action="{% url 'inventory:stock_critical_alerts_create_reorder' %}"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="alert_ids" value="{{ alert.id }}" />
+
+                <button type="submit" class="stock-btn primary small">
+                  Crear reorden
+                </button>
+              </form>
+              {% endif %} {% if not alert.is_read %}
+              <form
+                method="post"
+                action="{% url 'inventory:stock_critical_alert_mark_read' alert.id %}"
+              >
+                {% csrf_token %}
+                <button type="submit" class="stock-btn secondary small">
+                  Marcar leída
+                </button>
+              </form>
+              {% endif %} {% if alert.status == "active" %}
+              <form
+                method="post"
+                action="{% url 'inventory:stock_critical_alert_resolve' alert.id %}"
+              >
+                {% csrf_token %}
+                <button type="submit" class="stock-btn success small">
+                  Resolver
+                </button>
+              </form>
+              {% endif %} {% if alert.status == "active" %}
+              <a
+                href="{% url 'inventory:stock_critical_alert_supplier_options' alert.id %}"
+                class="stock-btn primary small"
+                style="background: #25d366; color: #052e16"
+              >
+                Solicitar a proveedor
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="pagination-row">
+      <span>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+
+      <span>
+        {% if page_obj.has_previous %}
+        <a
+          class="stock-btn secondary small"
+          href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}&read={{ read }}"
+        >
+          Anterior
+        </a>
+        {% endif %} {% if page_obj.has_next %}
+        <a
+          class="stock-btn secondary small"
+          href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}&read={{ read }}"
+        >
+          Siguiente
+        </a>
+        {% endif %}
+      </span>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <strong>No hay alertas de stock crítico</strong>
+      <p>Cuando un SKU llegue a su mínimo configurado, aparecerá aquí.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

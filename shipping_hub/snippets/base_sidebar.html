@@ -1,0 +1,17 @@
+<!-- Dentro de <div id="warehouse-menu" class="submenu">,
+     después del enlace de Envíos: -->
+
+<a href="{% url 'shipping_hub:integrations_list' %}" data-menu-link>
+  <i class="bi bi-box-arrow-up-right"></i>
+  <span class="menu-label">
+    Shipping Hub
+    <small>Guías / Integraciones</small>
+  </span>
+</a>
+
+
+<!-- Dentro de activateCurrentMenu(), agrega este bloque: -->
+
+if (path.startsWith("/shipping-hub")) {
+  openMenu("warehouse-menu", "warehouse-arrow", "warehouse-toggle");
+}

@@ -1,0 +1,90 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if suscripcion_vigente %}Función no incluida{% else %}Suscripción vencida{% endif %} | PAKIVOX</title>
+  <link rel="icon" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="{% static 'style/suscripcion.css' %}">
+</head>
+<body>
+  <main class="sus-card">
+    <header class="sus-top">
+      <div class="sus-brand">
+        <img src="{% static 'branding/pakivox_icon.png' %}" alt="" width="40" height="40">
+        <div><strong>PAKIVOX</strong><span>Ventas, inventario y envíos para mayoristas</span></div>
+      </div>
+      {% if suscripcion_vigente %}
+      <span class="sus-chip is-info">Tu suscripción está activa</span>
+      {% else %}
+      <span class="sus-chip is-bad">Suscripción vencida</span>
+      {% endif %}
+    </header>
+
+    <section class="sus-hero">
+      {% if suscripcion_vigente %}
+      <p class="sus-eyebrow">Función no incluida</p>
+      <h1>Esta función no está activa en tu plan</h1>
+      <p class="sus-lead">
+        Tu operación sigue funcionando con normalidad. Solo esta sección
+        (por ejemplo, WhatsApp) necesita un plan que la incluya y un pago
+        confirmado.
+      </p>
+      {% else %}
+      <p class="sus-eyebrow">Renovación</p>
+      <h1>Tu operación está en pausa</h1>
+      <p class="sus-lead">
+        La suscripción de tu empresa ya no está vigente. Tu información sigue
+        guardada; al confirmarse el pago se reactiva automáticamente.
+      </p>
+      {% endif %}
+
+      {% if messages %}
+      <div class="sus-motivos" role="status">
+        <strong>Motivo</strong>
+        {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if plan_nombre %}<p class="sus-plan">Plan actual: <strong>{{ plan_nombre }}</strong></p>{% endif %}
+
+      {% if planes_contratables %}
+      <div class="sus-planes" role="list">
+        {% for plan in planes_contratables %}
+        <form class="sus-plan-card" role="listitem" method="post" action="{% url 'subscriptions:create_checkout_session' %}">
+          {% csrf_token %}
+          <input type="hidden" name="plan" value="{{ plan.slug }}">
+          <strong>{{ plan.name }}</strong>
+          <span class="sus-precio">${{ plan.price|floatformat:"0g" }} <small>MXN al mes</small></span>
+          <small>Hasta {{ plan.max_users }} usuarios · {{ plan.max_warehouses }} bodega{{ plan.max_warehouses|pluralize }}</small>
+          <button type="submit" class="sus-btn is-primary">Contratar {{ plan.name }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="sus-acciones">
+        {% if suscripcion_vigente %}
+        <a class="sus-btn is-primary" href="{% url 'dashboard:ceo_dashboard' %}">Volver a mi panel</a>
+        <a class="sus-btn" href="{% url 'landing' %}#precios">Ver planes</a>
+        {% else %}
+        {% if not planes_contratables %}
+        <form method="post" action="{% url 'subscriptions:create_checkout_session' %}">
+          {% csrf_token %}
+          <button type="submit" class="sus-btn is-primary">Renovar suscripción</button>
+        </form>
+        {% endif %}
+        <a class="sus-btn" href="{% url 'landing' %}#precios">Ver planes y precios</a>
+        {% endif %}
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="sus-btn is-quiet">Cerrar sesión</button>
+        </form>
+      </div>
+      {% if not suscripcion_vigente %}
+      <p class="sus-nota">El precio vigente de tu plan se confirma en la página de pago seguro de Stripe.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

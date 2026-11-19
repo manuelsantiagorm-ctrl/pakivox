@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4"><div><h1 class="h3 mb-1">{{ channel.channel_name }}</h1><p class="text-muted mb-0">Folio {{ channel.onboarding_reference }}</p></div><a class="btn btn-outline-secondary" href="{% url 'messaging:owner_onboarding_list' %}">Volver</a></div>
+  <div class="row g-4"><div class="col-lg-5">
+    <div class="card mb-4"><div class="card-body"><h2 class="h5">Solicitud</h2><dl class="row mb-0"><dt class="col-5">Empresa</dt><dd class="col-7">{{ channel.company.name }}</dd><dt class="col-5">Bodega</dt><dd class="col-7">{{ channel.warehouse.name }}</dd><dt class="col-5">Número</dt><dd class="col-7">{{ channel.display_number }}</dd><dt class="col-5">Modalidad</dt><dd class="col-7">{{ channel.get_connection_mode_display }}</dd><dt class="col-5">Estado</dt><dd class="col-7">{{ channel.get_activation_status_display }}</dd></dl></div></div>
+    <div class="card"><div class="card-body"><h2 class="h5">Cambiar estado</h2><form method="post" action="{% url 'messaging:owner_onboarding_transition' channel.pk %}">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}<button class="btn btn-primary">Guardar cambio</button></form></div></div>
+  </div><div class="col-lg-7"><div class="card"><div class="card-body"><h2 class="h5">Auditoría</h2>{% for event in events %}<div class="border-start border-3 ps-3 pb-4"><div class="fw-semibold">{{ event.previous_status }} → {{ event.new_status }}</div><small class="text-muted">{{ event.created_at|date:"d/m/Y H:i:s" }} · {{ event.created_by }}</small>{% if event.public_note %}<div class="mt-2"><strong>Cliente:</strong> {{ event.public_note }}</div>{% endif %}{% if event.internal_note %}<div class="mt-1"><strong>Interna:</strong> {{ event.internal_note }}</div>{% endif %}</div>{% empty %}<p class="text-muted">Todavía no hay cambios registrados.</p>{% endfor %}</div></div></div></div>
+</div>
+{% endblock %}
+

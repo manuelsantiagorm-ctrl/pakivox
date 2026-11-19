@@ -1,0 +1,259 @@
+<section class="founder-attention-center" id="atencion">
+
+  <div class="founder-attention-heading">
+
+    <div>
+      <span class="founder-attention-kicker">
+        OPERATIONS / ATTENTION CENTER
+      </span>
+
+      <h2>
+        Lo que necesita tu atención
+      </h2>
+
+      <p>
+        Aquí aparecen únicamente situaciones que pueden requerir intervención.
+      </p>
+    </div>
+
+
+    {% if not founder.system.database.ok or not founder.system.shipping_worker.online or founder.system.shipping_purchases.manual_review or founder.system.shipping_purchases.possible_charge or founder.system.shipping_events.dead_letter %}
+
+      <span class="founder-attention-global bad">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Atención requerida
+      </span>
+
+    {% else %}
+
+      <span class="founder-attention-global good">
+        <i class="bi bi-shield-check"></i>
+        Sin incidentes activos
+      </span>
+
+    {% endif %}
+
+  </div>
+
+
+  {% if not founder.system.database.ok or not founder.system.shipping_worker.online or founder.system.shipping_purchases.manual_review or founder.system.shipping_purchases.possible_charge or founder.system.shipping_events.dead_letter %}
+
+    <div class="founder-attention-grid">
+
+
+      {% if not founder.system.database.ok %}
+
+        <article class="founder-incident-card critical">
+
+          <div class="founder-incident-top">
+
+            <span class="founder-incident-icon">
+              <i class="bi bi-database-fill-exclamation"></i>
+            </span>
+
+            <span class="founder-incident-state bad">
+              CRÍTICO
+            </span>
+
+          </div>
+
+          <div class="founder-incident-body">
+
+            <span class="founder-incident-category">
+              POSTGRESQL
+            </span>
+
+            <strong>
+              Base de datos sin respuesta
+            </strong>
+
+            <p>
+              La comprobación SELECT 1 no pudo completarse.
+            </p>
+
+          </div>
+
+        </article>
+
+      {% endif %}
+
+
+      {% if not founder.system.shipping_worker.online %}
+
+        <article class="founder-incident-card critical">
+
+          <div class="founder-incident-top">
+
+            <span class="founder-incident-icon">
+              <i class="bi bi-cpu-fill"></i>
+            </span>
+
+            <span class="founder-incident-state bad">
+              OFFLINE
+            </span>
+
+          </div>
+
+          <div class="founder-incident-body">
+
+            <span class="founder-incident-category">
+              SHIPPING WORKER
+            </span>
+
+            <strong>
+              {{ founder.system.shipping_worker.status }}
+            </strong>
+
+            <p>
+              {% if founder.system.shipping_worker.age_seconds != None %}
+                Último heartbeat hace
+                {{ founder.system.shipping_worker.age_seconds }} segundos.
+              {% else %}
+                No existe heartbeat disponible.
+              {% endif %}
+            </p>
+
+          </div>
+
+        </article>
+
+      {% endif %}
+
+
+      {% if founder.system.shipping_purchases.manual_review %}
+
+        <article class="founder-incident-card warning">
+
+          <div class="founder-incident-top">
+
+            <span class="founder-incident-icon">
+              <i class="bi bi-person-exclamation"></i>
+            </span>
+
+            <span class="founder-incident-state warn">
+              {{ founder.system.shipping_purchases.manual_review }}
+            </span>
+
+          </div>
+
+          <div class="founder-incident-body">
+
+            <span class="founder-incident-category">
+              SHIPPING
+            </span>
+
+            <strong>
+              Guías en revisión manual
+            </strong>
+
+            <p>
+              Existen operaciones que necesitan intervención humana.
+            </p>
+
+          </div>
+
+        </article>
+
+      {% endif %}
+
+
+      {% if founder.system.shipping_purchases.possible_charge %}
+
+        <article class="founder-incident-card critical">
+
+          <div class="founder-incident-top">
+
+            <span class="founder-incident-icon">
+              <i class="bi bi-currency-dollar"></i>
+            </span>
+
+            <span class="founder-incident-state bad">
+              {{ founder.system.shipping_purchases.possible_charge }}
+            </span>
+
+          </div>
+
+          <div class="founder-incident-body">
+
+            <span class="founder-incident-category">
+              POSIBLE COBRO
+            </span>
+
+            <strong>
+              Operaciones con cobro incierto
+            </strong>
+
+            <p>
+              No repitas la compra hasta realizar conciliación.
+            </p>
+
+          </div>
+
+        </article>
+
+      {% endif %}
+
+
+      {% if founder.system.shipping_events.dead_letter %}
+
+        <article class="founder-incident-card critical">
+
+          <div class="founder-incident-top">
+
+            <span class="founder-incident-icon">
+              <i class="bi bi-inboxes-fill"></i>
+            </span>
+
+            <span class="founder-incident-state bad">
+              {{ founder.system.shipping_events.dead_letter }}
+            </span>
+
+          </div>
+
+          <div class="founder-incident-body">
+
+            <span class="founder-incident-category">
+              EVENTS
+            </span>
+
+            <strong>
+              Eventos Dead Letter
+            </strong>
+
+            <p>
+              Existen eventos que agotaron sus intentos de procesamiento.
+            </p>
+
+          </div>
+
+        </article>
+
+      {% endif %}
+
+    </div>
+
+
+  {% else %}
+
+    <div class="fv3c-all-clear">
+
+      <span>
+        <i class="bi bi-check-circle-fill"></i>
+      </span>
+
+      <div>
+        <strong>
+          Operación sin incidentes críticos
+        </strong>
+
+        <small>
+          PostgreSQL, Shipping Worker y operaciones sensibles
+          no presentan condiciones que requieran intervención.
+        </small>
+      </div>
+
+    </div>
+
+  {% endif %}
+
+</section>

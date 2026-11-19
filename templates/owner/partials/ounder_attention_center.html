@@ -1,0 +1,431 @@
+﻿<section class="founder-attention-center" id="atencion">
+
+  <div class="founder-attention-heading">
+
+    <div>
+      <span class="founder-attention-kicker">
+        OPERATIONS / ATTENTION CENTER
+      </span>
+
+      <h2>
+        Lo que necesita tu atención ahora
+      </h2>
+
+      <p>
+        PAKIVOX prioriza aquí situaciones reales que podrían afectar
+        operación, dinero, guías o disponibilidad.
+      </p>
+    </div>
+
+    {% if founder.system.shipping_purchases.manual_review or founder.system.shipping_purchases.possible_charge or founder.system.shipping_events.dead_letter or not founder.system.database.ok or not founder.system.shipping_worker.online %}
+
+      <span class="founder-attention-global bad">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Atención requerida
+      </span>
+
+    {% else %}
+
+      <span class="founder-attention-global good">
+        <i class="bi bi-shield-check"></i>
+        Sin incidentes críticos
+      </span>
+
+    {% endif %}
+
+  </div>
+
+
+  <div class="founder-attention-grid">
+
+
+    <!-- =====================================================
+         DATABASE
+    ====================================================== -->
+
+    <article class="
+      founder-incident-card
+      {% if founder.system.database.ok %}
+        healthy
+      {% else %}
+        critical
+      {% endif %}
+    ">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-database"></i>
+        </span>
+
+        <span class="
+          founder-incident-state
+          {% if founder.system.database.ok %}
+            good
+          {% else %}
+            bad
+          {% endif %}
+        ">
+          {% if founder.system.database.ok %}
+            OPERATIVO
+          {% else %}
+            CRÍTICO
+          {% endif %}
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          POSTGRESQL
+        </span>
+
+        <strong>
+          {% if founder.system.database.ok %}
+            Base de datos respondiendo
+          {% else %}
+            Base de datos no disponible
+          {% endif %}
+        </strong>
+
+        <p>
+          {% if founder.system.database.ok %}
+            Respuesta actual:
+            {{ founder.system.database.latency_ms }} ms.
+          {% else %}
+            PAKIVOX no pudo completar la comprobación SELECT 1.
+          {% endif %}
+        </p>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         WORKER
+    ====================================================== -->
+
+    <article class="
+      founder-incident-card
+      {% if founder.system.shipping_worker.online %}
+        healthy
+      {% else %}
+        critical
+      {% endif %}
+    ">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-cpu"></i>
+        </span>
+
+        <span class="
+          founder-incident-state
+          {% if founder.system.shipping_worker.online %}
+            good
+          {% else %}
+            bad
+          {% endif %}
+        ">
+          {% if founder.system.shipping_worker.online %}
+            ONLINE
+          {% else %}
+            OFFLINE
+          {% endif %}
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          SHIPPING WORKER
+        </span>
+
+        <strong>
+          {{ founder.system.shipping_worker.status }}
+        </strong>
+
+        <p>
+          {% if founder.system.shipping_worker.age_seconds != None %}
+            Último heartbeat hace
+            {{ founder.system.shipping_worker.age_seconds }} segundos.
+          {% else %}
+            No existe heartbeat disponible.
+          {% endif %}
+        </p>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         MANUAL REVIEW
+    ====================================================== -->
+
+    <article class="
+      founder-incident-card
+      {% if founder.system.shipping_purchases.manual_review %}
+        warning
+      {% else %}
+        healthy
+      {% endif %}
+    ">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-person-exclamation"></i>
+        </span>
+
+        <span class="
+          founder-incident-state
+          {% if founder.system.shipping_purchases.manual_review %}
+            warn
+          {% else %}
+            good
+          {% endif %}
+        ">
+          {{ founder.system.shipping_purchases.manual_review }}
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          GUÍAS
+        </span>
+
+        <strong>
+          Revisión manual
+        </strong>
+
+        <p>
+          {% if founder.system.shipping_purchases.manual_review %}
+            Existen operaciones que necesitan intervención humana.
+          {% else %}
+            No existen guías esperando revisión manual.
+          {% endif %}
+        </p>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         POSSIBLE CHARGE
+    ====================================================== -->
+
+    <article class="
+      founder-incident-card
+      {% if founder.system.shipping_purchases.possible_charge %}
+        critical
+      {% else %}
+        healthy
+      {% endif %}
+    ">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-currency-dollar"></i>
+        </span>
+
+        <span class="
+          founder-incident-state
+          {% if founder.system.shipping_purchases.possible_charge %}
+            bad
+          {% else %}
+            good
+          {% endif %}
+        ">
+          {{ founder.system.shipping_purchases.possible_charge }}
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          COBRO INCIERTO
+        </span>
+
+        <strong>
+          Operaciones sensibles
+        </strong>
+
+        <p>
+          {% if founder.system.shipping_purchases.possible_charge %}
+            No deben repetirse compras hasta realizar conciliación.
+          {% else %}
+            No existen cobros inciertos detectados.
+          {% endif %}
+        </p>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         DEAD LETTER
+    ====================================================== -->
+
+    <article class="
+      founder-incident-card
+      {% if founder.system.shipping_events.dead_letter %}
+        critical
+      {% else %}
+        healthy
+      {% endif %}
+    ">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-inboxes-fill"></i>
+        </span>
+
+        <span class="
+          founder-incident-state
+          {% if founder.system.shipping_events.dead_letter %}
+            bad
+          {% else %}
+            good
+          {% endif %}
+        ">
+          {{ founder.system.shipping_events.dead_letter }}
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          WEBHOOKS / EVENTS
+        </span>
+
+        <strong>
+          Dead Letters
+        </strong>
+
+        <p>
+          {% if founder.system.shipping_events.dead_letter %}
+            Hay eventos que agotaron sus intentos de procesamiento.
+          {% else %}
+            No existen eventos dead-letter pendientes.
+          {% endif %}
+        </p>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         API OBSERVABILITY
+    ====================================================== -->
+
+    <article class="founder-incident-card pending">
+
+      <div class="founder-incident-top">
+
+        <span class="founder-incident-icon">
+          <i class="bi bi-cloud-arrow-up"></i>
+        </span>
+
+        <span class="founder-incident-state neutral">
+          PENDIENTE
+        </span>
+
+      </div>
+
+
+      <div class="founder-incident-body">
+
+        <span class="founder-incident-category">
+          API PROVIDERS
+        </span>
+
+        <strong>
+          Observabilidad externa
+        </strong>
+
+        <p>
+          Meta, Stripe, Skydropx, Envia y otros proveedores
+          tendrán health-check real en una fase posterior.
+        </p>
+
+      </div>
+
+    </article>
+
+
+  </div>
+
+
+  {% if founder.system.shipping_health.findings %}
+
+    <div class="founder-findings-panel">
+
+      <div class="founder-findings-title">
+
+        <div>
+          <i class="bi bi-radar"></i>
+
+          <span>
+            Hallazgos del Shipping Operations Center
+          </span>
+        </div>
+
+        <span>
+          {{ founder.system.shipping_health.findings|length }}
+        </span>
+
+      </div>
+
+
+      <div class="founder-findings-list">
+
+        {% for finding in founder.system.shipping_health.findings %}
+
+          <div class="founder-finding-row">
+
+            <span class="founder-finding-count">
+              {{ finding.count }}
+            </span>
+
+            <div>
+
+              <strong>
+                {{ finding.message }}
+              </strong>
+
+              <small>
+                {{ finding.code }}
+              </small>
+
+            </div>
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+  {% endif %}
+
+</section>

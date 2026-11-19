@@ -1,0 +1,118 @@
+{% comment %}
+  Panel "Avisar al cliente" del detalle del pedido.
+  Contexto: customer_updates (customer_updates/context.py) y order.
+{% endcomment %}
+{% if customer_updates %}
+{% with cu=customer_updates %}
+<div class="ps6b-side-card cu-panel" id="avisos-cliente" data-avisos-cliente>
+  <h4>
+    <i class="bi bi-send"></i>
+    Avisar al cliente
+  </h4>
+  <p class="cu-help">Sin costo por mensaje: tú mandas desde tu WhatsApp y el cliente sigue su pedido con un link.</p>
+
+  {# ---------------- Link de seguimiento ---------------- #}
+  <div class="cu-block">
+    <label class="cu-label" for="cuTrackingUrl">Link de seguimiento</label>
+    <div class="cu-copy-row">
+      <input id="cuTrackingUrl" class="cu-input" type="text" readonly value="{{ cu.tracking_url }}" data-cu-copy-source>
+      <button type="button" class="cu-icon-btn" data-cu-copy="#cuTrackingUrl" title="Copiar link" aria-label="Copiar link de seguimiento"><i class="bi bi-clipboard"></i></button>
+      <a class="cu-icon-btn" href="{{ cu.tracking_url }}" target="_blank" rel="noopener" title="Ver como cliente" aria-label="Abrir la página que ve el cliente"><i class="bi bi-box-arrow-up-right"></i></a>
+    </div>
+    <small class="cu-muted">
+      {% if cu.tracking_views %}El cliente lo ha abierto {{ cu.tracking_views }} vez{{ cu.tracking_views|pluralize:"es" }}{% if cu.tracking_last_viewed_at %} · última {{ cu.tracking_last_viewed_at|date:"d/m H:i" }}{% endif %}.{% else %}El cliente todavía no lo abre.{% endif %}
+    </small>
+  </div>
+
+  {% if cu.can_operate %}
+  {# ---------------- WhatsApp sin API ---------------- #}
+  <form class="cu-block" method="post" action="{% url 'sales:abrir_whatsapp_pedido' order.id %}" target="_blank" rel="noopener" data-sin-aviso data-cu-whatsapp-form>
+    {% csrf_token %}
+    <span class="cu-label">WhatsApp</span>
+
+    <fieldset class="cu-fieldset">
+      <legend class="cu-legend">Para</legend>
+      {% for candidate in cu.phone_candidates %}
+        <label class="cu-choice">
+          <input type="radio" name="phone" value="{{ candidate.phone }}" {% if forloop.first %}checked{% endif %} data-cu-phone-option>
+          <span>
+            <strong>{{ candidate.display }}</strong>
+            <small>{{ candidate.label }}{% if candidate.name %} · {{ candidate.name }}{% endif %}{% if forloop.first %} · recomendado{% endif %}</small>
+          </span>
+        </label>
+      {% endfor %}
+      <label class="cu-choice">
+        <input type="radio" name="phone" value="manual" {% if not cu.phone_candidates %}checked{% endif %} data-cu-phone-option data-cu-phone-manual>
+        <span><strong>Otro número</strong></span>
+      </label>
+      <input class="cu-input" type="tel" name="manual_phone" inputmode="tel" autocomplete="off" placeholder="10 dígitos, ej. 55 1234 5678" {% if cu.phone_candidates %}hidden{% endif %} data-cu-manual-input aria-label="Otro número de WhatsApp">
+      {% if not cu.phone_candidates %}
+        <small class="cu-warn">Este cliente no tiene teléfono registrado. Escríbelo aquí o agrégalo en su ficha del CRM.</small>
+      {% endif %}
+    </fieldset>
+
+    <fieldset class="cu-fieldset">
+      <legend class="cu-legend">Mensaje</legend>
+      <div class="cu-chips" role="group" aria-label="Elige el mensaje">
+        {% for draft in cu.drafts %}
+          <button type="button" class="cu-chip{% if draft.suggested %} is-active{% endif %}" data-cu-draft="{{ draft.key }}" aria-pressed="{% if draft.suggested %}true{% else %}false{% endif %}">
+            {{ draft.label }}{% if draft.suggested %} <span class="cu-badge">Sugerido</span>{% endif %}
+          </button>
+        {% endfor %}
+      </div>
+      {% for draft in cu.drafts %}
+        {% if draft.suggested %}
+          <input type="hidden" name="draft_key" value="{{ draft.key }}" data-cu-draft-key>
+          <textarea class="cu-textarea" name="body" rows="8" maxlength="1500" data-cu-body aria-label="Texto del mensaje">{{ draft.body }}</textarea>
+          <input type="hidden" name="original_body" value="{{ draft.body }}" data-cu-original>
+        {% endif %}
+      {% endfor %}
+      <small class="cu-muted">Puedes editar el texto antes de abrir WhatsApp.</small>
+    </fieldset>
+
+    <div class="cu-actions">
+      <button type="submit" class="cu-btn cu-btn-wa"><i class="bi bi-whatsapp"></i> Abrir en WhatsApp</button>
+      <button type="button" class="cu-btn cu-btn-ghost" data-cu-copy="[data-cu-body]"><i class="bi bi-clipboard"></i> Copiar texto</button>
+    </div>
+    <small class="cu-muted" data-cu-status aria-live="polite"></small>
+  </form>
+  {{ cu.drafts|json_script:"cuDraftsData" }}
+
+  {# ---------------- Correo ---------------- #}
+  <div class="cu-block">
+    <span class="cu-label">Correo</span>
+    {% if not cu.emails_enabled %}
+      <small class="cu-muted">Los correos a clientes están apagados en este servidor.</small>
+    {% elif cu.recipient_email %}
+      <small class="cu-muted">Avisos automáticos a <strong>{{ cu.recipient_email }}</strong> al registrar, pagar, enviar y entregar.</small>
+      <form method="post" action="{% url 'sales:enviar_correo_pedido' order.id %}" class="cu-inline-form">
+        {% csrf_token %}
+        <button type="submit" class="cu-btn cu-btn-ghost"><i class="bi bi-envelope"></i> Enviar estado por correo</button>
+      </form>
+    {% else %}
+      <small class="cu-warn">Sin correo del cliente. Agrégalo en su ficha del CRM para que reciba los avisos automáticos.</small>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{% url 'sales:renovar_link_seguimiento' order.id %}" class="cu-inline-form" data-cu-confirm="El link anterior dejará de abrir. ¿Generar uno nuevo?">
+    {% csrf_token %}
+    <button type="submit" class="cu-link-btn"><i class="bi bi-arrow-repeat"></i> Generar link nuevo (invalida el anterior)</button>
+  </form>
+  {% endif %}
+
+  {% if cu.recent_whatsapp or cu.recent_emails %}
+  <details class="cu-history">
+    <summary>Historial de avisos</summary>
+    <ul>
+      {% for log in cu.recent_whatsapp %}
+        <li><i class="bi bi-whatsapp"></i> {{ log.label }} · {{ log.created_at|date:"d/m H:i" }}{% if log.created_by %} · {{ log.created_by.get_full_name|default:log.created_by.email }}{% endif %}</li>
+      {% endfor %}
+      {% for notice in cu.recent_emails %}
+        <li><i class="bi bi-envelope"></i> {{ notice.get_event_type_display }} · {{ notice.get_status_display }} · {{ notice.created_at|date:"d/m H:i" }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endwith %}
+{% endif %}

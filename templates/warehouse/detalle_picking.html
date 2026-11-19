@@ -1,0 +1,1832 @@
+{% extends "base.html" %}
+
+{% block title %}
+Ruta de Picking {{ picking_order.order.folio }} | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Ruta de Picking
+{% endblock %}
+
+{% block page_subtitle %}
+Recolección guiada por ubicación de almacén
+{% endblock %}
+
+{% block content %}
+
+<section class="pick-page">
+
+  <!-- =====================================================
+       ENCABEZADO
+  ====================================================== -->
+
+  <header class="pick-hero">
+
+    <div class="pick-hero-main">
+
+      <span class="pick-eyebrow">
+        OPERACIÓN DE ALMACÉN
+      </span>
+
+      <div class="pick-title-row">
+
+        <div>
+          <h1>
+            {{ picking_order.order.folio }}
+          </h1>
+
+          <p>
+            {% if picking_order.order.customer %}
+              {{ picking_order.order.customer.full_name }}
+            {% else %}
+              Cliente no registrado
+            {% endif %}
+          </p>
+        </div>
+
+        <span class="pick-status pick-status-{{ picking_order.status }}">
+          {{ picking_order.get_status_display }}
+        </span>
+
+      </div>
+
+      <div class="pick-tags">
+
+        <span class="pick-tag">
+          <strong>Bodega:</strong>
+
+          {% if picking_order.warehouse %}
+            {{ picking_order.warehouse.name }}
+          {% else %}
+            Sin bodega
+          {% endif %}
+        </span>
+
+        <span class="pick-tag pick-tag-fulfillment">
+          <strong>Cumplimiento:</strong>
+
+          {% if picking_order.fulfillment %}
+            {{ picking_order.fulfillment.code }}
+          {% else %}
+            Flujo histórico
+          {% endif %}
+        </span>
+
+        <span class="pick-tag">
+          <strong>Operador:</strong>
+
+          {% if picking_order.assigned_to %}
+            {{ picking_order.assigned_to.username }}
+          {% else %}
+            Sin asignar
+          {% endif %}
+        </span>
+
+      </div>
+
+    </div>
+
+    <div class="pick-hero-actions">
+
+      <a
+        href="{% url 'sales:detalle_pedido' picking_order.order.id %}"
+        class="pick-btn pick-btn-secondary"
+      >
+        Ver pedido
+      </a>
+
+      <a
+        href="{% url 'warehouse:timeline_pedido' picking_order.order.id %}"
+        class="pick-btn pick-btn-secondary"
+      >
+        Ver timeline
+      </a>
+
+      {% if warehouse_read_only %}
+
+        <span class="pick-btn pick-btn-readonly">
+          <i class="bi bi-eye"></i>
+          Solo consulta
+        </span>
+        {% elif picking_order.status == "completed" and can_generate_packing %}
+        <a  href="{% url 'warehouse:generar_packing' picking_order.id %}"
+        class="pick-btn pick-btn-success"
+        >
+        Generar packing
+    </a>
+    {% elif picking_order.status == "completed" %}
+    <span class="pick-btn pick-btn-readonly">
+        <i class="bi bi-check2-circle"></i>
+        Enviado a Empacar
+    </span>
+    {% elif picking_order.status != "cancelled" %}
+
+        <form
+          method="post"
+          action="{% url 'warehouse:cancelar_picking' picking_order.id %}"
+          onsubmit="
+            return confirm(
+              '¿Cancelar este picking? El stock reservado será liberado.'
+            );
+          "
+        >
+          {% csrf_token %}
+
+          <input
+            type="hidden"
+            name="reason"
+            value="Cancelado desde la ruta de picking"
+          >
+
+          <button
+            type="submit"
+            class="pick-btn pick-btn-danger"
+          >
+            Cancelar picking
+          </button>
+        </form>
+
+      {% endif %}
+
+    </div>
+
+  </header>
+
+  {% if warehouse_read_only %}
+
+    <div class="pick-alert pick-alert-readonly">
+
+      <div class="pick-alert-icon">
+        <i class="bi bi-eye"></i>
+      </div>
+
+      <div>
+        <strong>Modo de consulta global</strong>
+
+        <p>
+          Estás visualizando esta ruta desde
+          “Todas las bodegas”.
+          Selecciona una bodega específica para confirmar
+          productos, reportar daños, cancelar el picking
+          o generar packing.
+        </p>
+      </div>
+
+    </div>
+
+  {% endif %}
+
+  <!-- =====================================================
+       ALERTAS
+  ====================================================== -->
+
+  {% if picking_order.status == "completed" %}
+
+    <div class="pick-alert pick-alert-success">
+
+      <div class="pick-alert-icon">
+        ✓
+      </div>
+
+      <div>
+        <strong>Picking completado</strong>
+
+        <p>
+          Todos los productos fueron recolectados.
+          El pedido puede continuar a packing.
+        </p>
+      </div>
+
+    </div>
+
+  {% elif picking_order.status == "cancelled" %}
+
+    <div class="pick-alert pick-alert-danger">
+
+      <div class="pick-alert-icon">
+        !
+      </div>
+
+      <div>
+        <strong>Picking cancelado</strong>
+
+        <p>
+          Esta ruta fue cancelada y el stock reservado fue liberado.
+        </p>
+
+        {% if picking_order.cancel_reason %}
+          <small>
+            Motivo: {{ picking_order.cancel_reason }}
+          </small>
+        {% endif %}
+      </div>
+
+    </div>
+
+  {% endif %}
+
+  <!-- =====================================================
+       RESUMEN
+  ====================================================== -->
+
+  <section class="pick-overview">
+
+    <article class="pick-kpi">
+
+      <span>Total de productos</span>
+
+      <strong>
+        {{ total_items }}
+      </strong>
+
+      <small>
+        Líneas en la ruta
+      </small>
+
+    </article>
+
+    <article class="pick-kpi">
+
+      <span>Recolectados</span>
+
+      <strong class="text-success">
+        {{ picked_items }}
+      </strong>
+
+      <small>
+        Productos confirmados
+      </small>
+
+    </article>
+
+    <article class="pick-kpi">
+
+      <span>Pendientes</span>
+
+      <strong class="text-warning">
+        {{ pending_items }}
+      </strong>
+
+      <small>
+        Productos por recoger
+      </small>
+
+    </article>
+
+    <article class="pick-kpi">
+
+      <span>Progreso</span>
+
+      <strong>
+        {{ progress_percent }}%
+      </strong>
+
+      <div class="pick-progress">
+
+        <div
+          class="pick-progress-value"
+          style="width: {{ progress_percent }}%;"
+        ></div>
+
+      </div>
+
+    </article>
+
+  </section>
+
+  <!-- =====================================================
+       RUTA
+  ====================================================== -->
+
+  <div class="pick-section-header">
+
+    <div>
+      <span>RUTA OPTIMIZADA</span>
+
+      <h2>
+        Productos por recolectar
+      </h2>
+
+      <p>
+        Sigue el orden indicado y confirma el código de cada ubicación.
+      </p>
+    </div>
+
+    <div class="pick-section-counter">
+      {{ picked_items }} de {{ total_items }}
+    </div>
+
+  </div>
+
+  <section class="pick-route">
+
+    {% for item in picking_items %}
+
+      <article
+        class="
+          pick-item
+          pick-item-{{ item.status }}
+          {% if item.has_issue %}
+            pick-item-issue
+          {% endif %}
+        "
+      >
+
+        <!-- NÚMERO DE RUTA -->
+
+        <div class="pick-step">
+
+          <span>
+            {{ item.route_order }}
+          </span>
+
+          {% if not forloop.last %}
+            <div class="pick-step-line"></div>
+          {% endif %}
+
+        </div>
+
+        <!-- INFORMACIÓN DEL PRODUCTO -->
+
+        <div class="pick-product">
+
+          <div class="pick-product-top">
+
+            <div class="pick-location">
+
+              {% if item.location %}
+
+                <span class="pick-location-label">
+                  UBICACIÓN
+                </span>
+
+                <strong>
+                  Pasillo {{ item.location.aisle|default:"-" }}
+                  · Anaquel {{ item.location.rack|default:"-" }}
+                  · Nivel {{ item.location.level|default:"-" }}
+                </strong>
+
+              {% else %}
+
+                <span class="pick-location-error">
+                  Sin ubicación asignada
+                </span>
+
+              {% endif %}
+
+            </div>
+
+            <span class="pick-item-status pick-item-status-{{ item.status }}">
+              {{ item.get_status_display }}
+            </span>
+
+          </div>
+
+          {% if item.trace_allocation %}
+            <div class="lt1d-lot-panel">
+              <span>LOTE ASIGNADO</span>
+              <strong>{{ item.trace_allocation.lot.lot_number }}</strong>
+              <small>
+                {% if item.trace_allocation.lot.expiration_date %}
+                  Caduca {{ item.trace_allocation.lot.expiration_date|date:"d/m/Y" }} ·
+                {% endif %}
+                {{ item.trace_allocation.get_status_display }} ·
+                {{ item.trace_allocation.quantity }} unidades
+              </small>
+              <a href="{% url 'warehouse:lot_traceability_detail' item.trace_allocation.lot.id %}">
+                Ver trazabilidad
+              </a>
+            </div>
+          {% endif %}
+
+          <div class="pick-product-heading">
+
+            <div>
+
+              <span class="pick-sku-label">
+                SKU
+              </span>
+
+              <h3>
+                {{ item.variant.sku }}
+              </h3>
+
+              {% if item.variant.product %}
+
+                <p>
+                  {{ item.variant.product.name }}
+                </p>
+
+              {% endif %}
+
+            </div>
+
+            {% if item.variant.product.stock_mode == "bulk" %}
+
+              <div class="pick-bulk-badge">
+
+                <span>
+                  Producto por volumen
+                </span>
+
+                <strong>
+                  1
+                  {{ item.variant.product.get_commercial_unit_display|default:"unidad" }}
+                  =
+                  {{ item.variant.product.conversion_factor|default:"1" }}
+                  {{ item.variant.product.get_base_unit_display|default:"piezas" }}
+                </strong>
+
+              </div>
+
+            {% else %}
+
+              <div class="pick-unit-badge">
+                Producto unitario
+              </div>
+
+            {% endif %}
+
+          </div>
+
+          <!-- CANTIDADES -->
+
+          <div class="pick-quantities">
+
+            <div class="pick-quantity">
+
+              <span>Requerido</span>
+
+              <strong>
+                {{ item.required_quantity|default:0 }}
+              </strong>
+
+              <small>
+                {{ item.variant.product.get_base_unit_display|default:"piezas internas" }}
+              </small>
+
+            </div>
+
+            <div class="pick-quantity">
+
+              <span>Recolectado</span>
+
+              <strong class="text-success">
+                {{ item.picked_quantity|default:0 }}
+              </strong>
+
+              <small>
+                {{ item.variant.product.get_base_unit_display|default:"piezas internas" }}
+              </small>
+
+            </div>
+
+            <div class="pick-quantity">
+
+              <span>Pendiente</span>
+
+              <strong class="text-warning">
+                {{ item.remaining_quantity|default:0 }}
+              </strong>
+
+              <small>
+                {{ item.variant.product.get_base_unit_display|default:"piezas internas" }}
+              </small>
+
+            </div>
+
+            <div class="pick-quantity">
+
+              <span>Dañado</span>
+
+              <strong class="text-danger">
+                {{ item.damaged_quantity|default:0 }}
+              </strong>
+
+              <small>
+                {{ item.variant.product.get_base_unit_display|default:"piezas internas" }}
+              </small>
+
+            </div>
+
+          </div>
+
+          <!-- CÓDIGO DE UBICACIÓN -->
+
+          {% if item.location %}
+
+            <div class="pick-code">
+
+              <span>
+                Código de ubicación
+              </span>
+
+              <strong>
+                {{ item.location.bin_code }}
+              </strong>
+
+            </div>
+
+          {% endif %}
+
+          {% if item.replacement_location %}
+
+            <div class="pick-reassigned">
+
+              <span>
+                Ubicación reasignada
+              </span>
+
+              <strong>
+                {{ item.replacement_location.bin_code }}
+              </strong>
+
+            </div>
+
+          {% endif %}
+
+          {% if item.scanned_code %}
+
+            <div class="pick-last-scan">
+              Último escaneo:
+              <strong>
+                {{ item.scanned_code }}
+              </strong>
+            </div>
+
+          {% endif %}
+
+          {% if item.has_issue %}
+
+            <div class="pick-issue">
+
+              <strong>
+                Incidencia detectada
+              </strong>
+
+              <p>
+                {% if item.issue_note %}
+                  {{ item.issue_note }}
+                {% else %}
+                  Revisa este producto antes de continuar.
+                {% endif %}
+              </p>
+
+            </div>
+
+          {% endif %}
+
+        </div>
+
+        <!-- PANEL DE ACCIONES -->
+
+        <aside class="pick-action-panel">
+
+          {% if warehouse_read_only %}
+
+            <div class="pick-action-finished pick-action-readonly">
+
+              <span>
+                <i class="bi bi-eye"></i>
+              </span>
+
+              <strong>
+                Solo consulta
+              </strong>
+
+              <small>
+                Selecciona {{ picking_order.warehouse.name }}
+                para operar esta ruta
+              </small>
+
+            </div>
+
+          {% elif picking_order.status == "cancelled" %}
+
+            <div class="pick-action-finished pick-action-cancelled">
+
+              <span>✕</span>
+
+              <strong>
+                Picking cancelado
+              </strong>
+
+            </div>
+
+          {% elif item.status == "picked" %}
+
+            <div class="pick-action-finished">
+
+              <span>✓</span>
+
+              <strong>
+                Producto recolectado
+              </strong>
+
+              <small>
+                Ubicación confirmada
+              </small>
+
+            </div>
+
+          {% elif item.location %}
+
+            <form
+              method="post"
+              action="{% url 'warehouse:confirmar_item_picking' item.id %}"
+              class="pick-scan-form"
+            >
+
+              {% csrf_token %}
+
+              <label for="scan-input-{{ item.id }}">
+                Escanear ubicación
+              </label>
+
+              <div class="pick-scan-input">
+
+                <input
+                  type="text"
+                  name="scanned_code"
+                  id="scan-input-{{ item.id }}"
+                  placeholder="Código QR o ubicación"
+                  autocomplete="off"
+                  required
+                >
+
+                <button
+                  type="button"
+                  class="pick-camera-btn"
+                  onclick="openScanner('{{ item.id }}')"
+                  title="Abrir cámara"
+                >
+                  QR
+                </button>
+
+              </div>
+
+              <button
+                type="submit"
+                class="pick-confirm-btn"
+              >
+                Confirmar recolección
+              </button>
+
+            </form>
+
+            <details class="pick-damage">
+
+              <summary>
+                Reportar producto dañado
+              </summary>
+
+              <form
+                method="post"
+                action="{% url 'warehouse:reportar_item_danado' item.id %}"
+                onsubmit="
+                  return confirm(
+                    '¿Confirmas que este producto está dañado?'
+                  );
+                "
+              >
+
+                {% csrf_token %}
+
+                <label>
+                  Cantidad dañada
+
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    max="{{ item.required_quantity }}"
+                    value="1"
+                    required
+                  >
+                </label>
+
+                <label>
+                  Motivo
+
+                  <input
+                    type="text"
+                    name="reason"
+                    placeholder="Describe el daño"
+                    required
+                  >
+                </label>
+
+                <button
+                  type="submit"
+                  class="pick-damage-btn"
+                >
+                  Confirmar daño
+                </button>
+
+              </form>
+
+            </details>
+
+          {% else %}
+
+            <div class="pick-action-finished pick-action-cancelled">
+
+              <span>!</span>
+
+              <strong>
+                Sin ubicación disponible
+              </strong>
+
+              <small>
+                Requiere intervención
+              </small>
+
+            </div>
+
+          {% endif %}
+
+        </aside>
+
+      </article>
+
+    {% empty %}
+
+      <div class="pick-empty">
+
+        <h3>
+          Esta ruta no tiene productos
+        </h3>
+
+        <p>
+          Revisa el pedido y vuelve a generar el picking.
+        </p>
+
+      </div>
+
+    {% endfor %}
+
+  </section>
+
+</section>
+
+<!-- =====================================================
+     MODAL QR
+====================================================== -->
+
+<div
+  id="qr-modal"
+  class="pick-modal"
+  aria-hidden="true"
+>
+
+  <div class="pick-modal-card">
+
+    <div class="pick-modal-header">
+
+      <div>
+        <span>ESCÁNER</span>
+        <h3>Escanear ubicación</h3>
+      </div>
+
+      <button
+        type="button"
+        onclick="closeScanner()"
+      >
+        Cerrar
+      </button>
+
+    </div>
+
+    <div id="qr-reader"></div>
+
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+  let activeScanner = null;
+  let activeInputId = null;
+
+  function openScanner(itemId) {
+    activeInputId = `scan-input-${itemId}`;
+
+    const modal = document.getElementById("qr-modal");
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+
+    if (
+      typeof Html5Qrcode === "undefined"
+    ) {
+      alert(
+        "No fue posible cargar el lector QR."
+      );
+
+      closeScanner();
+      return;
+    }
+
+    activeScanner = new Html5Qrcode(
+      "qr-reader"
+    );
+
+    activeScanner.start(
+      {
+        facingMode: "environment"
+      },
+      {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+      },
+      function(decodedText) {
+        const input = document.getElementById(
+          activeInputId
+        );
+
+        if (input) {
+          input.value = decodedText;
+          input.focus();
+        }
+
+        closeScanner();
+      },
+      function() {
+        // Ignoramos lecturas fallidas mientras
+        // la cámara continúa buscando el código.
+      }
+    ).catch(function(error) {
+      console.error(error);
+
+      alert(
+        "No fue posible abrir la cámara."
+      );
+
+      closeScanner();
+    });
+  }
+
+  function closeScanner() {
+    const modal = document.getElementById(
+      "qr-modal"
+    );
+
+    modal.classList.remove("is-open");
+    modal.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+    if (!activeScanner) {
+      return;
+    }
+
+    activeScanner.stop()
+      .then(function() {
+        activeScanner.clear();
+        activeScanner = null;
+      })
+      .catch(function() {
+        activeScanner = null;
+      });
+  }
+
+  document.addEventListener(
+    "keydown",
+    function(event) {
+      if (event.key === "Escape") {
+        closeScanner();
+      }
+    }
+  );
+</script>
+
+<style>
+  .pick-page {
+    display: grid;
+    gap: 22px;
+    width: 100%;
+  }
+
+  .pick-page *,
+  .pick-page *::before,
+  .pick-page *::after {
+    box-sizing: border-box;
+  }
+
+  .pick-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 18px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(56, 189, 248, 0.12),
+        transparent 36%
+      ),
+      #0f172a;
+  }
+
+  .pick-hero-main {
+    min-width: 0;
+  }
+
+  .pick-eyebrow,
+  .pick-section-header span,
+  .pick-modal-header span {
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+
+  .pick-title-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 7px;
+  }
+
+  .pick-title-row h1 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1;
+  }
+
+  .pick-title-row p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+  }
+
+  .pick-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .pick-tag {
+    padding: 8px 11px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.08);
+    color: #bae6fd;
+    font-size: 12px;
+  }
+
+  .pick-tag strong {
+    color: #7dd3fc;
+  }
+
+  .pick-hero-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  .pick-hero-actions form {
+    margin: 0;
+  }
+
+  .pick-btn {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 10px;
+    text-decoration: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    transition:
+      transform 0.16s ease,
+      filter 0.16s ease,
+      background 0.16s ease;
+  }
+
+  .pick-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+
+  .pick-btn-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: #172033;
+    color: #e2e8f0;
+  }
+
+  .pick-btn-success {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .pick-btn-danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .pick-status,
+  .pick-item-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .pick-status {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .pick-item-status {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .pick-status-pending,
+  .pick-item-status-pending {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fcd34d;
+  }
+
+  .pick-status-in_progress,
+  .pick-item-status-in_progress,
+  .pick-item-status-reassigned {
+    background: rgba(56, 189, 248, 0.14);
+    color: #7dd3fc;
+  }
+
+  .pick-status-completed,
+  .pick-item-status-picked {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+  }
+
+  .pick-status-cancelled,
+  .pick-item-status-damaged,
+  .pick-item-status-error {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+  }
+
+  .pick-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  .pick-alert-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    font-weight: 900;
+  }
+
+  .pick-alert strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .pick-alert p {
+    margin: 0;
+  }
+
+  .pick-alert-success {
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.09);
+    color: #bbf7d0;
+  }
+
+  .pick-alert-success .pick-alert-icon {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .pick-alert-danger {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.09);
+    color: #fecaca;
+  }
+
+  .pick-alert-danger .pick-alert-icon {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .pick-overview {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .pick-kpi {
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid rgba(148, 163, 184, 0.17);
+    border-radius: 14px;
+    background: #0f172a;
+  }
+
+  .pick-kpi > span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .pick-kpi > strong {
+    display: block;
+    margin-top: 7px;
+    color: #f8fafc;
+    font-size: 25px;
+  }
+
+  .pick-kpi > small {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+  }
+
+  .pick-progress {
+    height: 7px;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #020617;
+  }
+
+  .pick-progress-value {
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      #38bdf8,
+      #22c55e
+    );
+  }
+
+  .pick-section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  .pick-section-header h2 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+    font-size: 23px;
+  }
+
+  .pick-section-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+  }
+
+  .pick-section-counter {
+    padding: 9px 13px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.08);
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .pick-route {
+    display: grid;
+    gap: 14px;
+  }
+
+  .pick-item {
+    display: grid;
+    grid-template-columns:
+      48px
+      minmax(0, 1fr)
+      minmax(290px, 350px);
+    gap: 17px;
+    align-items: stretch;
+    padding: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.17);
+    border-radius: 16px;
+    background: #0f172a;
+  }
+
+  .pick-item-picked {
+    border-color: rgba(34, 197, 94, 0.28);
+  }
+
+  .pick-item-issue,
+  .pick-item-damaged {
+    border-color: rgba(245, 158, 11, 0.38);
+  }
+
+  .pick-step {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+
+  .pick-step > span {
+    position: relative;
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #38bdf8;
+    color: #082f49;
+    font-weight: 950;
+  }
+
+  .pick-item-picked .pick-step > span {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .pick-step-line {
+    position: absolute;
+    z-index: 1;
+    top: 40px;
+    bottom: -36px;
+    width: 2px;
+    background: rgba(56, 189, 248, 0.2);
+  }
+
+  .pick-product {
+    min-width: 0;
+  }
+
+  .pick-product-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .pick-location-label,
+  .pick-sku-label,
+  .pick-code span,
+  .pick-reassigned span {
+    display: block;
+    color: #38bdf8;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .pick-location strong {
+    display: block;
+    margin-top: 4px;
+    color: #bae6fd;
+    font-size: 12px;
+  }
+
+  .pick-location-error {
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .pick-product-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 17px;
+  }
+
+  .pick-product-heading h3 {
+    margin: 4px 0 0;
+    color: #f8fafc;
+    font-size: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  .pick-product-heading p {
+    margin: 5px 0 0;
+    color: #94a3b8;
+  }
+
+  .pick-bulk-badge,
+  .pick-unit-badge {
+    flex: 0 0 auto;
+    border-radius: 10px;
+  }
+
+  .pick-unit-badge {
+    padding: 8px 10px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    background: rgba(56, 189, 248, 0.08);
+    color: #7dd3fc;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .pick-bulk-badge {
+    max-width: 260px;
+    padding: 10px 12px;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .pick-bulk-badge span {
+    display: block;
+    color: #fbbf24;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pick-bulk-badge strong {
+    display: block;
+    margin-top: 4px;
+    color: #fde68a;
+    font-size: 11px;
+  }
+
+  .pick-quantities {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 17px;
+  }
+
+  .pick-quantity {
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid rgba(148, 163, 184, 0.13);
+    border-radius: 10px;
+    background: #070e1e;
+  }
+
+  .pick-quantity span {
+    display: block;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pick-quantity strong {
+    display: block;
+    margin-top: 5px;
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  .pick-quantity small {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .pick-code,
+  .pick-reassigned {
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: 10px;
+  }
+
+  .pick-code {
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(56, 189, 248, 0.07);
+  }
+
+  .pick-code strong,
+  .pick-reassigned strong {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .pick-code strong {
+    color: #e0f2fe;
+  }
+
+  .pick-reassigned {
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  .pick-reassigned span,
+  .pick-reassigned strong {
+    color: #86efac;
+  }
+
+  .pick-last-scan {
+    margin-top: 10px;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .pick-last-scan strong {
+    color: #cbd5e1;
+  }
+
+  .pick-issue {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.08);
+    color: #fde68a;
+  }
+
+  .pick-issue p {
+    margin: 4px 0 0;
+  }
+
+  .pick-action-panel {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 15px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 13px;
+    background: #0a1222;
+  }
+
+  .pick-scan-form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .pick-scan-form > label,
+  .pick-damage label {
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .pick-scan-input {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 50px;
+    gap: 7px;
+  }
+
+  .pick-scan-input input,
+  .pick-damage input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid rgba(148, 163, 184, 0.23);
+    border-radius: 9px;
+    outline: none;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+  .pick-scan-input input:focus,
+  .pick-damage input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  }
+
+  .pick-camera-btn,
+  .pick-confirm-btn,
+  .pick-damage-btn {
+    border: 0;
+    border-radius: 9px;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .pick-camera-btn {
+    background: rgba(56, 189, 248, 0.15);
+    color: #7dd3fc;
+  }
+
+  .pick-confirm-btn {
+    min-height: 42px;
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .pick-damage {
+    border-top: 1px solid rgba(148, 163, 184, 0.13);
+    padding-top: 11px;
+  }
+
+  .pick-damage summary {
+    color: #fca5a5;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .pick-damage form {
+    display: grid;
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .pick-damage label {
+    display: grid;
+    gap: 5px;
+  }
+
+  .pick-damage-btn {
+    min-height: 40px;
+    background: #f97316;
+    color: #431407;
+  }
+
+  .pick-action-finished {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    padding: 18px;
+    text-align: center;
+    color: #86efac;
+  }
+
+  .pick-action-finished > span {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #22c55e;
+    color: #052e16;
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  .pick-action-finished small {
+    color: #64748b;
+  }
+
+  .pick-action-cancelled {
+    color: #fca5a5;
+  }
+
+  .pick-action-cancelled > span {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .pick-empty {
+    padding: 35px;
+    border: 1px dashed rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    background: #0f172a;
+    text-align: center;
+  }
+
+  .pick-empty h3 {
+    margin: 0;
+    color: #f8fafc;
+  }
+
+  .pick-empty p {
+    margin: 8px 0 0;
+    color: #64748b;
+  }
+
+  .pick-modal {
+    position: fixed;
+    z-index: 99999;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, 0.9);
+    backdrop-filter: blur(7px);
+  }
+
+  .pick-modal.is-open {
+    display: flex;
+  }
+
+  .pick-modal-card {
+    width: min(460px, 100%);
+    padding: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 16px;
+    background: #0f172a;
+  }
+
+  .pick-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .pick-modal-header h3 {
+    margin: 4px 0 0;
+    color: #f8fafc;
+  }
+
+  .pick-modal-header button {
+    padding: 8px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    background: #172033;
+    color: #e2e8f0;
+    cursor: pointer;
+  }
+
+  #qr-reader {
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .text-success {
+    color: #4ade80 !important;
+  }
+
+  .text-warning {
+    color: #fbbf24 !important;
+  }
+
+  .text-danger {
+    color: #f87171 !important;
+  }
+
+  @media (max-width: 1200px) {
+    .pick-item {
+      grid-template-columns:
+        44px
+        minmax(0, 1fr);
+    }
+
+    .pick-action-panel {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .pick-hero {
+      display: grid;
+    }
+
+    .pick-hero-actions {
+      justify-content: flex-start;
+    }
+
+    .pick-overview {
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    }
+
+    .pick-product-heading {
+      display: grid;
+    }
+
+    .pick-bulk-badge,
+    .pick-unit-badge {
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .pick-quantities {
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .pick-hero,
+    .pick-item {
+      padding: 14px;
+    }
+
+    .pick-hero-actions,
+    .pick-hero-actions form,
+    .pick-btn {
+      width: 100%;
+    }
+
+    .pick-overview {
+      grid-template-columns: 1fr;
+    }
+
+    .pick-section-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .pick-item {
+      grid-template-columns: 1fr;
+    }
+
+    .pick-step {
+      justify-content: flex-start;
+    }
+
+    .pick-step-line {
+      display: none;
+    }
+
+    .pick-action-panel {
+      grid-column: 1;
+    }
+
+    .pick-product-top {
+      display: grid;
+    }
+
+    .pick-quantities {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+
+  /* =====================================================
+     MODO MULTIBODEGA DE SOLO CONSULTA
+  ====================================================== */
+
+  .pick-tag-fulfillment {
+    border-color: rgba(167, 139, 250, 0.28);
+    background: rgba(139, 92, 246, 0.09);
+    color: #ddd6fe;
+  }
+
+  .pick-tag-fulfillment strong {
+    color: #c4b5fd;
+  }
+
+  .pick-btn-readonly {
+    gap: 7px;
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    background: rgba(250, 204, 21, 0.09);
+    color: #fde68a;
+    cursor: default;
+  }
+
+  .pick-btn-readonly:hover {
+    transform: none;
+    filter: none;
+  }
+
+  .pick-alert-readonly {
+    border: 1px solid rgba(250, 204, 21, 0.32);
+    background: rgba(250, 204, 21, 0.08);
+    color: #fef3c7;
+  }
+
+  .pick-alert-readonly .pick-alert-icon {
+    background: rgba(250, 204, 21, 0.18);
+    color: #facc15;
+  }
+
+  .pick-action-readonly {
+    color: #fde68a;
+  }
+
+  .pick-action-readonly > span {
+    background: rgba(250, 204, 21, 0.18);
+    color: #facc15;
+  }
+
+  .pick-action-readonly small {
+    max-width: 230px;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+
+.lt1d-lot-panel{margin:12px 0;padding:12px 14px;border:1px solid rgba(56,189,248,.28);border-radius:12px;background:rgba(14,165,233,.08);display:flex;gap:10px;align-items:center;flex-wrap:wrap}.lt1d-lot-panel span{font-size:10px;font-weight:900;letter-spacing:.08em;color:#7dd3fc}.lt1d-lot-panel strong{color:#f8fafc}.lt1d-lot-panel small{color:#cbd5e1}.lt1d-lot-panel a{margin-left:auto;color:#7dd3fc;text-decoration:none;font-weight:800}
+</style>
+
+{% endblock %}

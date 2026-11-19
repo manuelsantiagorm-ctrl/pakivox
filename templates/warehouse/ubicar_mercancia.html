@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Ubicar mercancía | PAKIVOX{% endblock %}
+{% block page_title %}Ubicar mercancía{% endblock %}
+
+{% block content %}
+<style>
+  .putaway-wrap { max-width: 1180px; margin: 0 auto; }
+  .putaway-head, .putaway-card {
+    background: #111827; border: 1px solid #263244; border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(0,0,0,.22);
+  }
+  .putaway-head { padding: 24px; margin-bottom: 20px; display:flex;
+    align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .putaway-head h1 { margin:0 0 7px; color:#f8fafc; font-size:1.55rem; }
+  .putaway-head p { margin:0; color:#94a3b8; }
+  .putaway-total { min-width:150px; padding:14px 18px; border-radius:14px;
+    background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); }
+  .putaway-total span { display:block; color:#fbbf24; font-size:.78rem;
+    text-transform:uppercase; letter-spacing:.08em; }
+  .putaway-total strong { color:#fff; font-size:1.65rem; }
+  .putaway-card { padding:22px; margin-bottom:16px; }
+  .putaway-grid { display:grid; grid-template-columns:1.15fr .9fr 1fr .55fr auto;
+    gap:14px; align-items:end; }
+  .putaway-label { display:block; margin-bottom:7px; color:#cbd5e1;
+    font-size:.83rem; font-weight:700; }
+  .putaway-input { width:100%; min-height:46px; padding:10px 12px;
+    color:#f8fafc; background:#0b1220; border:1px solid #334155;
+    border-radius:11px; outline:none; }
+  .putaway-input:focus { border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.12); }
+  .putaway-product { color:#f8fafc; font-weight:800; }
+  .putaway-meta { margin-top:5px; color:#94a3b8; font-size:.86rem; }
+  .putaway-btn { min-height:46px; border:0; border-radius:11px; padding:0 18px;
+    background:linear-gradient(135deg,#f59e0b,#d97706); color:#111827;
+    font-weight:900; cursor:pointer; white-space:nowrap; }
+  .putaway-empty { text-align:center; padding:48px 24px; color:#94a3b8; }
+  .putaway-empty i { display:block; color:#22c55e; font-size:2.5rem; margin-bottom:12px; }
+  .putaway-note { margin-top:18px; color:#94a3b8; font-size:.88rem; }
+  @media (max-width:900px) {
+    .putaway-grid { grid-template-columns:1fr; }
+    .putaway-btn { width:100%; }
+  }
+</style>
+
+<div class="putaway-wrap">
+  <section class="putaway-head">
+    <div>
+      <h1><i class="bi bi-box-arrow-in-down"></i> Ubicar mercancía</h1>
+      <p>
+        Bodega activa: <strong>{{ active_warehouse.name }}</strong>.
+        Mueve existencias desde STAGING a una ubicación física.
+      </p>
+    </div>
+    <div class="putaway-total">
+      <span>Pendiente</span>
+      <strong>{{ staging_total }}</strong> piezas
+    </div>
+  </section>
+
+  {% if staging_assignments %}
+    {% for assignment in staging_assignments %}
+      <form method="post" class="putaway-card">
+        {% csrf_token %}
+        <input type="hidden" name="staging_assignment_id" value="{{ assignment.id }}">
+        <input type="hidden" name="request_id" value="{{ assignment.putaway_request_id }}">
+        <div class="putaway-grid">
+          <div>
+            <span class="putaway-label">Producto pendiente</span>
+            <div class="putaway-product">{{ assignment.variant.sku }}</div>
+            <div class="putaway-meta">
+              {{ assignment.variant.product.name|default:assignment.variant }}
+              · Origen {{ assignment.location.bin_code }}
+              · Disponibles {{ assignment.quantity }}
+            </div>
+          </div>
+          <div>
+            <span class="putaway-label">Lote</span>
+            {% if assignment.variant.inventory_control == "normal" %}
+              <div class="putaway-input" style="display:flex;align-items:center;color:#94a3b8;">
+                Sin control por lote
+              </div>
+            {% else %}
+              <select class="putaway-input" name="lot_balance_id" required>
+                <option value="">Selecciona lote</option>
+                {% for balance in assignment.lt1b_lot_balances %}
+                  <option value="{{ balance.id }}">
+                    {{ balance.lot.lot_number }}
+                    · {{ balance.physical_quantity }} pzas.
+                    {% if balance.lot.expiration_date %}
+                      · cad. {{ balance.lot.expiration_date|date:"d/m/Y" }}
+                    {% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="putaway-label" for="location-{{ assignment.id }}">
+              Ubicación física final
+            </label>
+            <select class="putaway-input" id="location-{{ assignment.id }}"
+                    name="final_location_id" required>
+              <option value="">Selecciona una ubicación</option>
+              {% for location in physical_locations %}
+                <option value="{{ location.id }}">
+                  {{ location.bin_code }}
+                  {% if location.zone %} · {{ location.zone.name }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="putaway-label" for="quantity-{{ assignment.id }}">
+              Cantidad
+            </label>
+            <input class="putaway-input" id="quantity-{{ assignment.id }}"
+                   type="number" name="quantity" min="1"
+                   max="{{ assignment.quantity }}" value="{{ assignment.quantity }}"
+                   required>
+          </div>
+          <button class="putaway-btn" type="submit">
+            <i class="bi bi-check2-circle"></i> Confirmar ubicación
+          </button>
+        </div>
+      </form>
+    {% endfor %}
+  {% else %}
+    <section class="putaway-card putaway-empty">
+      <i class="bi bi-check-circle-fill"></i>
+      <h2>STAGING está vacío</h2>
+      <p>No hay mercancía pendiente de ubicación en esta bodega.</p>
+    </section>
+  {% endif %}
+
+  {% if not physical_locations %}
+    <section class="putaway-card putaway-empty">
+      <i class="bi bi-exclamation-triangle"></i>
+      <h2>No hay ubicaciones físicas disponibles</h2>
+      <p>Crea o activa una ubicación física antes de continuar.</p>
+    </section>
+  {% endif %}
+
+  <p class="putaway-note">
+    Esta operación solo redistribuye mercancía entre ubicaciones.
+    No aumenta ni disminuye el stock físico o reservado.
+  </p>
+</div>
+{% endblock %}

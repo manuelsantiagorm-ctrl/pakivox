@@ -1,0 +1,210 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}CRM | PAKIVOX{% endblock %}
+
+{% block page_title %}CRM Mayorista{% endblock %}
+{% block page_subtitle %}Leads, prospectos, clientes, oportunidades y seguimiento comercial{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/crm_inicio.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="kpi-grid">
+    <div class="kpi-card">
+        <span>Total clientes</span>
+        <strong>{{ total_customers }}</strong>
+        <small>Base comercial registrada</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Leads</span>
+        <strong>{{ total_leads }}</strong>
+        <small>Prospectos iniciales</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Clientes VIP</span>
+        <strong class="kpi-vip">{{ total_vip }}</strong>
+        <small>Cuentas importantes</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Oportunidades abiertas</span>
+        <strong>{{ open_deals }}</strong>
+        <small>Negocios en proceso</small>
+    </div>
+</section>
+
+<section class="dashboard-grid crm-inicio-grid">
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Clientes recientes</h3>
+            <div class="panel-actions">
+                <a href="/crm/kanban/" class="btn btn-sm btn-outline-light">Ver Kanban</a>
+                <a href="{% url 'customer_create' %}" class="btn btn-sm btn-primary">+ Nuevo cliente</a>
+            </div>
+        </div>
+
+        <form
+            method="get"
+            action="{% url 'customer_smart_profile_by_phone' %}"
+            class="customer-search-box"
+            id="smartCustomerSearchForm"
+        >
+            <div class="search-input-wrapper">
+                <input
+                    type="text"
+                    name="phone"
+                    id="customerLiveSearch"
+                    placeholder="Buscar por nombre, empresa, WhatsApp, teléfono, tipo u origen..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-success">
+                Abrir perfil
+            </button>
+        </form>
+
+        <div class="search-status-row">
+            <small id="customerSearchHelp">
+                Escribe y la lista se filtrará automáticamente. Si solo queda un cliente, Enter lo abre directo.
+            </small>
+
+            <small id="customerSearchCounter">
+                Mostrando {{ customers|length }} clientes
+            </small>
+        </div>
+
+        <div class="table-responsive">
+            <table class="wms-custom-table">
+                <thead>
+                    <tr>
+                        <th>Cliente / Empresa</th>
+                        <th>Tipo</th>
+                        <th>WhatsApp</th>
+                        <th>Origen</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for customer in customers %}
+                    <tr
+                        class="customer-row"
+                        data-profile-url="{% url 'customer_smart_profile' customer.id %}"
+                        data-search="
+                            {{ customer.full_name }}
+                            {{ customer.business_name|default:'' }}
+                            {{ customer.phone|default:'' }}
+                            {{ customer.whatsapp|default:'' }}
+                            {{ customer.get_customer_type_display }}
+                            {{ customer.get_source_display }}
+                        "
+                    >
+                        <td>
+                            <div class="client-info">
+                                <span class="client-name">{{ customer.full_name }}</span>
+                                <span class="client-business">
+                                    {{ customer.business_name|default:"Sin empresa asignada" }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if "VIP" in customer.get_customer_type_display %}
+                                <span class="badge-wms badge-wms-vip">
+                                    👑 {{ customer.get_customer_type_display }}
+                                </span>
+                            {% elif "Lead" in customer.get_customer_type_display or "Prospecto" in customer.get_customer_type_display %}
+                                <span class="badge-wms badge-wms-lead">
+                                    ⚡ {{ customer.get_customer_type_display }}
+                                </span>
+                            {% else %}
+                                <span class="badge-wms badge-wms-normal">
+                                    👥 {{ customer.get_customer_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if customer.whatsapp or customer.phone %}
+                                <a
+                                    href="https://wa.me/{{ customer.whatsapp|default:customer.phone }}"
+                                    target="_blank"
+                                    class="whatsapp-link"
+                                >
+                                    💬 {{ customer.whatsapp|default:customer.phone }}
+                                </a>
+                            {% else %}
+                                <span class="source-text">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="source-text">{{ customer.get_source_display }}</span>
+                        </td>
+
+                        <td class="text-end">
+                            <a
+                                href="{% url 'customer_smart_profile' customer.id %}"
+                                class="btn-smart-profile"
+                            >
+                                Perfil 360
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 crm-vacio">
+                            Aún no hay clientes registrados en el CRM.
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr id="customerNoResults" hidden>
+                        <td colspan="5" class="text-center py-4 crm-vacio">
+                            No encontré clientes parecidos a tu búsqueda.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Actividades recientes</h3>
+            <a href="{% url 'crm_agenda' %}" class="btn btn-sm btn-outline-light">
+                Ver agenda
+            </a>
+        </div>
+
+        <div class="timeline-container">
+            {% for activity in recent_activities %}
+            <div class="timeline-item">
+                <div class="timeline-badge"></div>
+
+                <div class="timeline-content">
+                    <span class="timeline-title">{{ activity.title }}</span>
+                    <span class="timeline-meta">
+                        <strong>{{ activity.customer.full_name }}</strong>
+                        · {{ activity.get_activity_type_display }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="timeline-empty">
+                <p>No hay actividades comerciales registradas el día de hoy.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<script src="{% static 'js/crm_inicio.js' %}" defer></script>
+{% endblock %}

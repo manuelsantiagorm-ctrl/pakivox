@@ -1,0 +1,872 @@
+{% extends "base.html" %}
+{% load wms_units %}
+
+{% block title %}Timeline Pedido | PAKIVOX{% endblock %}
+
+{% block page_title %}Timeline del Pedido{% endblock %}
+{% block page_subtitle %}Seguimiento completo desde venta hasta entrega{% endblock %}
+
+{% block content %}
+<section class="timeline-page">
+  <div class="timeline-header">
+    <div>
+      <span class="eyebrow">Pedido</span>
+      <h2>{{ order.folio }}</h2>
+      <p>
+        Cliente:
+        {% if order.customer %}
+          {{ order.customer.full_name }}
+        {% else %}
+          Sin cliente
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="header-status">
+      <span class="order-status status-{{ order.status }}">
+        {{ order.get_status_display }}
+      </span>
+
+      <a href="{% url 'sales:detalle_pedido' order.id %}" class="ghost-btn">
+        Ver pedido
+      </a>
+      <a href="{% url 'warehouse:lot_traceability_list' %}" class="ghost-btn">
+        Centro de lotes
+      </a>
+    </div>
+  </div>
+
+  <div class="process-actions">
+    {% if not picking_order %}
+      <form method="post" action="{% url 'warehouse:generar_picking' order.id %}">{% csrf_token %}<button class="primary-btn" type="submit" data-submit-once>
+        Generar Picking
+      </button></form>
+    {% else %}
+      <a class="primary-btn" href="{% url 'warehouse:detalle_picking' picking_order.id %}">
+        Ver Picking
+      </a>
+    {% endif %}
+
+    {% if picking_order and picking_order.status == "completed" %}
+      {% if packing_order %}
+        <a class="primary-btn" href="{% url 'warehouse:detalle_packing' packing_order.id %}">
+          Ver Packing
+        </a>
+      {% else %}
+        <a class="primary-btn" href="{% url 'warehouse:generar_packing' picking_order.id %}">
+          Generar Packing
+        </a>
+      {% endif %}
+    {% endif %}
+
+    {% if packing_order and packing_order.status == "packed" %}
+      {% if shipping_order %}
+        <a class="primary-btn" href="{% url 'warehouse:detalle_shipping' shipping_order.id %}">
+          Ver Envío
+        </a>
+      {% else %}
+        <a class="primary-btn" href="{% url 'warehouse:generar_shipping' packing_order.id %}">
+            Preparar envío y consultar tarifas
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="steps-grid">
+    {% for step in steps %}
+      <article class="step-card {{ step.status }}">
+        <div class="step-number">
+          {{ forloop.counter }}
+        </div>
+
+        <div>
+          <span>{{ step.label }}</span>
+          <h3>
+            {% if step.status == "missing" %}
+              Pendiente
+            {% elif step.status == "pending" %}
+              Pendiente
+            {% elif step.status == "ready" %}
+              Listo
+            {% elif step.status == "in_progress" %}
+              En proceso
+            {% elif step.status == "completed" %}
+              Completado
+            {% elif step.status == "packed" %}
+              Empacado
+            {% elif step.status == "shipped" %}
+              Enviado
+            {% elif step.status == "delivered" %}
+              Entregado
+            {% elif step.status == "cancelled" %}
+              Cancelado
+            {% else %}
+              {{ step.status }}
+            {% endif %}
+          </h3>
+          <p>{{ step.description }}</p>
+
+          {% if step.url %}
+            <a href="{{ step.url }}">Abrir</a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  <section class="flow-items-card">
+    <div class="section-title compact">
+      <div>
+        <span>Contenido operativo</span>
+        <h3>Productos del pedido</h3>
+      </div>
+
+      {% if picking_order %}
+        <small>Picking #{{ picking_order.id }}</small>
+      {% else %}
+        <small>Sin picking generado</small>
+      {% endif %}
+    </div>
+
+    <div class="flow-items-list">
+      {% if picking_order %}
+        {% for item in picking_order.items.all %}
+          <article class="flow-item">
+            <div class="flow-item-main">
+              <div class="flow-item-title">
+                <strong>{{ item.variant.sku }}</strong>
+
+                {% if item.variant|is_bulk_variant %}
+                  <span class="unit-badge bulk">
+                    Producto por volumen ·
+                    1 {{ item.variant|commercial_unit }} =
+                    {{ item.variant|conversion_factor_label }}
+                    {{ item.variant|base_unit }}
+                  </span>
+                {% else %}
+                  <span class="unit-badge unit">
+                    Producto unitario
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if item.variant.product %}
+                <p>{{ item.variant.product.name }}</p>
+              {% endif %}
+
+              {% if item.location %}
+                <small>
+                  Ubicación:
+                  <strong>{{ item.location.bin_code }}</strong>
+                </small>
+              {% endif %}
+            </div>
+
+            <div class="flow-qty-grid">
+              <div>
+                <span>Pedido / Picking</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.required_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Recolectado</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.picked_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Estado</span>
+                <strong>{{ item.get_status_display }}</strong>
+                <small>
+                  {% if shipping_order.status == "shipped" or shipping_order.status == "delivered" %}
+                    Stock consumido
+                  {% elif picking_order.status == "completed" %}
+                    Listo para empaque/envío
+                  {% elif picking_order.status == "cancelled" %}
+                    Reserva liberada
+                  {% else %}
+                    Stock reservado
+                  {% endif %}
+                </small>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-state">
+            <h4>No hay productos en picking</h4>
+            <p>Cuando se genere el picking, los productos aparecerán aquí.</p>
+          </div>
+        {% endfor %}
+      {% else %}
+        {% for item in order.items.all %}
+          <article class="flow-item">
+            <div class="flow-item-main">
+              <div class="flow-item-title">
+                <strong>{{ item.variant.sku }}</strong>
+
+                {% if item.variant|is_bulk_variant %}
+                  <span class="unit-badge bulk">
+                    Producto por volumen ·
+                    1 {{ item.variant|commercial_unit }} =
+                    {{ item.variant|conversion_factor_label }}
+                    {{ item.variant|base_unit }}
+                  </span>
+                {% else %}
+                  <span class="unit-badge unit">
+                    Producto unitario
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if item.variant.product %}
+                <p>{{ item.variant.product.name }}</p>
+              {% endif %}
+            </div>
+
+            <div class="flow-qty-grid">
+              <div>
+                <span>Cantidad vendida</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.quantity|clean_qty }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    Equivale a
+                    {{ item.quantity|commercial_to_internal:item.variant }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Precio unitario</span>
+                <strong>${{ item.unit_price|floatformat:2 }}</strong>
+              </div>
+
+              <div>
+                <span>Total</span>
+                <strong>${{ item.total|floatformat:2 }}</strong>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-state">
+            <h4>Sin productos</h4>
+            <p>Este pedido todavía no tiene productos.</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+
+  {% if lot_traceability_rows %}
+    <section class="lt1d-order-trace">
+      <div class="section-title compact">
+        <div>
+          <span>Trazabilidad por lote</span>
+          <h3>Lotes vinculados al pedido</h3>
+        </div>
+        <a href="{% url 'warehouse:lot_traceability_list' %}">Centro de trazabilidad</a>
+      </div>
+
+      <div class="lt1d-order-trace-grid">
+        {% for allocation in lot_traceability_rows %}
+          <article>
+            <div>
+              <span>SKU</span>
+              <strong>{{ allocation.picking_item.variant.sku }}</strong>
+            </div>
+            <div>
+              <span>Lote</span>
+              <strong>{{ allocation.lot.lot_number }}</strong>
+            </div>
+            <div>
+              <span>Ubicación</span>
+              <strong>{{ allocation.balance.location.bin_code }}</strong>
+            </div>
+            <div>
+              <span>Cantidad</span>
+              <strong>{{ allocation.quantity }}</strong>
+            </div>
+            <div>
+              <span>Estado</span>
+              <strong>{{ allocation.get_status_display }}</strong>
+            </div>
+            <a href="{% url 'warehouse:lot_traceability_detail' allocation.lot.id %}">
+              Abrir lote
+            </a>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="timeline-grid">
+    <section class="timeline-card">
+      <div class="section-title">
+        <span>Historial</span>
+        <h3>Auditoría del pedido</h3>
+      </div>
+
+      <div class="log-list">
+        {% for log in logs %}
+          <article class="log-item {{ log.action }}">
+            <div class="log-dot"></div>
+
+            <div>
+              <span>{{ log.get_action_display }}</span>
+              <h4>{{ log.created_at|date:"d/m/Y H:i" }}</h4>
+              <p>{{ log.description }}</p>
+              <small>
+                Usuario:
+                {% if log.user %}
+                  {{ log.user.username }}
+                {% else %}
+                  Sistema
+                {% endif %}
+              </small>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-state">
+            <h4>No hay auditoría todavía</h4>
+            <p>Cuando avance el pedido, los eventos aparecerán aquí.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <aside class="side-card">
+      <div class="section-title">
+        <span>Acciones</span>
+        <h3>Siguiente paso</h3>
+      </div>
+
+      {% if not picking_order %}
+        <p>Este pedido aún no tiene ruta de picking.</p>
+        <form method="post" action="{% url 'warehouse:generar_picking' order.id %}">{% csrf_token %}<button class="primary-btn full" type="submit" data-submit-once>
+          Generar Picking
+        </button></form>
+
+      {% elif picking_order.status != "completed" %}
+        <p>El picking está pendiente o en proceso. Debe completarse antes de empacar.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:detalle_picking' picking_order.id %}">
+          Continuar Picking
+        </a>
+
+      {% elif not packing_order %}
+        <p>El picking ya está completado. Ahora sigue generar packing.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:generar_packing' picking_order.id %}">
+          Generar Packing
+        </a>
+
+      {% elif packing_order.status != "packed" %}
+        <p>El packing está pendiente. Debe empacarse antes de enviar.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:detalle_packing' packing_order.id %}">
+          Continuar Packing
+        </a>
+
+      {% elif not shipping_order %}
+      <p>El pedido ya está empacado. Prepara el envío para consultar las tarifas disponibles.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:generar_shipping' packing_order.id %}">
+          Generar Envío
+        </a>
+
+      {% elif shipping_order.status == "pending" or shipping_order.status == "ready" %}
+        <p>El envío está pendiente. Registra paquetería y guía.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:detalle_shipping' shipping_order.id %}">
+          Registrar Envío
+        </a>
+
+      {% elif shipping_order.status == "shipped" %}
+        <p>El pedido ya fue enviado. Falta marcarlo como entregado.</p>
+        <a class="primary-btn full" href="{% url 'warehouse:detalle_shipping' shipping_order.id %}">
+          Ver Envío
+        </a>
+
+      {% elif shipping_order.status == "delivered" %}
+        <p>Este pedido ya completó todo el flujo operativo.</p>
+        <a class="success-btn full" href="{% url 'warehouse:detalle_shipping' shipping_order.id %}">
+          Pedido Entregado
+        </a>
+
+      {% endif %}
+
+      <div class="secondary-links">
+        {% if picking_order %}
+          <a href="{% url 'warehouse:detalle_picking' picking_order.id %}">
+            Ver Picking
+          </a>
+        {% endif %}
+
+        {% if packing_order %}
+          <a href="{% url 'warehouse:detalle_packing' packing_order.id %}">
+            Ver Packing
+          </a>
+        {% endif %}
+
+        {% if shipping_order %}
+          <a href="{% url 'warehouse:detalle_shipping' shipping_order.id %}">
+            Ver Shipping
+          </a>
+        {% endif %}
+
+        <a href="{% url 'warehouse:auditoria_warehouse' %}?order={{ order.folio }}">
+          Ver Auditoría
+        </a>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .timeline-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .eyebrow,
+  .section-title span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 800;
+  }
+
+  .timeline-header h2 {
+    color: #f8fafc;
+    font-size: 34px;
+    margin: 6px 0;
+  }
+
+  .timeline-header p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .header-status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .order-status {
+    display: inline-block;
+    background: #22c55e;
+    color: #052e16;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 900;
+  }
+
+  .status-shipped {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .status-delivered {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .status-cancelled {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .process-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .primary-btn,
+  .success-btn,
+  .ghost-btn {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-weight: 900;
+  }
+
+  .primary-btn {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .success-btn {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .ghost-btn {
+    border: 1px solid rgba(148, 163, 184, .28);
+    color: #e5e7eb;
+  }
+
+  .full {
+    width: 100%;
+    text-align: center;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .step-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .step-number {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #334155;
+    color: #e5e7eb;
+    font-weight: 900;
+  }
+
+  .step-card.completed .step-number,
+  .step-card.packed .step-number,
+  .step-card.delivered .step-number {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .step-card.shipped .step-number,
+  .step-card.ready .step-number {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .step-card.cancelled .step-number {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .step-card.missing {
+    opacity: .65;
+  }
+
+  .step-card span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .06em;
+    font-weight: 800;
+  }
+
+  .step-card h3 {
+    color: #f8fafc;
+    margin: 6px 0;
+  }
+
+  .step-card p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .step-card a {
+    color: #38bdf8;
+    font-weight: 800;
+  }
+
+  .flow-items-card,
+  .timeline-card,
+  .side-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .section-title.compact {
+    margin-bottom: 14px;
+  }
+
+  .section-title h3 {
+    color: #f8fafc;
+    margin: 6px 0 16px;
+  }
+
+  .section-title small {
+    color: #94a3b8;
+    font-weight: 800;
+  }
+
+  .flow-items-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .flow-item {
+    display: grid;
+    grid-template-columns: 1fr minmax(380px, .9fr);
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .flow-item-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .flow-item-title strong {
+    color: #f8fafc;
+    font-size: 16px;
+  }
+
+  .flow-item-main p {
+    color: #94a3b8;
+    margin: 8px 0;
+  }
+
+  .flow-item-main small {
+    color: #94a3b8;
+  }
+
+  .flow-item-main small strong {
+    color: #7dd3fc;
+  }
+
+  .unit-badge {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .unit-badge.bulk {
+    background: rgba(245, 158, 11, .12);
+    border: 1px solid rgba(245, 158, 11, .28);
+    color: #fef3c7;
+  }
+
+  .unit-badge.unit {
+    background: rgba(56, 189, 248, .10);
+    border: 1px solid rgba(56, 189, 248, .24);
+    color: #bae6fd;
+  }
+
+  .flow-qty-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .flow-qty-grid div {
+    background: rgba(15, 23, 42, .95);
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .flow-qty-grid span {
+    display: block;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .06em;
+  }
+
+  .flow-qty-grid strong {
+    display: block;
+    color: #f8fafc;
+    margin-top: 6px;
+  }
+
+  .flow-qty-grid small {
+    display: block;
+    margin-top: 4px;
+    color: #fbbf24;
+    font-weight: 800;
+  }
+
+  .timeline-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  .log-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .log-item {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .14);
+  }
+
+  .log-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    margin-top: 5px;
+    background: #38bdf8;
+  }
+
+  .log-item.packing_completed .log-dot,
+  .log-item.order_delivered .log-dot,
+  .log-item.picking_completed .log-dot {
+    background: #22c55e;
+  }
+
+  .log-item.order_shipped .log-dot {
+    background: #38bdf8;
+  }
+
+  .log-item.item_error .log-dot,
+  .log-item.picking_cancelled .log-dot,
+  .log-item.warehouse_flow_cancelled .log-dot {
+    background: #ef4444;
+  }
+
+  .log-item span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .06em;
+  }
+
+  .log-item h4 {
+    color: #f8fafc;
+    margin: 4px 0;
+  }
+
+  .log-item p,
+  .log-item small,
+  .side-card p {
+    color: #94a3b8;
+  }
+
+  .secondary-links {
+    display: grid;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .secondary-links a {
+    color: #38bdf8;
+    text-decoration: none;
+    font-weight: 800;
+  }
+
+  .empty-state {
+    color: #94a3b8;
+    padding: 16px;
+    border-radius: 12px;
+    background: #020617;
+    border: 1px dashed rgba(148, 163, 184, .25);
+  }
+
+  .empty-state h4 {
+    color: #f8fafc;
+    margin: 0 0 6px;
+  }
+
+  .empty-state p {
+    margin: 0;
+  }
+
+  @media (max-width: 1100px) {
+    .flow-item {
+      grid-template-columns: 1fr;
+    }
+
+    .flow-qty-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .steps-grid,
+    .timeline-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .timeline-header,
+    .section-title {
+      display: grid;
+    }
+  }
+.lt1d-order-trace{background:#0f172a;border:1px solid rgba(56,189,248,.18);border-radius:14px;padding:18px}.lt1d-order-trace .section-title a{color:#7dd3fc;text-decoration:none;font-weight:800}.lt1d-order-trace-grid{display:grid;gap:10px;margin-top:14px}.lt1d-order-trace-grid article{display:grid;grid-template-columns:1fr 1fr 1fr .6fr .8fr auto;gap:12px;align-items:center;padding:12px;border:1px solid rgba(148,163,184,.14);border-radius:12px;background:#111827}.lt1d-order-trace-grid span{display:block;color:#94a3b8;font-size:10px;text-transform:uppercase;font-weight:800}.lt1d-order-trace-grid strong{color:#f8fafc}.lt1d-order-trace-grid a{color:#7dd3fc;text-decoration:none;font-weight:800}@media(max-width:900px){.lt1d-order-trace-grid article{grid-template-columns:1fr 1fr}}
+</style>
+{% endblock %}

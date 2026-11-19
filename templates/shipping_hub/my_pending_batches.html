@@ -1,0 +1,883 @@
+{% extends "base.html" %}
+
+{% block title %}
+Mis lotes pendientes | PAKIVOX
+{% endblock %}
+
+{% block content %}
+
+<style>
+/* ============================================================
+   PAKIVOX · MIS LOTES PENDIENTES
+   Executive SaaS Logistics UI
+   ============================================================ */
+
+.mp {
+    --mp-panel: rgba(15, 23, 42, .82);
+    --mp-panel-strong: #111c2f;
+
+    --mp-border: rgba(148, 163, 184, .14);
+    --mp-border-hover: rgba(148, 163, 184, .26);
+
+    --mp-text: #f8fafc;
+    --mp-text-secondary: #cbd5e1;
+    --mp-muted: #94a3b8;
+    --mp-muted-dark: #64748b;
+
+    --mp-primary: #3b82f6;
+    --mp-primary-hover: #2563eb;
+    --mp-primary-soft: rgba(59, 130, 246, .10);
+
+    --mp-success: #10b981;
+    --mp-success-soft: rgba(16, 185, 129, .09);
+
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 30px 24px 60px;
+    color: var(--mp-text);
+}
+
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.mp-header {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    padding: 28px 30px;
+
+    border: 1px solid var(--mp-border);
+    border-radius: 20px;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, .10),
+            transparent 34%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(17, 28, 47, .96),
+            rgba(15, 23, 42, .95)
+        );
+
+    box-shadow:
+        0 16px 50px rgba(0, 0, 0, .16),
+        inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+
+.mp-eyebrow {
+    margin-bottom: 8px;
+
+    color: #60a5fa;
+
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+
+.mp-header-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+
+.mp-back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 600;
+}
+.mp-title-group {
+
+
+.mp-header h1 {
+    margin: 0;
+
+    color: var(--mp-text);
+
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -.035em;
+}
+
+
+.mp-header-description {
+    max-width: 720px;
+    margin: 11px 0 0;
+
+    color: var(--mp-muted);
+
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+
+/* ============================================================
+   HEADER STATUS
+   ============================================================ */
+
+.mp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    flex: 0 0 auto;
+
+    padding: 8px 11px;
+
+    border: 1px solid rgba(59, 130, 246, .18);
+    border-radius: 9px;
+
+    background: rgba(59, 130, 246, .07);
+
+    color: #93c5fd;
+
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+
+.mp-status-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 999px;
+
+    background: #3b82f6;
+
+    box-shadow:
+        0 0 0 4px rgba(59, 130, 246, .08);
+}
+
+
+/* ============================================================
+   MAIN PANEL
+   ============================================================ */
+
+.mp-panel {
+    overflow: hidden;
+
+    border: 1px solid var(--mp-border);
+    border-radius: 18px;
+
+    background: var(--mp-panel);
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .11),
+        inset 0 1px 0 rgba(255, 255, 255, .02);
+}
+
+
+.mp-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 18px 22px;
+
+    border-bottom: 1px solid rgba(148, 163, 184, .10);
+}
+
+
+.mp-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+
+.mp-panel-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 34px;
+
+    border: 1px solid rgba(59, 130, 246, .13);
+    border-radius: 9px;
+
+    background: var(--mp-primary-soft);
+
+    color: #93c5fd;
+
+    font-size: 15px;
+    font-weight: 900;
+}
+
+
+.mp-panel-header h2 {
+    margin: 0;
+
+    color: #f1f5f9;
+
+    font-size: 14px;
+    font-weight: 800;
+}
+
+
+.mp-panel-header p {
+    margin: 3px 0 0;
+
+    color: var(--mp-muted);
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   BATCH LIST
+   ============================================================ */
+
+.mp-list {
+    padding: 6px 12px 12px;
+}
+
+
+.mp-batch {
+    position: relative;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+
+    gap: 24px;
+
+    margin-top: 6px;
+    padding: 18px 16px;
+
+    border: 1px solid transparent;
+    border-radius: 13px;
+
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        transform .18s ease;
+}
+
+
+.mp-batch:hover {
+    border-color: var(--mp-border);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 41, 59, .38),
+            rgba(15, 23, 42, .32)
+        );
+
+    transform: translateY(-1px);
+}
+
+
+.mp-batch + .mp-batch::before {
+    content: "";
+
+    position: absolute;
+
+    top: -3px;
+    left: 16px;
+    right: 16px;
+
+    height: 1px;
+
+    background: rgba(148, 163, 184, .09);
+}
+
+
+.mp-batch:hover::before,
+.mp-batch:hover + .mp-batch::before {
+    opacity: 0;
+}
+
+
+/* ============================================================
+   BATCH INFORMATION
+   ============================================================ */
+
+.mp-batch-main {
+    min-width: 0;
+}
+
+
+.mp-batch-topline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-bottom: 9px;
+}
+
+
+.mp-batch-id {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 5px 8px;
+
+    border: 1px solid rgba(59, 130, 246, .16);
+    border-radius: 7px;
+
+    background: rgba(59, 130, 246, .07);
+
+    color: #93c5fd;
+
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: .04em;
+}
+
+
+.mp-batch-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 5px 8px;
+
+    border: 1px solid rgba(16, 185, 129, .15);
+    border-radius: 7px;
+
+    background: var(--mp-success-soft);
+
+    color: #6ee7b7;
+
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+
+.mp-batch-status-dot {
+    width: 5px;
+    height: 5px;
+
+    border-radius: 999px;
+
+    background: var(--mp-success);
+}
+
+
+.mp-batch h3 {
+    margin: 0 0 9px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    color: #f1f5f9;
+
+    font-size: 15px;
+    line-height: 1.35;
+    font-weight: 800;
+    letter-spacing: -.01em;
+}
+
+
+/* ============================================================
+   METADATA
+   ============================================================ */
+
+.mp-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px 18px;
+}
+
+
+.mp-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    min-width: 0;
+
+    color: var(--mp-muted);
+
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+
+.mp-meta-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    flex: 0 0 20px;
+
+    border-radius: 6px;
+
+    background: rgba(148, 163, 184, .07);
+
+    color: #64748b;
+
+    font-size: 10px;
+}
+
+
+.mp-meta-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   ACTION
+   ============================================================ */
+
+.mp-action {
+    display: flex;
+    align-items: center;
+}
+
+
+.mp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+
+    min-height: 39px;
+
+    padding: 9px 14px;
+
+    border: 1px solid transparent;
+    border-radius: 9px;
+
+    background: var(--mp-primary);
+
+    color: #ffffff;
+
+    text-decoration: none;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    white-space: nowrap;
+
+    box-shadow:
+        0 5px 16px rgba(37, 99, 235, .14);
+
+    transition:
+        background .17s ease,
+        transform .17s ease,
+        box-shadow .17s ease;
+}
+
+
+.mp-btn:hover {
+    background: var(--mp-primary-hover);
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 7px 20px rgba(37, 99, 235, .20);
+}
+
+
+.mp-btn:active {
+    transform: translateY(0);
+}
+
+
+.mp-btn-arrow {
+    font-size: 15px;
+    line-height: 1;
+
+    transition: transform .17s ease;
+}
+
+
+.mp-btn:hover .mp-btn-arrow {
+    transform: translateX(2px);
+}
+
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.mp-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 64px 24px;
+
+    text-align: center;
+}
+
+
+.mp-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 15px;
+
+    border: 1px solid rgba(148, 163, 184, .12);
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 41, 59, .55),
+            rgba(15, 23, 42, .55)
+        );
+
+    color: #64748b;
+
+    font-size: 20px;
+}
+
+
+.mp-empty h3 {
+    margin: 0 0 7px;
+
+    color: #cbd5e1;
+
+    font-size: 14px;
+    font-weight: 800;
+}
+
+
+.mp-empty p {
+    max-width: 400px;
+    margin: 0;
+
+    color: var(--mp-muted-dark);
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+    .mp {
+        padding: 20px 14px 45px;
+    }
+
+
+    .mp-header {
+        padding: 22px 18px;
+    }
+
+
+    .mp-header-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+
+    .mp-batch {
+        grid-template-columns: 1fr;
+
+        gap: 17px;
+
+        padding: 18px 14px;
+    }
+
+
+    .mp-action {
+        width: 100%;
+    }
+
+
+    .mp-btn {
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 500px) {
+
+    .mp-header h1 {
+        font-size: 24px;
+    }
+
+
+    .mp-panel-header {
+        padding: 16px;
+    }
+
+
+    .mp-list {
+        padding-left: 7px;
+        padding-right: 7px;
+    }
+
+
+    .mp-meta {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+}
+</style>
+
+
+<main class="mp">
+
+
+    <!-- ========================================================
+         HEADER
+         ======================================================== -->
+
+    <section class="mp-header">
+
+        <div class="mp-eyebrow">
+            Operación de recolección
+        </div>
+        <div class="mp-header-row">
+            <div class="mp-title-group">
+                <a href="{% url 'shipping_hub:tracking_center' %}" class="mp-back-link">← Volver al centro</a>
+                <h1>
+                    Mis lotes pendientes
+                </h1>
+
+                <p class="mp-header-description">
+                    Consulta los lotes de recolección que tienes asignados
+                    y continúa con el procesamiento de los envíos pendientes.
+                </p>
+
+            </div>
+
+
+            <div class="mp-status">
+
+                <span class="mp-status-dot"></span>
+
+                Lotes activos
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================
+         PENDING BATCHES
+         ======================================================== -->
+
+    <section class="mp-panel">
+
+
+        <header class="mp-panel-header">
+
+            <div class="mp-panel-title">
+
+                <div class="mp-panel-icon">
+                    ▦
+                </div>
+
+                <div>
+
+                    <h2>
+                        Recolecciones asignadas
+                    </h2>
+
+                    <p>
+                        Lotes abiertos que requieren tu atención.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        {% if batches %}
+
+            <div class="mp-list">
+
+                {% for batch in batches %}
+
+                    <article class="mp-batch">
+
+
+                        <!-- ==================================================
+                             BATCH INFORMATION
+                             ================================================== -->
+
+                        <div class="mp-batch-main">
+
+
+                            <div class="mp-batch-topline">
+
+                                <span class="mp-batch-id">
+                                    LOTE #{{ batch.pk }}
+                                </span>
+
+                                <span class="mp-batch-status">
+
+                                    <span class="mp-batch-status-dot"></span>
+
+                                    Pendiente
+
+                                </span>
+
+                            </div>
+
+
+                            <h3>
+                                {{ batch.collection_point.name }}
+                            </h3>
+
+
+                            <div class="mp-meta">
+
+
+                                <!-- WAREHOUSE -->
+
+                                <div class="mp-meta-item">
+
+                                    <span class="mp-meta-icon">
+                                        ◫
+                                    </span>
+
+                                    <span class="mp-meta-value">
+                                        {{ batch.collection_point.warehouse.name }}
+                                    </span>
+
+                                </div>
+
+
+                                <!-- PACKAGES -->
+
+                                <div class="mp-meta-item">
+
+                                    <span class="mp-meta-icon">
+                                        □
+                                    </span>
+
+                                    <span class="mp-meta-value">
+                                        {{ batch.items.count }}
+                                        paquete{{ batch.items.count|pluralize:"s" }}
+                                    </span>
+
+                                </div>
+
+
+                                <!-- DATE -->
+
+                                <div class="mp-meta-item">
+
+                                    <span class="mp-meta-icon">
+                                        ◷
+                                    </span>
+
+                                    <span class="mp-meta-value">
+                                        {{ batch.created_at|date:"d/m/Y" }}
+                                        ·
+                                        {{ batch.created_at|date:"H:i" }}
+                                    </span>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==================================================
+                             PRIMARY ACTION
+                             ================================================== -->
+
+                        <div class="mp-action">
+
+                            <a
+                                class="mp-btn"
+                                href="{% url 'shipping_hub:shipment_batch_scan' batch.collection_point.qr_token %}"
+                            >
+                                Abrir lote
+
+                                <span class="mp-btn-arrow">
+                                    →
+                                </span>
+
+                            </a>
+
+                        </div>
+
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+
+        {% else %}
+
+
+            <!-- ==================================================
+                 EMPTY STATE
+                 ================================================== -->
+
+            <div class="mp-empty">
+
+                <div class="mp-empty-icon">
+                    ✓
+                </div>
+
+                <h3>
+                    Todo está al día
+                </h3>
+
+                <p>
+                    No tienes lotes de recolección pendientes en este momento.
+                    Cuando se te asigne uno nuevo aparecerá aquí.
+                </p>
+
+            </div>
+
+
+        {% endif %}
+
+
+    </section>
+
+
+</main>
+
+{% endblock %}

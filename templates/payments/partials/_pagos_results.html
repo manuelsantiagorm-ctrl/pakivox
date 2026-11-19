@@ -1,0 +1,148 @@
+<section class="payment-kpis" id="paymentKpisBlock">
+  <div class="payment-kpi">
+    <span>Pendientes</span>
+    <strong>{{ pending_count }}</strong>
+    <small>Pagos por revisar</small>
+  </div>
+  <div class="payment-kpi success">
+    <span>Aprobados</span>
+    <strong>{{ approved_count }}</strong>
+    <small>Pagos aplicados</small>
+  </div>
+  <div class="payment-kpi danger">
+    <span>Rechazados</span>
+    <strong>{{ rejected_count }}</strong>
+    <small>Pagos rechazados</small>
+  </div>
+  <div class="payment-kpi warning">
+    <span>Monto pendiente</span>
+    <strong>${{ total_pending|floatformat:2 }}</strong>
+    <small>En revisión / pendiente</small>
+  </div>
+  <div class="payment-kpi success">
+    <span>Total aprobado</span>
+    <strong>${{ total_approved|floatformat:2 }}</strong>
+    <small>Dinero aplicado</small>
+  </div>
+</section>
+
+<section class="payments-table-card">
+  <div class="table-responsive">
+    <h3 style="padding: 16px 16px 0;">Pedidos esperando cobro</h3>
+    <p style="padding: 0 16px 12px; color: #9ca3af; font-size: 0.9rem;">
+      Pedidos activos con saldo pendiente, incluso si todavía no se les ha registrado ningún pago.
+    </p>
+    <table class="payments-table">
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Saldo pendiente</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          {% if order.balance_due > 0 %}
+            <tr>
+              <td>{{ order.folio }}</td>
+              <td>
+                {% if order.customer %}
+                  {{ order.customer.full_name }}
+                {% else %}
+                  Sin cliente
+                {% endif %}
+              </td>
+              <td>${{ order.balance_due|floatformat:2 }}</td>
+              <td>
+                <div style="display: flex; gap: 8px;">
+                  <button
+                    type="button"
+                    class="btn-primary-pay"
+                    onclick="openPaymentModal('{{ order.id }}')"
+                  >
+                    Registrar pago
+                  </button>
+                  <a 
+                    href="{% url 'payments:abrir_chat_flotante_pago' order.id %}"
+                    class="btn-table"
+                    title="Ver conversación de WhatsApp con el cliente"
+                  >
+                    <i class="bi bi-whatsapp"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="payments-table-card">
+  <div class="table-responsive">
+    <table class="payments-table">
+      <thead>
+        <tr>
+          <th>Pago</th>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Método</th>
+          <th>Tipo</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+          <tr>
+            <td>
+              <strong>{{ payment.folio }}</strong>
+              {% if payment.transaction_id %}
+                <small>TX: {{ payment.transaction_id }}</small>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'sales:detalle_pedido' payment.order.id %}">
+                {{ payment.order.folio }}
+              </a>
+            </td>
+            <td>
+              {% if payment.order.customer %}
+                {{ payment.order.customer.full_name }}
+              {% else %}
+                Sin cliente
+              {% endif %}
+            </td>
+            <td>{{ payment.get_payment_method_display }}</td>
+            <td>{{ payment.get_payment_type_display }}</td>
+            <td>
+              <strong>${{ payment.amount|floatformat:2 }}</strong>
+            </td>
+            <td>
+              <span class="payment-status status-{{ payment.status }}">
+                {{ payment.get_status_display }}
+              </span>
+            </td>
+            <td>
+              {{ payment.created_at|date:"d/m/Y H:i" }}
+            </td>
+            <td class="text-end">
+              <a class="btn-table" href="{% url 'payments:detalle_pago' payment.id %}">
+                Ver
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="empty-cell">
+              No hay pagos registrados.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

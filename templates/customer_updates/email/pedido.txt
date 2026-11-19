@@ -1,0 +1,24 @@
+{% autoescape off %}{{ headline }}
+
+{{ intro }}
+
+Pedido: {{ folio }}
+Estado: {{ status_label }}
+Total: ${{ total|floatformat:"2g" }}
+Pagado: ${{ amount_paid|floatformat:"2g" }}{% if balance_due and not is_cancelled %}
+Por pagar: ${{ balance_due|floatformat:"2g" }}{% endif %}
+{% for shipment in shipments %}
+Envío{% if shipments|length > 1 %} {{ shipment.index }}{% endif %}: {{ shipment.carrier }}{% if shipment.tracking_number %} · guía {{ shipment.tracking_number }}{% endif %}{% if shipment.tracking_url %}
+Rastreo: {{ shipment.tracking_url }}{% endif %}{% endfor %}
+{% if email_items %}
+Productos:{% for item in email_items %}
+- {{ item.name }}{% if item.details %} ({{ item.details }}){% endif %} × {{ item.quantity }}{% endfor %}{% if more_items %}
+  y {{ more_items }} más{% endif %}
+{% endif %}
+Ve tu pedido en cualquier momento:
+{{ tracking_url }}
+
+{{ company_name }}
+
+Recibes este correo porque hiciste un pedido con {{ company_name }}. Si tienes dudas, responde a este correo.
+{% endautoescape %}

@@ -1,0 +1,189 @@
+/*
+  Dashboard CEO · pestaña Operación (bloque .opx-board en templates/dashboard/ceo.html)
+  Paleta PAKIVOX: #021024 #052659 #5483B3 #7DA0CA #C1E8FF.
+  Sobre fondo oscuro: "todo bien" #8EB69B, aviso #F0B856, problema #F17882.
+*/
+
+.opx-board {
+  --opx-navy-900: #021024;
+  --opx-navy-700: #052659;
+  --opx-blue-500: #5483B3;
+  --opx-blue-300: #7DA0CA;
+  --opx-blue-100: #C1E8FF;
+  --opx-text: #EAF6FF;
+  --opx-muted: #9DB6D2;
+  --opx-line: rgba(125, 160, 202, .2);
+  --opx-good: #8EB69B;
+  --opx-warn: #F0B856;
+  --opx-bad: #F17882;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  color: var(--opx-text);
+}
+
+/* Numeros de arriba */
+.opx-kpis {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.opx-kpi {
+  position: relative;
+  display: block;
+  padding: 18px 20px;
+  border: 1px solid var(--opx-line);
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(84, 131, 179, .28), transparent 55%),
+    linear-gradient(160deg, rgba(5, 38, 89, .75), rgba(2, 16, 36, .9));
+  box-shadow: 0 1px 0 rgba(193, 232, 255, .08) inset, 0 18px 40px -24px rgba(0, 0, 0, .8);
+  color: var(--opx-text);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform .18s, border-color .18s;
+}
+
+a.opx-kpi:hover { transform: translateY(-2px); border-color: var(--opx-blue-300); color: var(--opx-text); }
+.opx-kpi span { display: block; font-size: 14px; font-weight: 600; color: var(--opx-muted); }
+.opx-kpi strong { display: block; margin-top: 10px; font-size: clamp(28px, 2.6vw, 38px); font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.opx-kpi small { display: block; margin-top: 8px; font-size: 12.5px; color: var(--opx-muted); }
+
+/* Tarjetas con grafica */
+.opx-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--opx-line);
+  border-radius: 18px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgba(84, 131, 179, .18), transparent 60%),
+    linear-gradient(170deg, rgba(5, 38, 89, .6), rgba(2, 16, 36, .92) 70%);
+  box-shadow: 0 1px 0 rgba(193, 232, 255, .07) inset, 0 24px 50px -30px rgba(0, 0, 0, .85);
+  overflow: hidden;
+}
+
+.opx-card--wide { grid-column: span 2; }
+
+.opx-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 8px;
+}
+
+.opx-card-head h3 { margin: 0; font-size: 18px; font-weight: 700; color: var(--opx-text); }
+.opx-card-head p { margin: 4px 0 0; font-size: 13.5px; color: var(--opx-muted); }
+
+.opx-badge {
+  flex: none;
+  padding: 8px 14px;
+  border: 1px solid rgba(193, 232, 255, .25);
+  border-radius: 12px;
+  background: rgba(193, 232, 255, .07);
+  text-align: right;
+}
+
+.opx-badge strong { display: block; font-size: 22px; font-weight: 700; color: var(--opx-blue-100); font-variant-numeric: tabular-nums; }
+.opx-badge span { display: block; font-size: 12px; color: var(--opx-muted); }
+
+.opx-chart { position: relative; min-width: 0; padding: 6px 16px 4px; }
+.opx-chart--flow { flex: 1; min-height: 300px; }
+.opx-chart--bar { flex: 1; min-height: 220px; }
+
+.opx-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 22px 18px;
+  flex-wrap: wrap;
+}
+
+.opx-note { font-size: 13px; color: var(--opx-muted); }
+
+.opx-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+.opx-actions a,
+.opx-actions button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(193, 232, 255, .28);
+  border-radius: 10px;
+  background: rgba(193, 232, 255, .06);
+  color: var(--opx-blue-100);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Los enlaces abren otra pagina: todos iguales y con flecha, para que no parezcan pestañas. */
+.opx-actions a::after { content: "↗"; margin-left: 6px; font-size: 12px; opacity: .8; }
+.opx-actions a:hover, .opx-actions button:hover { border-color: var(--opx-blue-100); color: var(--opx-blue-100); background: rgba(193, 232, 255, .12); }
+
+/* Anillos de picking y packing */
+.opx-rings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 8px 18px 4px; }
+.opx-ring { margin: 0; min-width: 0; text-align: center; }
+.opx-ring-canvas { position: relative; height: 140px; min-width: 0; }
+.opx-ring-canvas b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--opx-text); pointer-events: none; }
+.opx-ring figcaption strong { display: block; font-size: 15px; }
+.opx-ring figcaption span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--opx-muted); }
+
+.opx-ship { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px 18px 4px; }
+
+.opx-ship span {
+  padding: 10px 8px;
+  border: 1px solid var(--opx-line);
+  border-radius: 12px;
+  background: rgba(2, 16, 36, .5);
+  font-size: 12.5px;
+  color: var(--opx-muted);
+  text-align: center;
+}
+
+.opx-ship b { display: block; font-size: 20px; color: var(--opx-text); font-variant-numeric: tabular-nums; }
+.opx-ship .is-good b { color: var(--opx-good); }
+
+/* Dona de inventario */
+.opx-donut { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 6px 18px 4px; }
+.opx-donut-canvas { position: relative; height: 210px; min-width: 0; }
+.opx-donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+.opx-donut-center strong { font-size: 30px; font-weight: 700; color: var(--opx-text); font-variant-numeric: tabular-nums; }
+.opx-donut-center span { font-size: 12px; color: var(--opx-muted); }
+
+.opx-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.opx-legend li { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; font-size: 13.5px; color: var(--opx-muted); }
+.opx-legend li b { color: var(--opx-text); font-variant-numeric: tabular-nums; }
+.opx-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.opx-legend i.is-available { background: var(--opx-blue-100); }
+.opx-legend i.is-reserved { background: var(--opx-blue-300); }
+.opx-legend i.is-committed { background: var(--opx-blue-500); }
+.opx-legend li.is-total { grid-template-columns: 1fr auto; padding-top: 8px; border-top: 1px solid var(--opx-line); }
+
+@media (max-width: 1280px) {
+  .opx-board { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .opx-card--wide { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .opx-board { grid-template-columns: 1fr !important; }
+  .opx-kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .opx-kpi { padding: 14px; }
+  .opx-kpi strong { font-size: 26px; }
+  .opx-card-head { padding: 16px 16px 6px; flex-direction: column; }
+  .opx-badge { text-align: left; }
+  .opx-chart--flow { min-height: 260px; }
+  .opx-card-foot { padding: 10px 16px 16px; }
+  .opx-actions { margin-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opx-kpi { transition: none; }
+}

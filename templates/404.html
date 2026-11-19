@@ -1,0 +1,31 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Página no encontrada | PAKIVOX</title>
+  <link rel="icon" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{% static 'style/errores.css' %}">
+</head>
+<body class="error-solo">
+  <main class="error-pagina">
+    <div class="error-tarjeta">
+      <a class="error-marca" href="/">PAKIVOX</a>
+      <div class="error-icono"><i class="bi bi-signpost-split" aria-hidden="true"></i></div>
+      <span class="error-codigo">Error 404</span>
+      <h1>No encontramos esta página</h1>
+      <p>
+        Puede que el enlace esté incompleto, que el registro ya no exista o que
+        pertenezca a otra empresa. Revisa la dirección o regresa a donde estabas.
+      </p>
+      <div class="error-acciones">
+        <button type="button" class="es-secundaria" data-error-regresar="/"><i class="bi bi-arrow-left" aria-hidden="true"></i> Regresar</button>
+        <a class="es-principal" href="/"><i class="bi bi-house-door-fill" aria-hidden="true"></i> Ir al inicio</a>
+      </div>
+    </div>
+  </main>
+  <script src="{% static 'js/errores.js' %}" defer></script>
+</body>
+</html>

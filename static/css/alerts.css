@@ -1,0 +1,340 @@
+:root {
+    --wms-alert-bg: #0b1220;
+    --wms-alert-panel: #101a2d;
+    --wms-alert-border: rgba(148, 163, 184, 0.22);
+    --wms-alert-text: #f8fafc;
+    --wms-alert-muted: #94a3b8;
+    --wms-alert-accent: #14b8a6;
+    --wms-alert-danger: #f43f5e;
+    --wms-alert-warning: #f59e0b;
+    --wms-alert-info: #38bdf8;
+}
+
+.wms-alert-lock {
+    overflow: hidden !important;
+}
+
+.wms-alert-root {
+    position: relative;
+    z-index: 2147483000;
+}
+
+.wms-alert-backdrop {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, 0.82);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease, visibility .18s ease;
+}
+
+.wms-alert-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.wms-alert-dialog {
+    width: min(100%, 510px);
+    color: var(--wms-alert-text);
+    background:
+        radial-gradient(circle at 100% 0, rgba(20, 184, 166, .10), transparent 42%),
+        linear-gradient(145deg, #111c30, var(--wms-alert-bg));
+    border: 1px solid var(--wms-alert-border);
+    border-radius: 22px;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .58);
+    padding: 28px;
+    transform: translateY(14px) scale(.97);
+    transition: transform .2s ease;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.wms-alert-backdrop.is-open .wms-alert-dialog {
+    transform: none;
+}
+
+.wms-alert-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.wms-alert-icon {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    color: var(--wms-alert-accent);
+    background: rgba(20, 184, 166, .12);
+    border: 1px solid rgba(20, 184, 166, .25);
+}
+
+.wms-alert-dialog[data-type="error"] .wms-alert-icon,
+.wms-alert-dialog[data-type="danger"] .wms-alert-icon {
+    color: var(--wms-alert-danger);
+    background: rgba(244, 63, 94, .12);
+    border-color: rgba(244, 63, 94, .28);
+}
+
+.wms-alert-dialog[data-type="warning"] .wms-alert-icon {
+    color: var(--wms-alert-warning);
+    background: rgba(245, 158, 11, .12);
+    border-color: rgba(245, 158, 11, .28);
+}
+
+.wms-alert-dialog[data-type="info"] .wms-alert-icon {
+    color: var(--wms-alert-info);
+    background: rgba(56, 189, 248, .12);
+    border-color: rgba(56, 189, 248, .28);
+}
+
+.wms-alert-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.wms-alert-eyebrow {
+    margin: 0 0 4px;
+    color: var(--wms-alert-accent);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.wms-alert-title {
+    margin: 0;
+    color: #fff;
+    font-size: 21px;
+    line-height: 1.25;
+    font-weight: 850;
+}
+
+.wms-alert-message {
+    margin: 13px 0 0;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.wms-alert-close {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 22px;
+    line-height: 1;
+    padding: 3px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.wms-alert-close:hover,
+.wms-alert-close:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, .07);
+    outline: none;
+}
+
+.wms-alert-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.wms-alert-btn {
+    min-height: 42px;
+    border-radius: 11px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+}
+
+.wms-alert-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.wms-alert-btn:focus-visible {
+    outline: 3px solid rgba(56, 189, 248, .28);
+    outline-offset: 2px;
+}
+
+.wms-alert-btn-secondary {
+    color: #dbeafe;
+    background: rgba(30, 41, 59, .8);
+    border-color: rgba(148, 163, 184, .22);
+}
+
+.wms-alert-btn-primary {
+    color: #042f2e;
+    background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+    box-shadow: 0 8px 24px rgba(20, 184, 166, .22);
+}
+
+.wms-alert-dialog[data-type="danger"] .wms-alert-btn-primary,
+.wms-alert-dialog[data-type="error"] .wms-alert-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #fb7185, #e11d48);
+    box-shadow: 0 8px 24px rgba(225, 29, 72, .2);
+}
+
+.wms-alert-toast-stack {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    width: min(420px, calc(100vw - 28px));
+    display: grid;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.wms-alert-toast {
+    pointer-events: auto;
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 14px;
+    align-items: start;
+    border-radius: 16px;
+    padding: 18px 18px 18px 16px;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, .4);
+    animation: wmsToastIn .22s ease both;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #06210f;
+    background: linear-gradient(150deg, #4ade80, #22c55e);
+    border: 1px solid rgba(6, 33, 15, 0.15);
+}
+
+.wms-alert-toast[data-type="warning"] {
+    color: #3d2a03;
+    background: linear-gradient(150deg, #fcd34d, #f59e0b);
+    border-color: rgba(61, 42, 3, 0.18);
+}
+
+.wms-alert-toast[data-type="error"] {
+    color: #ffffff;
+    background: linear-gradient(150deg, #fb7185, #e11d48);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.wms-alert-toast[data-type="info"] {
+    color: #ffffff;
+    background: linear-gradient(150deg, #38bdf8, #0284c7);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.wms-alert-toast-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.28);
+    color: inherit;
+    font-weight: 900;
+    font-size: 19px;
+    flex: 0 0 auto;
+}
+
+.wms-alert-toast strong {
+    display: block;
+    color: inherit;
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.wms-alert-toast p {
+    margin: 0;
+    color: inherit;
+    opacity: 0.92;
+    font-size: 13px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.wms-alert-toast-close {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    opacity: 0.65;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.wms-alert-toast-close:hover {
+    opacity: 1;
+}
+
+.wms-alert-toast.is-leaving {
+    animation: wmsToastOut .18s ease both;
+}
+
+@keyframes wmsToastIn {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+}
+
+@keyframes wmsToastOut {
+    to {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+}
+
+@media (max-width: 560px) {
+    .wms-alert-dialog {
+        padding: 22px 18px;
+        border-radius: 18px;
+    }
+
+    .wms-alert-icon {
+        flex-basis: 42px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .wms-alert-title {
+        font-size: 18px;
+    }
+
+    .wms-alert-actions {
+        flex-direction: column-reverse;
+    }
+
+    .wms-alert-btn {
+        width: 100%;
+    }
+
+    .wms-alert-toast-stack {
+        top: 12px;
+        right: 14px;
+        left: 14px;
+        width: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .wms-alert-backdrop,
+    .wms-alert-dialog,
+    .wms-alert-toast {
+        transition: none;
+        animation: none;
+    }
+}

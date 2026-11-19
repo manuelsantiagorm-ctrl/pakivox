@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block title %}Escaneo de lote | PAKIVOX{% endblock %}{% block content %}
+<style>
+.bs{max-width:1100px;margin:auto;padding:24px}
+.bs-card{background:#1e293b;border:1px solid rgba(148,163,184,.25);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 12px 32px rgba(15,23,42,.25);color:#e2e8f0}
+.bs-card h1,.bs-card h2{color:#f1f5f9}
+.bs-card p,.bs-card small{color:#94a3b8}
+.bs label{color:#cbd5e1;display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #334155}
+.bs-check{width:20px;height:20px;flex-shrink:0}
+.bs-actions{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+.bs button{display:inline-block;padding:12px 18px;border:0;border-radius:10px;color:#fff;font-weight:700;cursor:pointer}
+.bs-btn-confirm{background:#2563eb}
+.bs-btn-missing{background:#b91c1c}
+.bs-badge{padding:5px 9px;border-radius:999px;background:#1e3a5f;color:#93c5fd;font-weight:700;font-size:12px}
+</style>
+<main class="bs">
+<a href="{% url 'shipping_hub:my_pending_batches' %}" style="color:#94a3b8;text-decoration:none;display:inline-block;margin-bottom:10px">← Mis lotes pendientes</a>
+<section class="bs-card"><h1>{{ point.name }}</h1><p>Lote #{{ batch.pk }} · Asignado a {{ batch.assigned_to.get_full_name|default:batch.assigned_to.username }}</p></section>
+{% for carrier, items in groups.items %}
+<section class="bs-card">
+<h2>{{ carrier }} <span class="bs-badge">{{ items|length }} paquete(s)</span></h2>
+<form method="post" action="{% url 'shipping_hub:shipment_batch_confirm' batch.pk %}">{% csrf_token %}
+<input type="hidden" name="carrier" value="{{ carrier }}">
+{% for item in items %}
+<label><input class="bs-check" type="checkbox" name="item_ids" value="{{ item.pk }}" checked>Pedido {{ item.package.carrier_shipment.shipping_order.order.folio }} · Paquete #{{ item.package.package_number }} · GuÃa {{ item.package.tracking_number|default:"—" }}</label>
+{% endfor %}
+<label style="border:0"><small>Motivo de rechazo (solo si vas a reportar rechazados):</small></label>
+<input type="text" name="reject_reason" placeholder="Ej. Empaque dañado, no cumple medidas..." style="width:100%;padding:10px;border:1px solid #475569;border-radius:10px;background:#0f172a;color:#f1f5f9;margin-bottom:10px">
+<div class="bs-actions">
+<button type="submit" class="bs-btn-confirm">Confirmar entregados en {{ carrier }}</button>
+<button type="submit" class="bs-btn-missing" formaction="{% url 'shipping_hub:shipment_batch_report_missing' batch.pk %}" formnovalidate onclick="return confirm('Reportarás como FALTANTES solo los paquetes que sigan marcados. Desmarca antes los que sÃ tienes. ¿Continuar?');">Reportar faltantes</button>
+<button type="submit" style="background:#b45309" formaction="{% url 'shipping_hub:shipment_batch_report_rejected' batch.pk %}" formnovalidate onclick="return confirm('Reportarás como RECHAZADOS por la paqueterÃa los paquetes marcados. ¿Continuar?');">Reportar rechazados</button>
+</div>
+</form>
+</section>
+{% empty %}
+<section class="bs-card"><p>No hay paquetes pendientes en este lote. Ya se confirmó todo.</p></section>
+{% endfor %}
+</main>{% endblock %}

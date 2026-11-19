@@ -1,0 +1,133 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Mesa de Control | PAKIVOX{% endblock %}
+{% block page_title %}Mesa de Control{% endblock %}
+{% block page_subtitle %}Control ejecutivo de la operación en tiempo real{% endblock %}
+
+{% block content %}
+<section class="tower-page">
+  <header class="tower-hero">
+    <div class="hero-copy">
+      <span class="eyebrow"><i class="bi bi-broadcast-pin"></i> Control Tower</span>
+      <h1>Mesa de Control</h1>
+      <p>Prioridades, bloqueos y avance operativo de toda la empresa en una sola vista.</p>
+    </div>
+    <div class="hero-status"><span class="status-dot"></span> Operación en vivo</div>
+  </header>
+
+  <div class="executive-kpis" aria-label="Resumen ejecutivo">
+    <article class="executive-kpi kpi-blue">
+      <div class="kpi-icon"><i class="bi bi-inboxes"></i></div>
+      <div><span>Carga operativa</span><strong>{{ total_workload }}</strong><small>pendientes totales</small></div>
+    </article>
+    <article class="executive-kpi kpi-red">
+      <div class="kpi-icon"><i class="bi bi-exclamation-octagon"></i></div>
+      <div><span>Atención crítica</span><strong>{{ critical_workload }}</strong><small>requieren decisión</small></div>
+    </article>
+    <article class="executive-kpi kpi-amber">
+      <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <div><span>En proceso</span><strong>{{ in_process_workload }}</strong><small>operaciones activas</small></div>
+    </article>
+    <article class="executive-kpi kpi-green">
+      <div class="kpi-icon"><i class="bi bi-shield-check"></i></div>
+      <div><span>Etapas limpias</span><strong>{{ clean_stage_count }}/9</strong><small>sin pendientes</small></div>
+    </article>
+  </div>
+
+  <section class="flow-panel">
+    <div class="section-heading">
+      <div><span class="section-kicker">Flujo operativo</span><h2>¿Dónde está el trabajo?</h2></div>
+      <small>Selecciona una etapa para filtrar las prioridades</small>
+    </div>
+
+    <div class="stage-grid">
+      {% for card in cards %}
+        <a href="{{ card.url }}" class="stage-card {{ card.tone }}">
+          <div class="stage-top">
+            <span class="stage-icon">
+              {% if card.bucket == 'pending_payment_review' %}<i class="bi bi-credit-card-2-front"></i>
+              {% elif card.bucket == 'pending_invoice' %}<i class="bi bi-receipt"></i>
+              {% elif card.bucket == 'credit_hold' %}<i class="bi bi-person-lock"></i>
+              {% elif card.bucket == 'pending_picking' %}<i class="bi bi-box-seam"></i>
+              {% elif card.bucket == 'pending_packing' %}<i class="bi bi-box2-heart"></i>
+              {% elif card.bucket == 'stock_issues' %}<i class="bi bi-exclamation-triangle"></i>
+              {% elif card.bucket == 'ready_dispatch' %}<i class="bi bi-truck-flatbed"></i>
+              {% elif card.bucket == 'in_transit' %}<i class="bi bi-truck"></i>
+              {% else %}<i class="bi bi-cart-check"></i>{% endif %}
+            </span>
+            <strong class="stage-count">{{ card.count }}</strong>
+          </div>
+          <small>{{ card.group }}</small>
+          <h3>{{ card.title }}</h3>
+          <p>{{ card.description }}</p>
+          <span class="stage-link">Ver pendientes <i class="bi bi-arrow-right"></i></span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="priority-panel">
+    <div class="priority-head">
+      <div><span class="section-kicker">Acción ejecutiva</span><h2>Prioridades de hoy</h2><p>Mostrando: <strong>{{ selected_bucket_label }}</strong></p></div>
+      <div class="records-badge"><strong>{{ rows|length }}</strong><span>registros</span></div>
+    </div>
+
+    <nav class="filter-strip" aria-label="Filtros operativos">
+      <a href="?bucket=all" class="{% if bucket == 'all' %}active{% endif %}"><i class="bi bi-grid"></i> Todo</a>
+      <a href="?bucket=admin" class="{% if bucket == 'admin' %}active{% endif %}"><i class="bi bi-briefcase"></i> Administración</a>
+      <a href="?bucket=warehouse" class="{% if bucket == 'warehouse' %}active{% endif %}"><i class="bi bi-boxes"></i> Bodega</a>
+      <a href="?bucket=logistics" class="{% if bucket == 'logistics' %}active{% endif %}"><i class="bi bi-truck"></i> Logística</a>
+      <a href="?bucket=purchases" class="{% if bucket == 'purchases' %}active{% endif %}"><i class="bi bi-cart3"></i> Compras</a>
+    </nav>
+
+    {% if rows %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prioridad</th><th>Asunto</th><th>Folio / SKU</th><th>Cliente / Proveedor</th><th>Estado</th><th>Monto</th><th>Antigüedad</th><th></th></tr></thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td><span class="priority-pill {{ row.priority_tone }}"><i></i>{{ row.priority_label }}</span></td>
+                <td><strong>{{ row.title }}</strong><small>{{ row.group }} · {{ row.description|truncatechars:76 }}</small></td>
+                <td><strong class="folio">{{ row.folio }}</strong></td>
+                <td><span class="owner">{{ row.owner }}</span></td>
+                <td><span class="status-pill">{{ row.status }}</span></td>
+                <td>{% if row.amount != None %}<strong>${{ row.amount|floatformat:2 }}</strong>{% else %}<span class="muted">—</span>{% endif %}</td>
+                <td>
+                  {% if row.created_at %}
+                    <strong class="age {% if row.age_days >= 3 %}overdue{% endif %}">{{ row.age_days }} día{{ row.age_days|pluralize }}</strong>
+                    <small>{{ row.created_at|date:"d/m/Y · H:i" }}</small>
+                  {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td><a href="{{ row.url }}" class="row-action">{{ row.action }} <i class="bi bi-arrow-up-right"></i></a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state"><div class="empty-icon"><i class="bi bi-check2-circle"></i></div><h3>Operación limpia</h3><p>No hay pendientes en <strong>{{ selected_bucket_label }}</strong>.</p><a href="?bucket=all">Ver todo el flujo</a></div>
+    {% endif %}
+  </section>
+</section>
+
+<style>
+  .tower-page{--panel:#0f172a;--panel-2:#111c31;--line:rgba(148,163,184,.15);--muted:#91a0b7;display:grid;gap:16px;color:#e5edf8}
+  .tower-hero,.flow-panel,.priority-panel,.executive-kpi{border:1px solid var(--line);background:linear-gradient(145deg,rgba(17,28,49,.98),rgba(10,18,33,.98));box-shadow:0 16px 38px rgba(2,6,23,.16)}
+  .tower-hero{min-height:128px;border-radius:22px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden}
+  .tower-hero:after{content:"";position:absolute;width:330px;height:330px;right:-120px;top:-210px;border-radius:50%;background:rgba(14,165,233,.12);filter:blur(8px)}
+  .eyebrow,.section-kicker{display:block;color:#38bdf8;text-transform:uppercase;letter-spacing:.13em;font-weight:900;font-size:10px}.eyebrow i{margin-right:6px}
+  .hero-copy h1{margin:5px 0 3px;font-size:30px;line-height:1.1;font-weight:950;letter-spacing:-.04em;color:#f8fafc}.hero-copy p{margin:0;color:var(--muted);font-size:13px}
+  .hero-status{z-index:1;display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid rgba(34,197,94,.22);background:rgba(34,197,94,.08);border-radius:999px;color:#bbf7d0;font-size:11px;font-weight:850;white-space:nowrap}.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.1)}
+  .executive-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.executive-kpi{border-radius:17px;padding:15px 16px;display:flex;align-items:center;gap:13px;min-width:0}.kpi-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;font-size:18px;flex:none}.executive-kpi span,.executive-kpi small{display:block;color:var(--muted);font-size:10px}.executive-kpi span{text-transform:uppercase;letter-spacing:.08em;font-weight:900}.executive-kpi strong{display:block;font-size:25px;line-height:1;margin:3px 0;color:#f8fafc}.kpi-blue .kpi-icon{color:#7dd3fc;background:rgba(14,165,233,.12)}.kpi-red .kpi-icon{color:#fca5a5;background:rgba(239,68,68,.12)}.kpi-amber .kpi-icon{color:#fcd34d;background:rgba(245,158,11,.12)}.kpi-green .kpi-icon{color:#86efac;background:rgba(34,197,94,.12)}
+  .flow-panel,.priority-panel{border-radius:22px;padding:20px}.section-heading,.priority-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:15px}.section-heading h2,.priority-head h2{margin:3px 0 0;color:#f8fafc;font-size:20px;font-weight:950;letter-spacing:-.025em}.section-heading>small{color:var(--muted);font-size:11px}.priority-head p{margin:4px 0 0;color:var(--muted);font-size:11px}.priority-head p strong{color:#7dd3fc}
+  .stage-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stage-card{position:relative;display:block;min-width:0;padding:14px;border-radius:15px;border:1px solid var(--line);background:rgba(5,12,25,.56);color:inherit;text-decoration:none;transition:.18s ease;overflow:hidden}.stage-card:hover,.stage-card.active{transform:translateY(-2px);border-color:rgba(56,189,248,.55);box-shadow:0 12px 24px rgba(2,6,23,.25)}.stage-card.active:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 4px 4px 0;background:#38bdf8}.stage-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.stage-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:rgba(56,189,248,.09);color:#7dd3fc}.stage-count{font-size:25px;line-height:1;color:#f8fafc}.stage-card>small{color:#7890ae;text-transform:uppercase;letter-spacing:.08em;font-size:8px;font-weight:900}.stage-card h3{margin:2px 0 4px;color:#f8fafc;font-size:13px;font-weight:900}.stage-card p{margin:0;color:var(--muted);font-size:10px;line-height:1.35;min-height:27px}.stage-link{display:inline-flex;align-items:center;gap:5px;margin-top:9px;color:#7dd3fc;font-size:9px;font-weight:850}.stage-card.danger .stage-icon{color:#fca5a5;background:rgba(239,68,68,.1)}.stage-card.warning .stage-icon{color:#fcd34d;background:rgba(245,158,11,.1)}.stage-card.success .stage-icon{color:#86efac;background:rgba(34,197,94,.1)}
+  .records-badge{display:flex;align-items:baseline;gap:6px;padding:8px 12px;border-radius:11px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.15)}.records-badge strong{font-size:20px;color:#f8fafc}.records-badge span{font-size:10px;color:#7dd3fc;text-transform:uppercase;font-weight:900}
+  .filter-strip{display:flex;gap:7px;flex-wrap:wrap;padding:10px 0 14px;border-top:1px solid var(--line)}.filter-strip a{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;color:#9fb1c8;background:rgba(2,6,23,.42);border:1px solid var(--line);text-decoration:none;font-size:10px;font-weight:850}.filter-strip a:hover,.filter-strip a.active{color:#e0f2fe;background:rgba(14,165,233,.12);border-color:rgba(56,189,248,.4)}
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:1050px}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}th{background:rgba(2,6,23,.45);color:#7890ae;text-transform:uppercase;letter-spacing:.08em;font-size:8px;font-weight:950}td{color:#cbd5e1;font-size:10px}tbody tr{transition:background .15s}tbody tr:hover{background:rgba(56,189,248,.035)}tbody tr:last-child td{border-bottom:0}td strong{display:block;color:#f1f5f9;font-size:11px}td small{display:block;color:#71839d;font-size:8px;margin-top:3px;max-width:260px}.folio{font-variant-numeric:tabular-nums}.owner{display:block;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .priority-pill,.status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 8px;white-space:nowrap;font-size:8px;font-weight:900}.priority-pill i{width:5px;height:5px;border-radius:50%;background:currentColor}.priority-pill.critical{color:#fecaca;background:rgba(239,68,68,.13)}.priority-pill.high{color:#fde68a;background:rgba(245,158,11,.12)}.priority-pill.medium{color:#bae6fd;background:rgba(14,165,233,.12)}.priority-pill.low{color:#cbd5e1;background:rgba(148,163,184,.11)}.status-pill{color:#cbd5e1;background:rgba(148,163,184,.1)}.age.overdue{color:#fca5a5}.row-action{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border-radius:8px;background:#0ea5e9;color:#06283b;text-decoration:none;font-size:9px;font-weight:950;white-space:nowrap}.row-action:hover{background:#38bdf8}.muted{color:#64748b}
+  .empty-state{text-align:center;padding:38px 18px;border:1px dashed rgba(34,197,94,.22);border-radius:14px;background:rgba(34,197,94,.025)}.empty-icon{width:50px;height:50px;margin:0 auto 10px;display:grid;place-items:center;border-radius:16px;background:rgba(34,197,94,.12);color:#86efac;font-size:25px}.empty-state h3{margin:0 0 4px;color:#f8fafc}.empty-state p{margin:0 0 12px;color:var(--muted);font-size:11px}.empty-state a{color:#7dd3fc;font-size:10px;font-weight:850}
+  @media(max-width:1100px){.executive-kpis{grid-template-columns:repeat(2,1fr)}.stage-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:700px){.tower-hero,.section-heading,.priority-head{align-items:flex-start;display:grid}.tower-hero{padding:20px}.hero-status{justify-self:start}.executive-kpis,.stage-grid{grid-template-columns:1fr}.flow-panel,.priority-panel{padding:14px}.section-heading>small{display:none}}
+</style>
+{% endblock %}

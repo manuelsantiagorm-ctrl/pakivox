@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block content %}
+{% include "warehouse/transfers/_styles.html" %}
+<main class="wt">
+  <div class="wt-shell">
+    <header class="wt-topbar">
+      <div>
+        <div class="wt-eyebrow">
+          <span class="wt-eyebrow-dot"></span>
+          Operación y almacén
+        </div>
+        <h1 class="wt-title">Traspasos entre bodegas</h1>
+        <p class="wt-subtitle">
+          Coordina movimientos internos con trazabilidad completa desde la solicitud
+          hasta la recepción en la bodega destino.
+        </p>
+      </div>
+      <a class="wt-btn" href="{% url 'warehouse:transfer_create' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Nuevo traspaso
+      </a>
+    </header>
+
+    <section class="wt-stats" aria-label="Resumen de traspasos">
+      <article class="wt-stat" style="--stat-color:#24a8ff">
+        <div class="wt-stat-head">
+          <span class="wt-stat-label">Total registrados</span>
+          <span class="wt-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M5 6v14h14V6M9 10h6"/>
+            </svg>
+          </span>
+        </div>
+        <div class="wt-stat-value">{{ transfer_summary.total|default:0 }}</div>
+      </article>
+
+      <article class="wt-stat" style="--stat-color:#f5ad36">
+        <div class="wt-stat-head">
+          <span class="wt-stat-label">Por procesar</span>
+          <span class="wt-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+          </span>
+        </div>
+        <div class="wt-stat-value">{{ transfer_summary.pending|default:0 }}</div>
+      </article>
+
+      <article class="wt-stat" style="--stat-color:#22d3ee">
+        <div class="wt-stat-head">
+          <span class="wt-stat-label">En tránsito</span>
+          <span class="wt-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+            </svg>
+          </span>
+        </div>
+        <div class="wt-stat-value">{{ transfer_summary.in_transit|default:0 }}</div>
+      </article>
+
+      <article class="wt-stat" style="--stat-color:#23c483">
+        <div class="wt-stat-head">
+          <span class="wt-stat-label">Completados</span>
+          <span class="wt-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>
+            </svg>
+          </span>
+        </div>
+        <div class="wt-stat-value">{{ transfer_summary.completed|default:0 }}</div>
+      </article>
+    </section>
+
+    <section class="wt-card wt-card-pad">
+      <form method="get" class="wt-filter">
+        <div class="wt-search-wrap">
+          <label for="wt-q">Buscar movimiento</label>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input id="wt-q" name="q" value="{{ query }}" placeholder="Folio, motivo, origen o destino">
+        </div>
+        <div>
+          <label for="wt-status">Estado operativo</label>
+          <select id="wt-status" name="status">
+            <option value="">Todos los estados</option>
+            {% for value,label in status_choices %}
+              <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="wt-actions wt-filter-actions">
+          <button class="wt-btn" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 5h16M7 12h10M10 19h4"/>
+            </svg>
+            Aplicar
+          </button>
+          {% if query or selected_status %}
+            <a class="wt-btn alt" href="{% url 'warehouse:transfer_list' %}">Limpiar</a>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+
+    <section class="wt-card wt-table">
+      <div class="wt-table-head">
+        <div>
+          <h2 class="wt-table-title">Movimientos de inventario</h2>
+          <div class="wt-table-meta">
+            {% if active_warehouse %}
+              Relacionados con {{ active_warehouse.name }}
+            {% else %}
+              Vista consolidada de bodegas autorizadas
+            {% endif %}
+          </div>
+        </div>
+        <div class="wt-table-meta">Máximo 200 registros</div>
+      </div>
+
+      <div class="wt-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Ruta del movimiento</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Registro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in transfers %}
+              <tr>
+                <td>
+                  <a class="wt-folio" href="{% url 'warehouse:transfer_detail' t.pk %}">
+                    {{ t.folio }}
+                  </a>
+                </td>
+                <td>
+                  <div class="wt-route">
+                    <div class="wt-warehouse">
+                      <span class="wt-warehouse-name">{{ t.origin_warehouse.name }}</span>
+                      <span class="wt-warehouse-role">Origen</span>
+                    </div>
+                    <span class="wt-route-arrow">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14m-5-5 5 5-5 5"/>
+                      </svg>
+                    </span>
+                    <div class="wt-warehouse">
+                      <span class="wt-warehouse-name">{{ t.destination_warehouse.name }}</span>
+                      <span class="wt-warehouse-role">Destino</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="wt-badge" data-status="{{ t.status }}">{{ t.get_status_display }}</span>
+                </td>
+                <td><span class="wt-priority">{{ t.get_priority_display }}</span></td>
+                <td class="wt-date">
+                  {{ t.created_at|date:"d M Y" }}
+                  <small>{{ t.created_at|date:"H:i" }} h</small>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td class="wt-empty" colspan="5">
+                  <span class="wt-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M4 7h16v12H4zM8 7V5h8v2M8 12h8"/>
+                    </svg>
+                  </span>
+                  <h3>{% if query or selected_status %}Sin resultados para estos filtros{% else %}Aún no hay traspasos registrados{% endif %}</h3>
+                  <p>
+                    {% if query or selected_status %}
+                      Prueba con otro folio, bodega o estado operativo.
+                    {% else %}
+                      Crea el primer movimiento para trasladar inventario entre tus bodegas autorizadas.
+                    {% endif %}
+                  </p>
+                  {% if query or selected_status %}
+                    <a class="wt-btn alt" href="{% url 'warehouse:transfer_list' %}">Quitar filtros</a>
+                  {% else %}
+                    <a class="wt-btn" href="{% url 'warehouse:transfer_create' %}">Crear primer traspaso</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,128 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Dashboard CEO | PAKIVOX{% endblock %}
+
+{% block page_title %}Dashboard CEO{% endblock %}
+{% block page_subtitle %}Panel ejecutivo comercial, operativo y financiero de PAKIVOX{% endblock %}
+
+{% block content %}
+
+<section class="kpi-grid">
+    <div class="kpi-card">
+        <span>Pipeline</span>
+        <strong>${{ pipeline|floatformat:0 }}</strong>
+        <small>Oportunidades abiertas</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Forecast</span>
+        <strong>${{ forecast|floatformat:0 }}</strong>
+        <small>Valor ponderado por probabilidad</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Ganados</span>
+        <strong>${{ won|floatformat:0 }}</strong>
+        <small>Oportunidades cerradas</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Perdidos</span>
+        <strong>${{ lost|floatformat:0 }}</strong>
+        <small>Oportunidades perdidas</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Clientes</span>
+        <strong>{{ customers }}</strong>
+        <small>Clientes y leads registrados</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Pedidos</span>
+        <strong>{{ orders }}</strong>
+        <small>Pedidos registrados</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Pagos pendientes</span>
+        <strong>{{ pending_payments }}</strong>
+        <small>Pagos por revisar</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Picking</span>
+        <strong>{{ pending_pickings }}</strong>
+        <small>Órdenes pendientes</small>
+    </div>
+</section>
+
+<section class="ceo-grid">
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Embudo comercial</h3>
+        </div>
+
+        <div class="metric-list">
+            {% for item in funnel %}
+                <div>
+                    <span>{{ item.name }}</span>
+                    <strong>{{ item.count }}</strong>
+                </div>
+            {% empty %}
+                <div>
+                    <span>Sin etapas registradas</span>
+                    <strong>0</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Top clientes</h3>
+        </div>
+
+        <div class="metric-list">
+            {% for customer in top_customers %}
+                <div>
+                    <span>
+                        <strong>{{ customer.full_name }}</strong><br>
+                        <small>{{ customer.business_name|default:"Sin empresa" }}</small>
+                    </span>
+                    <strong>${{ customer.estimated_monthly_purchase|floatformat:0 }}</strong>
+                </div>
+            {% empty %}
+                <div>
+                    <span>Sin clientes registrados</span>
+                    <strong>0</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel mt-4">
+    <div class="panel-header">
+        <h3>Actividad reciente</h3>
+    </div>
+
+    <div class="metric-list">
+        {% for activity in activities %}
+            <div>
+                <span>
+                    <strong>{{ activity.get_activity_type_display }}</strong><br>
+                    <small>{{ activity.description }}</small>
+                </span>
+                <strong>{{ activity.created_at|timesince }}</strong>
+            </div>
+        {% empty %}
+            <div>
+                <span>Sin actividad reciente</span>
+                <strong>0</strong>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}

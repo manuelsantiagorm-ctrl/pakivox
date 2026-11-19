@@ -1,0 +1,83 @@
+﻿{% extends "base.html" %}
+
+{% block page_title %}Centro de notificaciones{% endblock %}
+{% block page_subtitle %}Alertas operativas de PAKIVOX{% endblock %}
+
+{% block content %}
+<section class="notification-center-page">
+  <div class="notification-center-head">
+    <div>
+      <span class="notification-kicker">CENTRO GLOBAL</span>
+      <h2>Notificaciones</h2>
+      <p>{{ unread_count }} sin leer · {{ active_count }} activas</p>
+    </div>
+    <form method="post" action="{% url 'notifications:mark_all_read' %}">
+      {% csrf_token %}
+      <button class="btn btn-outline-light" type="submit">
+        <i class="bi bi-check2-all"></i> Marcar todas como leídas
+      </button>
+    </form>
+  </div>
+
+  <form method="get" class="notification-filters">
+    <input name="q" value="{{ q }}" placeholder="Buscar notificación">
+    <select name="status">
+      <option value="active" {% if status == "active" %}selected{% endif %}>Activas</option>
+      <option value="resolved" {% if status == "resolved" %}selected{% endif %}>Resueltas</option>
+    </select>
+    <select name="level">
+      <option value="">Todas las prioridades</option>
+      <option value="critical" {% if level == "critical" %}selected{% endif %}>Críticas</option>
+      <option value="warning" {% if level == "warning" %}selected{% endif %}>Advertencias</option>
+      <option value="info" {% if level == "info" %}selected{% endif %}>Información</option>
+      <option value="success" {% if level == "success" %}selected{% endif %}>Éxitos</option>
+    </select>
+    <select name="read">
+      <option value="">Leídas y no leídas</option>
+      <option value="unread" {% if read_filter == "unread" %}selected{% endif %}>No leídas</option>
+      <option value="read" {% if read_filter == "read" %}selected{% endif %}>Leídas</option>
+    </select>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </form>
+
+  <div class="notification-list">
+    {% for notification in notifications %}
+    <article class="notification-card notification-{{ notification.level }} {% if not notification.is_read_for_user %}is-unread{% endif %}">
+      <a class="notification-card-main" href="{% url 'notifications:open' notification.id %}">
+        <span class="notification-card-icon">
+          <i class="bi {{ notification.icon }}"></i>
+        </span>
+        <span class="notification-card-copy">
+          <span class="notification-card-title">
+            {{ notification.title }}
+            {% if not notification.is_read_for_user %}<em>Nueva</em>{% endif %}
+          </span>
+          <span class="notification-card-message">{{ notification.message }}</span>
+          <small>
+            {% if notification.warehouse %}{{ notification.warehouse.name }} · {% endif %}
+            {{ notification.updated_at|date:"d/m/Y H:i" }}
+            {% if notification.reference %} · {{ notification.reference }}{% endif %}
+          </small>
+        </span>
+        <span class="notification-card-action">
+          {{ notification.action_label }} <i class="bi bi-arrow-right"></i>
+        </span>
+      </a>
+      {% if not notification.is_read_for_user %}
+      <form method="post" action="{% url 'notifications:mark_read' notification.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit">Marcar leída</button>
+      </form>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="notification-empty">
+      <i class="bi bi-bell-slash"></i>
+      <h3>No hay notificaciones con estos filtros</h3>
+      <p>Cuando ocurra un evento importante aparecerá aquí.</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

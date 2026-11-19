@@ -1,0 +1,556 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Relacionar columnas | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Relacionar columnas
+{% endblock %}
+
+{% block page_subtitle %}
+Indica qué representa cada columna del archivo
+{% endblock %}
+
+{% block content %}
+<section class="mapping-page">
+  <header class="mapping-header">
+    <div>
+      <span>
+        <i class="bi bi-diagram-3"></i>
+        Paso 2 de 3
+      </span>
+
+      <h2>{{ job.original_filename }}</h2>
+
+      <p>
+        Hoja: {{ job.sheet_name }} ·
+        {{ job.total_rows }} filas encontradas ·
+        Folio {{ job.folio }}
+      </p>
+    </div>
+
+    <a
+      href="{% url 'data_imports:job_detail' job.pk %}"
+      class="mapping-secondary"
+    >
+      Ver lote
+    </a>
+  </header>
+
+  {% if sheet_form.fields.sheet_name.choices|length > 1 %}
+    <form method="post" class="sheet-selector">
+      {% csrf_token %}
+
+      <input type="hidden" name="action" value="change_sheet">
+
+      <label>
+        <span>Hoja que deseas importar</span>
+        {{ sheet_form.sheet_name }}
+      </label>
+
+      <button type="submit">
+        Cambiar hoja
+      </button>
+    </form>
+  {% endif %}
+
+  <form method="post" class="mapping-panel">
+    {% csrf_token %}
+
+    <input type="hidden" name="action" value="save_mapping">
+
+    {% if mapping_form.non_field_errors %}
+      <div class="mapping-errors">
+        {{ mapping_form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="mapping-table-wrap">
+      <table class="mapping-table">
+        <thead>
+          <tr>
+            <th>Columna del archivo</th>
+            <th>Campo de PAKIVOX</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for row in mapping_rows %}
+            <tr>
+              <td>
+                <strong>{{ row.header }}</strong>
+                <small>Columna {{ row.index|add:"1" }}</small>
+              </td>
+
+              <td>
+                <div class="mapping-field-controls">
+                  {{ row.field }}
+                  <button
+                    type="button"
+                    class="mapping-create-field"
+                    data-target-select="{{ row.field.id_for_label }}"
+                  >
+                    <i class="bi bi-plus-lg"></i>
+                    Crear campo
+                  </button>
+                </div>
+
+                {% if row.field.errors %}
+                  <div class="mapping-field-error">
+                    {{ row.field.errors }}
+                  </div>
+                {% endif %}
+              </td>
+
+              <td>
+                <span class="mapping-detected">
+                  <i class="bi bi-magic"></i>
+                  Sugerencia automática
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="mapping-footer">
+      <div>
+        <strong>Campo obligatorio</strong>
+
+        <p>
+          Debe existir una columna relacionada con
+          Nombre completo / Razón social.
+        </p>
+      </div>
+
+      <div class="mapping-actions">
+        <a
+          href="{% url 'data_imports:dashboard' %}"
+          class="mapping-secondary"
+        >
+          Cancelar
+        </a>
+
+        <button type="submit" class="mapping-primary">
+          Guardar relación
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </footer>
+  </form>
+</section>
+
+<div id="customFieldModal" class="cf-modal" hidden>
+  <div class="cf-modal-card" role="dialog" aria-modal="true" aria-labelledby="cfModalTitle">
+    <header>
+      <div>
+        <small>Sin salir de la importación</small>
+        <h3 id="cfModalTitle">Crear campo personalizado</h3>
+      </div>
+      <button type="button" id="cfModalClose" class="cf-close" aria-label="Cerrar">×</button>
+    </header>
+
+    <div id="cfModalErrors" class="cf-errors" hidden></div>
+
+    <div class="cf-grid">
+      <label>
+        <span>Nombre del campo *</span>
+        <input id="cfName" type="text" maxlength="100" placeholder="Ej. Municipio o Alcaldía">
+      </label>
+      <label>
+        <span>Tipo *</span>
+        <select id="cfType">
+          <option value="text">Texto</option>
+          <option value="number">Número</option>
+          <option value="date">Fecha</option>
+          <option value="boolean">Sí / No</option>
+          <option value="select">Lista de opciones</option>
+          <option value="email">Correo</option>
+          <option value="phone">Teléfono</option>
+        </select>
+      </label>
+      <label class="cf-full">
+        <span>Texto de ayuda</span>
+        <input id="cfHelp" type="text" maxlength="250" placeholder="Ej. Municipio correspondiente al domicilio">
+      </label>
+      <label id="cfOptionsWrap" class="cf-full" hidden>
+        <span>Opciones (una por línea) *</span>
+        <textarea id="cfOptions" rows="4"></textarea>
+      </label>
+      <label class="cf-check">
+        <input id="cfRequired" type="checkbox">
+        <span>Este campo es obligatorio</span>
+      </label>
+    </div>
+
+    <footer>
+      <button type="button" id="cfModalCancel" class="mapping-secondary">Cancelar</button>
+      <button type="button" id="cfModalSave" class="mapping-primary">Crear y seleccionar</button>
+    </footer>
+  </div>
+</div>
+
+<style>
+  .mapping-page {
+    display: grid;
+    gap: 15px;
+  }
+
+  .mapping-header,
+  .sheet-selector,
+  .mapping-panel {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    background: #0f172a;
+  }
+
+  .mapping-header {
+    padding: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .mapping-header span {
+    color: #c4b5fd;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mapping-header h2 {
+    margin: 7px 0 4px;
+    color: #f8fafc;
+  }
+
+  .mapping-header p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .sheet-selector {
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .sheet-selector label {
+    flex: 1;
+    display: grid;
+    gap: 6px;
+    color: #cbd5e1;
+    font-weight: 800;
+  }
+
+  .sheet-selector button,
+  .mapping-primary,
+  .mapping-secondary {
+    min-height: 42px;
+    padding: 0 15px;
+    border-radius: 11px;
+    font-weight: 900;
+  }
+
+  .sheet-selector button,
+  .mapping-primary {
+    border: 0;
+    background: #22c55e;
+    color: #052e16;
+    cursor: pointer;
+  }
+
+  .mapping-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: #cbd5e1;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .import-select,
+  .import-mapping-select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 11px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+  .mapping-field-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mapping-field-controls select { flex: 1; }
+
+  .mapping-create-field {
+    min-height: 42px;
+    white-space: nowrap;
+    border: 1px solid rgba(34, 197, 94, .45);
+    border-radius: 10px;
+    padding: 0 12px;
+    background: rgba(34, 197, 94, .1);
+    color: #86efac;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .cf-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, .78);
+    backdrop-filter: blur(5px);
+  }
+
+  .cf-modal[hidden] { display: none; }
+
+  .cf-modal-card {
+    width: min(620px, 100%);
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 18px;
+    padding: 22px;
+    background: #0f172a;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, .45);
+  }
+
+  .cf-modal-card header,
+  .cf-modal-card footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cf-modal-card h3 { margin: 4px 0 0; color: #f8fafc; }
+  .cf-modal-card small { color: #86efac; font-weight: 900; text-transform: uppercase; }
+  .cf-close { border: 0; background: transparent; color: #cbd5e1; font-size: 30px; cursor: pointer; }
+  .cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .cf-grid label { display: grid; gap: 7px; color: #e2e8f0; font-weight: 800; }
+  .cf-grid input:not([type="checkbox"]), .cf-grid select, .cf-grid textarea {
+    width: 100%; box-sizing: border-box; border: 1px solid #334155; border-radius: 10px;
+    padding: 11px; background: #020617; color: #f8fafc;
+  }
+  .cf-full { grid-column: 1 / -1; }
+  .cf-check { grid-column: 1 / -1; display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
+  .cf-errors { margin-top: 15px; padding: 11px; border-radius: 10px; color: #fecaca; background: rgba(127,29,29,.3); }
+
+  .mapping-panel {
+    overflow: hidden;
+  }
+
+  .mapping-table-wrap {
+    overflow-x: auto;
+  }
+
+  .mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .mapping-table th,
+  .mapping-table td {
+    padding: 14px 17px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.09);
+    color: #cbd5e1;
+  }
+
+  .mapping-table th {
+    color: #64748b;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  .mapping-table td:first-child {
+    width: 30%;
+  }
+
+  .mapping-table td:nth-child(2) {
+    width: 48%;
+  }
+
+  .mapping-table strong,
+  .mapping-table small {
+    display: block;
+  }
+
+  .mapping-table strong {
+    color: #f8fafc;
+  }
+
+  .mapping-table small {
+    margin-top: 4px;
+    color: #64748b;
+  }
+
+  .mapping-detected {
+    display: inline-flex;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: #ddd6fe;
+    background: rgba(76, 29, 149, 0.16);
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .mapping-footer {
+    padding: 17px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .mapping-footer strong {
+    color: #f8fafc;
+  }
+
+  .mapping-footer p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+
+  .mapping-actions {
+    display: flex;
+    gap: 9px;
+  }
+
+  .mapping-errors,
+  .mapping-field-error {
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.22);
+  }
+
+  .mapping-errors {
+    margin: 15px;
+    padding: 13px;
+    border-radius: 11px;
+  }
+
+  .mapping-field-error {
+    margin-top: 5px;
+    padding: 6px;
+    border-radius: 7px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 760px) {
+    .mapping-header,
+    .mapping-footer,
+    .sheet-selector {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script>
+(() => {
+  const modal = document.getElementById("customFieldModal");
+  const nameInput = document.getElementById("cfName");
+  const typeInput = document.getElementById("cfType");
+  const helpInput = document.getElementById("cfHelp");
+  const optionsInput = document.getElementById("cfOptions");
+  const optionsWrap = document.getElementById("cfOptionsWrap");
+  const requiredInput = document.getElementById("cfRequired");
+  const errorsBox = document.getElementById("cfModalErrors");
+  const saveButton = document.getElementById("cfModalSave");
+  let targetSelect = null;
+
+  const csrfToken = document.querySelector(".mapping-panel input[name=csrfmiddlewaretoken]").value;
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  document.querySelectorAll(".mapping-create-field").forEach((button) => {
+    button.addEventListener("click", () => {
+      targetSelect = document.getElementById(button.dataset.targetSelect);
+      nameInput.value = "";
+      typeInput.value = "text";
+      helpInput.value = "";
+      optionsInput.value = "";
+      requiredInput.checked = false;
+      optionsWrap.hidden = true;
+      errorsBox.hidden = true;
+      modal.hidden = false;
+      document.body.style.overflow = "hidden";
+      nameInput.focus();
+    });
+  });
+
+  typeInput.addEventListener("change", () => {
+    optionsWrap.hidden = typeInput.value !== "select";
+  });
+  document.getElementById("cfModalClose").addEventListener("click", closeModal);
+  document.getElementById("cfModalCancel").addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  saveButton.addEventListener("click", async () => {
+    errorsBox.hidden = true;
+    saveButton.disabled = true;
+    saveButton.textContent = "Creando...";
+
+    const body = new FormData();
+    body.append("csrfmiddlewaretoken", csrfToken);
+    body.append("name", nameInput.value.trim());
+    body.append("field_type", typeInput.value);
+    body.append("help_text", helpInput.value.trim());
+    body.append("options_text", optionsInput.value);
+    body.append("required", requiredInput.checked ? "on" : "");
+    body.append("show_in_form", "on");
+    body.append("allow_import", "on");
+    body.append("allow_export", "on");
+    body.append("is_active", "on");
+    body.append("order", "0");
+
+    try {
+      const response = await fetch("{% url 'custom_fields:field_create_inline' %}", {
+        method: "POST",
+        body,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        const messages = Object.values(data.errors || {}).flat();
+        throw new Error(messages.join(" ") || data.message || "No se pudo crear el campo.");
+      }
+
+      document.querySelectorAll(".import-mapping-select").forEach((select) => {
+        if (![...select.options].some((option) => option.value === data.value)) {
+          select.add(new Option(data.label, data.value));
+        }
+      });
+      if (targetSelect) {
+        targetSelect.value = data.value;
+        targetSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      closeModal();
+    } catch (error) {
+      errorsBox.textContent = error.message;
+      errorsBox.hidden = false;
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = "Crear y seleccionar";
+    }
+  });
+})();
+</script>
+{% endblock %}

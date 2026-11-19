@@ -1,0 +1,742 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Editar ubicación | PAKIVOX{% endblock %}
+
+{% block page_title %}Editar ubicación de almacén{% endblock %}
+
+{% block page_subtitle %}
+Modifica la ubicación física y regenera automáticamente el código QR.
+{% endblock %}
+
+{% block content %}
+<section class="location-edit-page">
+  <div class="location-edit-header">
+    <div>
+      <span class="eyebrow">Configuración de bodega</span>
+      <h1>Editar ubicación</h1>
+      <p>
+        Al modificar pasillo, anaquel o nivel, PAKIVOX actualiza el código
+        operativo y el QR de la ubicación.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <a href="{% url 'warehouse:mapa_ubicaciones_qr' %}" class="btn-ghost">
+        <i class="bi bi-arrow-left"></i>
+        Volver al mapa
+      </a>
+
+      <a href="{% url 'warehouse:lista_ubicaciones' %}" class="btn-ghost">
+        <i class="bi bi-geo-alt"></i>
+        Ver ubicaciones
+      </a>
+    </div>
+  </div>
+
+  <div class="location-edit-grid">
+    <form method="post" class="location-form-card">
+      {% csrf_token %}
+
+      <div class="form-badge">
+        <i class="bi bi-pencil-square"></i>
+        Edición de QR operativo
+      </div>
+
+      <h2>Datos de la ubicación</h2>
+
+      <p class="form-intro">
+        Código actual:
+        <strong>{{ location.bin_code }}</strong>
+        · QR actual:
+        <strong>{{ location.qr_code }}</strong>
+      </p>
+
+      <div class="form-grid">
+        <div class="form-group form-group-full">
+          <label>Bodega</label>
+          <select name="warehouse" required>
+            <option value="">Selecciona una bodega</option>
+            {% for warehouse in warehouses %}
+              <option
+                value="{{ warehouse.id }}"
+                {% if warehouse.id == location.warehouse_id %}selected{% endif %}
+              >
+                {{ warehouse.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if zones %}
+          <div class="form-group form-group-full">
+            <label>Zona opcional</label>
+            <select name="zone">
+              <option value="">Sin zona específica</option>
+              {% for zone in zones %}
+                <option
+                  value="{{ zone.id }}"
+                  {% if location.zone_id == zone.id %}selected{% endif %}
+                >
+                  {{ zone.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label>Pasillo</label>
+          <input
+            type="text"
+            name="aisle"
+            value="{{ location.aisle }}"
+            maxlength="50"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Rack / Anaquel</label>
+          <input
+            type="text"
+            name="rack"
+            value="{{ location.rack }}"
+            maxlength="50"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nivel</label>
+          <input
+            type="text"
+            name="level"
+            value="{{ location.level }}"
+            maxlength="50"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Estado operativo</label>
+          <select name="status">
+            {% for value, label in status_choices %}
+              <option
+                value="{{ value }}"
+                {% if value == location.status %}selected{% endif %}
+              >
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group form-group-full">
+          <label class="checkbox-row">
+            <input
+              type="checkbox"
+              name="is_active"
+              {% if location.is_active %}checked{% endif %}
+            />
+            <span>Ubicación activa para operación</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="code-preview">
+        <span>Nuevo código estimado</span>
+        <strong id="binPreview">{{ location.bin_code }}</strong>
+        <small id="qrPreview">LOC-{{ location.bin_code }}</small>
+      </div>
+
+      <div class="warning-box">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+          <strong>Importante</strong>
+          <span>
+            Si esta etiqueta ya está pegada físicamente en el almacén, deberás
+            reimprimir el QR después de guardar cambios.
+          </span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-save-fill"></i>
+          Guardar cambios
+        </button>
+
+        <a href="{% url 'warehouse:mapa_ubicaciones_qr' %}" class="btn-secondary">
+          Cancelar
+        </a>
+      </div>
+    </form>
+
+    <aside class="location-preview-card">
+      <div class="preview-top">
+        <span>Vista previa</span>
+        <strong>QR READY</strong>
+      </div>
+
+      <div class="qr-simulated-card">
+        <div class="qr-box">
+          <i class="bi bi-qr-code"></i>
+        </div>
+
+        <span class="warehouse-name">{{ location.warehouse.name }}</span>
+
+        <h3 id="visualBinPreview">{{ location.bin_code }}</h3>
+
+        <p id="visualDescription">
+          Pasillo {{ location.aisle }} · Anaquel {{ location.rack }} · Nivel {{ location.level }}
+        </p>
+
+        <strong id="visualQrPreview">{{ location.qr_code }}</strong>
+      </div>
+
+      <div class="tips-card">
+        <h4>Reglas recomendadas</h4>
+
+        <div class="tip-item">
+          <span>01</span>
+          <div>
+            <strong>Orden físico</strong>
+            <p>Pasillo → Anaquel → Nivel.</p>
+          </div>
+        </div>
+
+        <div class="tip-item">
+          <span>02</span>
+          <div>
+            <strong>QR consistente</strong>
+            <p>El QR siempre debe coincidir con el código visible.</p>
+          </div>
+        </div>
+
+        <div class="tip-item">
+          <span>03</span>
+          <div>
+            <strong>Reimpresión</strong>
+            <p>Si cambias el código, imprime una nueva etiqueta.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .location-edit-page {
+    display: grid;
+    gap: 24px;
+  }
+
+  .location-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .location-edit-header h1 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 34px;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+  }
+
+  .location-edit-header p {
+    max-width: 760px;
+    margin: 0;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .btn-ghost {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 15px;
+    border-radius: 13px;
+    text-decoration: none;
+    color: #e5e7eb;
+    background: #020817;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .btn-ghost:hover {
+    color: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.34);
+  }
+
+  .location-edit-grid {
+    min-height: calc(100vh - 270px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+    gap: 24px;
+  }
+
+  .location-form-card,
+  .location-preview-card {
+    border-radius: 28px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background:
+      radial-gradient(circle at top left, rgba(245, 158, 11, 0.1), transparent 32%),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94));
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  }
+
+  .location-form-card {
+    padding: 30px;
+  }
+
+  .form-badge {
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.26);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .location-form-card h2 {
+    margin: 22px 0 0;
+    color: #f8fafc;
+    font-size: 32px;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+  }
+
+  .form-intro {
+    margin: 12px 0 0;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .form-intro strong {
+    color: #f8fafc;
+  }
+
+  .form-grid {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .form-group {
+    display: grid;
+    gap: 8px;
+  }
+
+  .form-group-full {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020817;
+    color: #f8fafc;
+    outline: none;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: rgba(56, 189, 248, 0.55);
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+  }
+
+  .checkbox-row {
+    min-height: 48px;
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #020817;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    cursor: pointer;
+  }
+
+  .checkbox-row input {
+    width: 16px;
+    height: 16px;
+    min-height: auto;
+    accent-color: #22c55e;
+  }
+
+  .checkbox-row span {
+    color: #f8fafc;
+  }
+
+  .code-preview {
+    margin-top: 22px;
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.7);
+    border: 1px solid rgba(245, 158, 11, 0.26);
+  }
+
+  .code-preview span {
+    display: block;
+    color: #fcd34d;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .code-preview strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+  }
+
+  .code-preview small {
+    display: inline-block;
+    margin-top: 10px;
+    color: #cbd5e1;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .warning-box {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px;
+    border-radius: 16px;
+    color: #fde68a;
+    background: rgba(120, 53, 15, 0.22);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+  }
+
+  .warning-box i {
+    margin-top: 2px;
+  }
+
+  .warning-box strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .warning-box span {
+    display: block;
+    margin-top: 4px;
+    color: #fde68a;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .form-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #facc15);
+    border-color: rgba(250, 204, 21, 0.35);
+    box-shadow: 0 16px 34px rgba(245, 158, 11, 0.24);
+  }
+
+  .btn-secondary {
+    color: #e5e7eb;
+    background: rgba(2, 6, 23, 0.7);
+  }
+
+  .location-preview-card {
+    padding: 24px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .preview-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .preview-top span {
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+  }
+
+  .preview-top strong {
+    color: #86efac;
+    font-size: 11px;
+    font-weight: 950;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+  }
+
+  .qr-simulated-card {
+    padding: 22px;
+    border-radius: 22px;
+    background: #020817;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .qr-box {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    background: #ffffff;
+    color: #020617;
+    font-size: 94px;
+  }
+
+  .warehouse-name {
+    display: block;
+    color: #38bdf8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 950;
+  }
+
+  .qr-simulated-card h3 {
+    margin: 8px 0 0;
+    color: #f8fafc;
+    font-size: 34px;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+  }
+
+  .qr-simulated-card p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+
+  .qr-simulated-card strong {
+    display: inline-block;
+    margin-top: 14px;
+    color: #f8fafc;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+
+  .tips-card {
+    padding: 20px;
+    border-radius: 22px;
+    background: rgba(2, 6, 23, 0.46);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .tips-card h4 {
+    margin: 0 0 14px;
+    color: #f8fafc;
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .tip-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .tip-item span {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #86efac;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .tip-item strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .tip-item p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1000px) {
+    .location-edit-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .location-edit-header {
+      flex-direction: column;
+    }
+
+    .header-actions {
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    .btn-ghost {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  function updateEditPreview() {
+    const aisleInput = document.querySelector('[name="aisle"]');
+    const rackInput = document.querySelector('[name="rack"]');
+    const levelInput = document.querySelector('[name="level"]');
+
+    const binPreview = document.getElementById("binPreview");
+    const qrPreview = document.getElementById("qrPreview");
+    const visualBinPreview = document.getElementById("visualBinPreview");
+    const visualDescription = document.getElementById("visualDescription");
+    const visualQrPreview = document.getElementById("visualQrPreview");
+
+    if (!aisleInput || !rackInput || !levelInput) {
+      return;
+    }
+
+    const aisle = aisleInput.value.trim().toUpperCase() || "A";
+    const rack = rackInput.value.trim().toUpperCase() || "1";
+    const level = levelInput.value.trim().toUpperCase() || "01";
+
+    const binCode = `${aisle}${rack}-${level}`;
+    const qrCode = `LOC-${binCode}`;
+
+    if (binPreview) {
+      binPreview.textContent = binCode;
+    }
+
+    if (qrPreview) {
+      qrPreview.textContent = qrCode;
+    }
+
+    if (visualBinPreview) {
+      visualBinPreview.textContent = binCode;
+    }
+
+    if (visualDescription) {
+      visualDescription.textContent = `Pasillo ${aisle} · Anaquel ${rack} · Nivel ${level}`;
+    }
+
+    if (visualQrPreview) {
+      visualQrPreview.textContent = qrCode;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .querySelectorAll('[name="aisle"], [name="rack"], [name="level"]')
+      .forEach(function (input) {
+        input.addEventListener("input", updateEditPreview);
+      });
+
+    updateEditPreview();
+  });
+</script>
+{% endblock %}

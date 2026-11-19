@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes no creados | {{ job.folio }}{% endblock %}
+{% block page_title %}Clientes no creados{% endblock %}
+{% block page_subtitle %}
+Corrige errores, revisa clientes existentes y conserva la trazabilidad del Excel
+{% endblock %}
+
+{% block content %}
+<section class="pc-page">
+  <header class="pc-hero">
+    <div>
+      <span>{{ job.folio }}</span>
+      <h2>{{ job.original_filename }}</h2>
+      <p>Empresa: {{ company.name }} · {{ job.total_rows }} filas analizadas</p>
+    </div>
+
+    <div class="pc-actions">
+      <a href="{% url 'data_imports:job_detail' job.pk %}" class="ghost">
+        ← Volver al análisis
+      </a>
+      <a href="{% url 'data_imports:download_pending_report' job.pk %}">
+        Descargar reporte
+      </a>
+    </div>
+  </header>
+
+  <section class="pc-summary">
+    <article class="danger">
+      <span>Pendientes de corregir</span>
+      <strong>{{ error_count }}</strong>
+      <small>No se creó ningún cliente para estas filas</small>
+    </article>
+
+    <article class="duplicate">
+      <span>Duplicados pendientes</span>
+      <strong>{{ duplicate_count }}</strong>
+      <small>Necesitan una decisión</small>
+    </article>
+
+    <article>
+      <span>No creados por ya existir</span>
+      <strong>{{ skipped_count }}</strong>
+      <small>Relacionados u omitidos</small>
+    </article>
+
+    <article class="success">
+      <span>Recuperados después</span>
+      <strong>{{ corrected_count }}</strong>
+      <small>Corregidos e importados desde esta pantalla</small>
+    </article>
+
+    <article class="warning">
+      <span>Direcciones omitidas</span>
+      <strong>{{ address_omitted_count }}</strong>
+      <small>El cliente existe, pero falta completar su dirección</small>
+    </article>
+  </section>
+
+  <section class="pc-card">
+    <header>
+      <span>Acción requerida</span>
+      <h3>Clientes pendientes de corregir</h3>
+    </header>
+
+    <div class="pc-table-wrap">
+      <table class="pc-table">
+        <thead>
+          <tr>
+            <th>Fila</th>
+            <th>Cliente recibido</th>
+            <th>Contacto</th>
+            <th>Motivo</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in error_rows %}
+            <tr>
+              <td><strong>#{{ row.row_number }}</strong></td>
+              <td>
+                <strong>
+                  {{ row.normalized_data.customer.full_name|default:"Sin nombre" }}
+                </strong>
+              </td>
+              <td>
+                <small>Tel: {{ row.normalized_data.customer.phone|default:"-" }}</small>
+                <small>WhatsApp: {{ row.normalized_data.customer.whatsapp|default:"-" }}</small>
+                <small>Correo: {{ row.normalized_data.customer.email|default:"-" }}</small>
+              </td>
+              <td>
+                {% for error in row.errors %}
+                  <div class="pc-message error">{{ error }}</div>
+                {% endfor %}
+                {% for warning in row.warnings %}
+                  <div class="pc-message warning">{{ warning }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                <a
+                  href="{% url 'data_imports:edit_pending_customer' job.pk row.pk %}"
+                  class="small"
+                >
+                  Corregir registro
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">
+                <div class="pc-empty success">
+                  No quedan clientes con errores pendientes.
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if duplicate_count %}
+    <section class="pc-card pc-duplicate-card">
+      <div>
+        <span>Revisión de coincidencias</span>
+        <h3>{{ duplicate_count }} duplicados esperan decisión</h3>
+        <p>Compara cada fila contra el cliente existente.</p>
+      </div>
+      <a href="{% url 'data_imports:resolve_duplicates' job.pk %}">
+        Resolver duplicados
+      </a>
+    </section>
+  {% endif %}
+
+  <section class="pc-card">
+    <header>
+      <span>No se creó otro cliente</span>
+      <h3>Registros relacionados u omitidos</h3>
+    </header>
+
+    <div class="pc-grid">
+      {% for row in skipped_rows %}
+        <article>
+          <span>Fila #{{ row.row_number }}</span>
+          <strong>
+            {{ row.normalized_data.customer.full_name|default:"Sin nombre" }}
+          </strong>
+          <p>
+            Cliente existente relacionado:
+            <b>#{{ row.matched_object_id|default:"-" }}</b>
+          </p>
+          <small>Resultado: {{ row.action_taken|default:"Omitido" }}</small>
+        </article>
+      {% empty %}
+        <div class="pc-empty">No hay registros relacionados u omitidos.</div>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+
+<style>
+  .pc-page{display:grid;gap:16px}
+  .pc-hero,.pc-card,.pc-summary article{
+    border:1px solid rgba(148,163,184,.16);
+    border-radius:18px;background:#0f172a
+  }
+  .pc-hero{padding:22px;display:flex;justify-content:space-between;gap:18px;align-items:center}
+  .pc-hero span,.pc-card>header span,.pc-duplicate-card span{
+    color:#67e8f9;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase
+  }
+  .pc-hero h2{margin:7px 0 4px;color:#f8fafc}
+  .pc-hero p,.pc-duplicate-card p{margin:0;color:#94a3b8}
+  .pc-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .pc-actions a,.pc-table a,.pc-duplicate-card>a{
+    min-height:40px;padding:0 13px;border-radius:10px;display:inline-flex;
+    align-items:center;justify-content:center;background:#22c55e;color:#052e16;
+    text-decoration:none;font-weight:900
+  }
+  .pc-actions a.ghost{background:transparent;color:#cbd5e1;border:1px solid rgba(148,163,184,.22)}
+  .pc-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+  .pc-summary article{padding:17px}
+  .pc-summary span,.pc-summary small{display:block;color:#94a3b8}
+  .pc-summary strong{display:block;margin:7px 0;color:#f8fafc;font-size:26px}
+  .pc-summary .danger strong{color:#f87171}
+  .pc-summary .duplicate strong{color:#c4b5fd}
+  .pc-summary .success strong{color:#4ade80}
+  .pc-summary .warning strong{color:#facc15}
+  .pc-card{padding:18px}
+  .pc-card h3{margin:5px 0 0;color:#f8fafc}
+  .pc-table-wrap{overflow-x:auto;margin:15px -18px -18px}
+  .pc-table{width:100%;min-width:1000px;border-collapse:collapse}
+  .pc-table th,.pc-table td{
+    padding:14px 18px;text-align:left;vertical-align:top;
+    border-top:1px solid rgba(148,163,184,.08);color:#cbd5e1
+  }
+  .pc-table th{color:#64748b;font-size:10px;text-transform:uppercase}
+  .pc-table small{display:block;margin-top:4px;color:#94a3b8}
+  .pc-message{padding:7px 9px;border-radius:8px;font-size:11px}
+  .pc-message+.pc-message{margin-top:5px}
+  .pc-message.error{color:#fecaca;background:rgba(127,29,29,.2)}
+  .pc-message.warning{color:#fde68a;background:rgba(120,53,15,.2)}
+  .pc-table a.small{min-height:34px;font-size:11px}
+  .pc-duplicate-card{display:flex;justify-content:space-between;align-items:center;gap:18px}
+  .pc-duplicate-card>a{background:#7c3aed;color:#fff}
+  .pc-grid{margin-top:15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .pc-grid article{padding:14px;border:1px solid rgba(148,163,184,.1);border-radius:13px;background:rgba(2,6,23,.3)}
+  .pc-grid article span,.pc-grid article small{color:#64748b}
+  .pc-grid article strong{display:block;margin-top:5px;color:#e2e8f0}
+  .pc-grid article p{color:#94a3b8}
+  .pc-empty{padding:35px;text-align:center;color:#94a3b8}
+  .pc-empty.success{color:#bbf7d0}
+  @media(max-width:1100px){
+    .pc-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .pc-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:720px){
+    .pc-hero,.pc-duplicate-card{align-items:stretch;flex-direction:column}
+    .pc-summary{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}

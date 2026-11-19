@@ -1,0 +1,330 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Ubicaciones | PAKIVOX{% endblock %}
+
+{% block page_title %}
+Ubicaciones / Locations
+{% endblock %}
+
+{% block page_subtitle %}
+Gestión de pasillos, anaqueles y niveles
+{% endblock %}
+
+{% block content %}
+
+<section class="locations-page">
+  <div class="page-toolbar">
+    <div>
+      <span class="eyebrow">Almacén</span>
+      <h2>Ubicaciones de Bodega</h2>
+      <p>
+        Administra pasillos, anaqueles, niveles, códigos QR y el mapa visual de tu almacén.
+      </p>
+    </div>
+
+    <div class="toolbar-actions">
+      <a href="{% url 'warehouse:ubicar_mercancia' %}" class="btn-map">
+        <i class="bi bi-box-arrow-in-down"></i>
+        Ubicar mercancía
+      </a>
+
+      <a href="{% url 'warehouse:layout_designer' %}" class="btn-map">
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+        Mapa Visual
+      </a>
+
+      <a href="/warehouse/ubicaciones/" class="btn-qr">
+        <i class="bi bi-qr-code"></i>
+        Ver QR
+      </a>
+
+      <a href="{% url 'warehouse:crear_ubicacion' %}" class="btn-new">
+        <i class="bi bi-plus-circle-fill"></i>
+        Nueva ubicación
+      </a>
+    </div>
+  </div>
+
+  <div class="location-grid">
+    {% for location in locations %}
+      <article class="location-card">
+        <div class="location-head">
+          <span>
+            {{ location.warehouse.name|default:"Bodega sin nombre" }}
+          </span>
+
+          {% if location.zone %}
+            <small class="zone-pill">
+              {{ location.zone.name }}
+            </small>
+          {% else %}
+            <small class="zone-pill muted">
+              Sin zona
+            </small>
+          {% endif %}
+        </div>
+
+        <h3>{{ location.bin_code }}</h3>
+
+        <p>
+          Pasillo {{ location.aisle }} ·
+          Anaquel {{ location.rack }} ·
+          Nivel {{ location.level }}
+        </p>
+
+        <div class="location-code">
+          <i class="bi bi-qr-code"></i>
+          {{ location.qr_code|default:location.bin_code }}
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-box-seam"></i>
+        </div>
+
+        <h3>No hay ubicaciones creadas</h3>
+
+        <p>
+          Crea ubicaciones para mapear pasillos, anaqueles y niveles dentro de tu bodega.
+        </p>
+
+        <a href="{% url 'warehouse:crear_ubicacion' %}">
+          Crear primera ubicación
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+  .locations-page {
+    display: grid;
+    gap: 22px;
+  }
+
+  .page-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .10em;
+    font-weight: 950;
+  }
+
+  .page-toolbar h2 {
+    color: #f8fafc;
+    margin: 6px 0 6px;
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .page-toolbar p {
+    color: #94a3b8;
+    margin: 0;
+    max-width: 680px;
+    line-height: 1.45;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 13px;
+    text-decoration: none;
+    font-weight: 950;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+
+  .toolbar-actions a:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-map {
+    background: linear-gradient(135deg, #2563eb, #38bdf8);
+    color: #020617;
+    border-color: rgba(56, 189, 248, .45) !important;
+    box-shadow: 0 10px 24px rgba(56, 189, 248, .18);
+  }
+
+  .btn-qr {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .btn-new {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .location-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .location-card {
+    background:
+      radial-gradient(circle at top right, rgba(56, 189, 248, .08), transparent 34%),
+      #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 16px;
+    padding: 18px;
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .location-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, .45);
+    box-shadow: 0 14px 32px rgba(2, 6, 23, .30);
+  }
+
+  .location-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .location-head span {
+    color: #38bdf8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 950;
+  }
+
+  .zone-pill {
+    background: rgba(34, 197, 94, .12);
+    border: 1px solid rgba(34, 197, 94, .22);
+    color: #86efac;
+    border-radius: 999px;
+    padding: 5px 8px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .zone-pill.muted {
+    background: rgba(148, 163, 184, .10);
+    border-color: rgba(148, 163, 184, .18);
+    color: #94a3b8;
+  }
+
+  .location-card h3 {
+    color: #f8fafc;
+    margin: 8px 0;
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .location-card p {
+    color: #cbd5e1;
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .location-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    color: #f8fafc;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-weight: 950;
+  }
+
+  .location-code i {
+    color: #38bdf8;
+  }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    background:
+      radial-gradient(circle at top left, rgba(56, 189, 248, .10), transparent 32%),
+      #111827;
+    border: 1px dashed rgba(148, 163, 184, .35);
+    border-radius: 18px;
+    padding: 34px 24px;
+    color: #cbd5e1;
+    text-align: center;
+  }
+
+  .empty-icon {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 14px;
+    border-radius: 22px;
+    display: grid;
+    place-items: center;
+    background: rgba(56, 189, 248, .12);
+    border: 1px solid rgba(56, 189, 248, .25);
+    color: #7dd3fc;
+    font-size: 30px;
+  }
+
+  .empty-state h3 {
+    color: #f8fafc;
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 950;
+  }
+
+  .empty-state p {
+    color: #94a3b8;
+    margin: 0 auto 18px;
+    max-width: 520px;
+    line-height: 1.5;
+  }
+
+  .empty-state a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 13px;
+    background: #22c55e;
+    color: #052e16;
+    text-decoration: none;
+    font-weight: 950;
+  }
+
+  @media (max-width: 760px) {
+    .page-toolbar {
+      display: grid;
+    }
+
+    .toolbar-actions {
+      width: 100%;
+    }
+
+    .toolbar-actions a {
+      flex: 1;
+    }
+  }
+</style>
+
+{% endblock %}

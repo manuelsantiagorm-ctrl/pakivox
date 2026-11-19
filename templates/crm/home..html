@@ -1,0 +1,162 @@
+﻿{% extends "base.html" %} {% block title %}CRM | PAKIVOX{% endblock %} {% block
+page_title %}CRM Mayorista{% endblock %} {% block page_subtitle %}Leads,
+prospectos, clientes, oportunidades y seguimiento comercial{% endblock %} {%
+block content %}
+
+<section class="kpi-grid">
+  <div class="kpi-card">
+    <span>Total clientes</span>
+    <strong>{{ total_customers }}</strong>
+    <small>Base comercial registrada</small>
+  </div>
+
+  <div class="kpi-card">
+    <span>Leads</span>
+    <strong>{{ total_leads }}</strong>
+    <small>Prospectos iniciales</small>
+  </div>
+
+  <div class="kpi-card">
+    <span>Clientes VIP</span>
+    <strong>{{ total_vip }}</strong>
+    <small>Cuentas importantes</small>
+  </div>
+
+  <div class="kpi-card">
+    <span>Oportunidades abiertas</span>
+    <strong>{{ open_deals }}</strong>
+    <small>Negocios en proceso</small>
+  </div>
+</section>
+
+<section class="dashboard-grid">
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Clientes recientes</h3>
+      <div>
+        <a href="/crm/kanban/" class="btn btn-sm btn-outline-light"
+          >Ver Kanban</a
+        >
+        <a href="/admin/crm/customer/add/" class="btn btn-sm btn-primary"
+          >Nuevo cliente</a
+        >
+      </div>
+    </div>
+
+    <form
+      method="get"
+      action="{% url 'customer_smart_profile_by_phone' %}"
+      class="customer-search-box"
+    >
+      <input
+        type="text"
+        name="phone"
+        placeholder="Buscar perfil inteligente por teléfono o WhatsApp..."
+        required
+      />
+      <button type="submit" class="btn btn-sm btn-success">Abrir perfil</button>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>WhatsApp</th>
+            <th>Origen</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td>
+              <strong>{{ customer.full_name }}</strong><br />
+              <small class="text-muted"
+                >{{ customer.business_name|default:"Sin empresa" }}</small
+              >
+            </td>
+            <td>{{ customer.get_customer_type_display }}</td>
+            <td>{{ customer.whatsapp|default:customer.phone|default:"-" }}</td>
+            <td>{{ customer.get_source_display }}</td>
+            <td>
+              <a
+                href="{% url 'customer_smart_profile' customer.id %}"
+                class="btn btn-sm btn-success"
+              >
+                Perfil inteligente
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-muted">Aún no hay clientes registrados.</td>
+              Aún no hay clientes registrados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Actividades recientes</h3>
+      <a href="/admin/crm/activity/add/" class="btn btn-sm btn-outline-light"
+        >Nueva actividad</a
+      >
+    </div>
+
+    <div class="metric-list">
+      {% for activity in recent_activities %}
+      <div>
+        <span>
+          <strong>{{ activity.title }}</strong><br />
+          <small
+            >{{ activity.customer.full_name }} · {{
+            activity.get_activity_type_display }}</small
+          >
+        </span>
+        <strong>→</strong>
+      </div>
+      {% empty %}
+      <div>
+        <span>No hay actividades registradas.</span>
+        <strong>0</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<style>
+    .customer-search-box {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .customer-search-box input {
+        flex: 1;
+        background: #020617;
+        border: 1px solid rgba(148, 163, 184, .22);
+        color: #f8fafc;
+        border-radius: 12px;
+        padding: 10px 12px;
+        outline: none;
+    }
+
+    .customer-search-box input::placeholder {
+        color: #64748b;
+    }
+
+    @media (max-width: 650px) {
+        .customer-search-box {
+            display: grid;
+        }
+    }
+</style>
+
+{% endblock %}

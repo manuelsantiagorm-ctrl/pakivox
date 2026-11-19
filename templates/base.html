@@ -1,0 +1,1365 @@
+﻿{% load static wms_navigation %}
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>{% block title %}PAKIVOX{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'branding/pakivox_icon.png' %}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/alerts.css' %}" />
+    <link rel="stylesheet" href="{% static 'legal/legal.css' %}" />
+    <script src="{% static 'js/alerts.js' %}" defer></script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% block extra_head %}{% endblock %}
+
+    <link rel="stylesheet" href="{% static 'style/marco_sistema.css' %}">
+  
+
+
+</head>
+<body>
+<a class="saltar-contenido" href="#contenido-principal">Saltar al contenido</a>
+    <div class="app-layout">
+      <aside class="sidebar" id="appSidebar" aria-label="Navegación principal">
+        <!-- MARCA Y LOGO ORIGINAL DE PAKIVOX -->
+        <div class="brand">
+          <img class="brand-icon pakivox-brand-image" src="{% static 'branding/pakivox_icon.png' %}" alt="">
+          <div>
+            <strong>PAKIVOX</strong>
+            <span>{{ warehouse_company.name|default:"SaaS Mayorista" }}</span>
+          </div>
+        </div>
+
+            <!-- ========================================================= -->
+    <!-- 🚀 TARJETA DINÁMICA DE ESTADO DE SUSCRIPCIÓN              -->
+    <!-- ========================================================= -->
+    {% with sub=warehouse_company.subscription %}
+
+      {% if sub %}
+
+        {% if sub.status == "active" %}
+
+          {% if sub.is_valid %}
+
+            <!-- ===================================================== -->
+            <!-- PLAN PREMIUM ACTIVO Y VIGENTE                         -->
+            <!-- ===================================================== -->
+            <div
+              class="premium-upgrade-card is-active"
+            >
+              <div class="plan-badge">
+
+                <span
+                  class="status-dot"
+                ></span>
+
+                <span
+                  class="plan-title"
+                >
+                  Plan {{ sub.plan.name|default:"de pago" }} activo
+                </span>
+
+              </div>
+
+              <p
+                class="plan-desc"
+              >
+                Tu suscripción se encuentra activa y vigente.
+              </p>
+            </div>
+
+          {% else %}
+
+            <!-- ===================================================== -->
+            <!-- SUSCRIPCIÓN VENCIDA                                   -->
+            <!-- ===================================================== -->
+            <div
+              class="premium-upgrade-card is-expired"
+            >
+              <div class="plan-badge">
+
+                <span
+                  class="status-dot"
+                ></span>
+
+                <span
+                  class="plan-title"
+                >
+                  Suscripción vencida
+                </span>
+
+              </div>
+
+              <p
+                class="plan-desc"
+              >
+                Tu periodo Premium terminó.
+                Renueva tu plan para continuar usando todas las funciones.
+              </p>
+
+              <a
+                href="{% url 'subscriptions:subscription_expired' %}"
+                class="btn-upgrade-premium is-link"
+              >
+                <span>Renovar plan →</span>
+              </a>
+            </div>
+
+          {% endif %}
+
+        {% elif sub.status == "trial" %}
+
+          <!-- ===================================================== -->
+          <!-- PRUEBA GRATUITA                                      -->
+          <!-- ===================================================== -->
+          <div class="premium-upgrade-card">
+
+            <div class="plan-badge">
+              <span class="status-dot"></span>
+
+              <span class="plan-title">
+                Prueba Gratuita
+              </span>
+            </div>
+
+            <p class="plan-desc">
+              Disfrutas de tu periodo de prueba de PAKIVOX.
+            </p>
+
+            <button
+              type="button"
+              class="btn-upgrade-premium"
+              data-accion="openPremiumModal"
+            >
+              <span>⚡ Mejorar a Premium</span>
+            </button>
+
+          </div>
+
+        {% else %}
+
+          <!-- ===================================================== -->
+          <!-- PLAN INACTIVO / CANCELADO / VENCIDO                   -->
+          <!-- ===================================================== -->
+          <div
+            class="premium-upgrade-card is-expired"
+          >
+            <div class="plan-badge">
+
+              <span
+                class="status-dot"
+              ></span>
+
+              <span
+                class="plan-title"
+              >
+                Plan no disponible
+              </span>
+
+            </div>
+
+            <p
+              class="plan-desc"
+            >
+              Renueva tu suscripción para recuperar el acceso Premium.
+            </p>
+
+            <a
+              href="{% url 'subscriptions:subscription_expired' %}"
+              class="btn-upgrade-premium is-link"
+            >
+              <span>Renovar plan →</span>
+            </a>
+
+          </div>
+
+        {% endif %}
+
+      {% else %}
+
+        <!-- ======================================================= -->
+        <!-- EMPRESA SIN SUSCRIPCIÓN                                 -->
+        <!-- ======================================================= -->
+        <div class="premium-upgrade-card">
+
+          <div class="plan-badge">
+
+            <span class="status-dot"></span>
+
+            <span class="plan-title">
+              Sin suscripción
+            </span>
+
+          </div>
+
+          <p class="plan-desc">
+            Activa PAKIVOX Premium para continuar.
+          </p>
+
+          <a
+            href="{% url 'subscriptions:subscription_expired' %}"
+            class="btn-upgrade-premium is-link"
+          >
+            <span>Activar Premium →</span>
+          </a>
+
+        </div>
+
+      {% endif %}
+
+    {% endwith %}
+
+        <nav class="menu">
+          <!-- PRINCIPAL · UNA SOLA FUENTE DE NAVEGACIÓN -->
+          <section class="menu-group" aria-labelledby="menu-principal">
+            <h2 id="menu-principal" class="menu-group-title">Principal</h2>
+
+            {% if not capability_access_all %}
+              <a
+                href="{% url 'accounts:employee_home' %}"
+                class="menu-link"
+                data-menu-link
+              >
+                <i class="fa-solid fa-house"></i>
+                <span class="menu-label">Inicio</span>
+              </a>
+            {% endif %}
+
+            {% if capability_access_all or "dashboard.view" in user_capability_codes %}
+              <a
+                href="{% url 'dashboard:ceo_dashboard' %}"
+                class="menu-link"
+                data-menu-link
+              >
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span class="menu-label">Dashboard</span>
+              </a>
+            {% endif %}
+
+            {% if capability_access_all or "control_tower.view" in user_capability_codes %}
+              <a
+                href="{% url 'dashboard:control_flow_dashboard' %}"
+                class="menu-link"
+                data-menu-link
+              >
+                <i class="bi bi-kanban-fill"></i>
+                <span class="menu-label">Mesa de Control</span>
+              </a>
+            {% endif %}
+          </section>
+
+          {% if simple_navigation_enabled %}
+          <section class="menu-group" aria-labelledby="menu-mi-trabajo">
+            <h2 id="menu-mi-trabajo" class="menu-group-title">Mi trabajo</h2>
+
+            {% for item in simple_nav_items %}
+            <a
+              href="{{ item.url }}"
+              class="menu-link"
+              data-menu-link
+              data-activity-code="{{ item.code }}"
+            >
+              <i class="bi {{ item.icon }}"></i>
+              <span class="menu-label">
+                {{ item.name }}
+                <small>{{ item.description }}</small>
+              </span>
+            </a>
+            {% endfor %}
+
+            {% for item in simple_tool_nav_items %}
+            <a
+              href="{{ item.url }}"
+              class="menu-link"
+              data-menu-link
+              data-tool-code="{{ item.code }}"
+            >
+              <i class="bi {{ item.icon }}"></i>
+              <span class="menu-label">
+                {{ item.name }}
+                <small>{{ item.description }}</small>
+              </span>
+            </a>
+            {% endfor %}
+          </section>
+          {% endif %}
+
+          {% if capability_access_all %}
+          <!-- ========================================================= -->
+<!-- OPERACIÓN Y ALMACÉN                                       -->
+<!-- ========================================================= -->
+{% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes or "receiving.execute" in user_capability_codes or "picking.execute" in user_capability_codes or "packing.execute" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+
+  <section
+    class="menu-group"
+    aria-labelledby="menu-operacion"
+  >
+    <h2
+      id="menu-operacion"
+      class="menu-group-title"
+    >
+      Operación y almacén
+    </h2>
+
+
+    <!-- ======================================================= -->
+    <!-- INVENTARIO                                              -->
+    <!-- ======================================================= -->
+    {% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes %}
+      <div class="menu-section">
+
+        <button
+          id="inventory-toggle"
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="inventory-menu"
+          data-accion="toggleInventoryMenu"
+        >
+          <span class="menu-toggle-left">
+            <i class="bi bi-box-seam-fill"></i>
+
+            <span class="menu-label">
+              Inventario
+              <small>Productos y existencias</small>
+            </span>
+          </span>
+
+          <i
+            id="inventory-arrow"
+            class="bi bi-chevron-down"
+          ></i>
+        </button>
+
+        <div
+          id="inventory-menu"
+          class="submenu"
+        >
+
+          <!-- Productos -->
+          <a
+            href="{% url 'inventory:lista_productos' %}"
+            data-menu-link
+          >
+            <i class="bi bi-box"></i>
+
+            <span class="menu-label">
+              Productos
+              <small>Catálogo y variantes</small>
+            </span>
+          </a>
+
+
+          <!-- Stock global -->
+          <a
+            href="{% url 'inventory:lista_stock' %}"
+            data-menu-link
+          >
+            <i class="bi bi-bar-chart-fill"></i>
+
+            <span class="menu-label">
+              Existencias
+              <small>Lo que hay en cada bodega</small>
+            </span>
+          </a>
+
+
+          <!-- Opciones que modifican inventario -->
+          {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+
+            <a
+              href="{% url 'inventory:seleccionar_producto_entrada_stock' %}"
+              data-menu-link
+            >
+              <i class="bi bi-box-arrow-in-down"></i>
+
+              <span class="menu-label">
+                Registrar entrada
+                <small>Mercancía que llega</small>
+              </span>
+            </a>
+
+          {% endif %}
+
+
+          <!-- Alertas de stock crítico -->
+          <a
+            href="{% url 'inventory:stock_critical_alerts' %}"
+            data-menu-link
+          >
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            <span class="menu-label">
+              Por agotarse
+              <small>Productos con poco stock</small>
+            </span>
+          </a>
+
+
+          <!-- Movimientos de inventario -->
+          <a
+            href="{% url 'inventory:movimientos_inventario' %}"
+            data-menu-link
+          >
+            <i class="bi bi-arrow-left-right"></i>
+
+            <span class="menu-label">
+              Movimientos
+              <small>Entradas, salidas y ajustes</small>
+            </span>
+          </a>
+
+
+          <!-- Ubicaciones: requiere administración de inventario -->
+          {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+
+            <a
+              href="{% url 'warehouse:lista_ubicaciones' %}"
+              data-menu-link
+            >
+              <i class="bi bi-geo-alt"></i>
+              <span class="menu-label">
+                Ubicaciones
+                <small>Pasillos y anaqueles</small>
+              </span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- Aquí continúan los bloques de Recepción, Picking, Packing -->
+    <!-- y Shipping, cada uno protegido por su capacidad.            -->
+            {% if capability_access_all or "inventory.manage" in user_capability_codes or "receiving.execute" in user_capability_codes or "picking.execute" in user_capability_codes or "packing.execute" in user_capability_codes or "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="warehouse-toggle" class="menu-toggle" type="button" data-accion="toggleWarehouseMenu">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-upc-scan"></i>
+                  <span class="menu-label">
+                    Almacén
+                    <small>Surtir, empacar y enviar</small>
+                  </span>
+                </span>
+                <i id="warehouse-arrow" class="bi bi-chevron-down"></i>
+              </button>
+              <div id="warehouse-menu" class="submenu">
+                <a href="{% url 'warehouse:pendientes_por_enviar' %}" data-menu-link>
+                  <i class="bi bi-box-arrow-up"></i>
+                  <span class="menu-label">
+                    Por surtir
+                    <small>Pedidos por preparar</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:listos_despacho' %}" data-menu-link>
+                  <i class="bi bi-box2-heart"></i>
+                  <span class="menu-label">
+                    Listos para enviar
+                    <small>Ya empacados</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:pedidos_en_ruta' %}" data-menu-link>
+                  <i class="bi bi-truck"></i>
+                  <span class="menu-label">
+                    Enviados / En ruta
+                    <small>Con guía, en camino</small>
+                  </span>
+                </a>
+                {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+                <a href="{% url 'warehouse:layout_designer' %}" data-menu-link>
+                  <i class="bi bi-grid-3x3-gap-fill"></i>
+                  <span class="menu-label">
+                    Diseñar bodega
+                    <small>Acomodo de pasillos</small>
+                  </span>
+                </a>
+                <a href="{% url 'warehouse:mapa_ubicaciones_qr' %}" data-menu-link>
+                  <i class="bi bi-qr-code"></i>
+                  <span class="menu-label">
+                    Mapa de bodega
+                    <small>Códigos QR de ubicaciones</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "picking.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_picking' %}" data-menu-link>
+                  <i class="bi bi-list-check"></i>
+                  <span class="menu-label">
+                    Surtido (picking)
+                    <small>Recorridos para surtir</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "packing.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_packing' %}" data-menu-link>
+                  <i class="bi bi-box-seam"></i>
+                  <span class="menu-label">
+                    Empaque (packing)
+                    <small>Pedidos por empacar</small>
+                  </span>
+                </a>
+                {% endif %}
+                {% if capability_access_all or "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+                <a href="{% url 'warehouse:lista_shipping' %}" data-menu-link>
+                    <i class="bi bi-send-check"></i>
+                    <span class="menu-label">
+                        Todos los envíos
+                        <small>Historial de envíos</small>
+                  </span>
+                </a>
+                <a href="{% url 'shipping_hub:print_center' %}" data-menu-link>
+                  <i class="bi bi-printer"></i>
+                  <span class="menu-label">
+                    Centro de impresión
+                    <small>Imprimir guías en lote</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if capability_access_all or "inventory.manage" in user_capability_codes %}
+                <a href="{% url 'warehouse:auditoria_warehouse' %}" data-menu-link>
+                  <i class="bi bi-clock-history"></i>
+                  <span class="menu-label">
+                    Bitácora del almacén
+                    <small>Quién hizo qué y cuándo</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'warehouse:lista_ubicaciones' %}" data-menu-link>
+                  <i class="bi bi-geo-alt"></i>
+                  <span class="menu-label">
+                    Ubicaciones
+                    <small>Pasillos y anaqueles</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+                    {% if capability_access_all or "shipping.configure" in user_capability_codes %}
+            <a href="{% url 'shipping_hub:integrations_list' %}" data-menu-link>
+              <i class="bi bi-truck-front-fill"></i>
+              <span class="menu-label">
+                Guías de envío
+                <small>Paqueterías: Envia y Skydropx</small>
+              </span>
+            </a>
+            <a  href="{% url 'shipping_hub_dispatch:dispatch_center' %}"
+              data-menu-link
+            >
+              <i class="bi bi-truck"></i>
+              <span class="menu-label">
+                Centro de Despacho
+                <small>Guías / En tránsito / Entregados</small>
+              </span>
+            </a>
+            <a href="{% url 'shipping_hub:shipment_batch_create' %}" data-menu-link>
+              <i class="bi bi-box-seam-fill"></i>
+              <span class="menu-label">
+                Generar lote de envío
+                <small>Agrupar paquetes / Asignar recolector</small>
+              </span>
+            </a>
+            <a href="{% url 'shipping_hub:my_pending_batches' %}" data-menu-link>
+                <i class="bi bi-list-check"></i>
+                <span class="menu-label">
+                    Mis lotes pendientes
+                    <small>Escanear y confirmar entregas</small>
+                </span>
+            </a>
+            <a href="{% url 'shipping_hub:incident_center' %}" data-menu-link>
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span class="menu-label">
+                Incidencias logísticas
+                <small>Faltantes / Rechazos / Devoluciones</small>
+              </span>
+            </a>
+            {% elif "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes or "shipping.quote" in user_capability_codes %}
+            <a href="{% url 'warehouse:lista_shipping' %}" data-menu-link>
+              <i class="bi bi-truck-front-fill"></i>
+              <span class="menu-label">
+                Logística y entregas
+                <small>Envíos y rastreo</small>
+              </span>
+            </a>
+            {% if "shipping.execute" in user_capability_codes %}
+            <a href="{% url 'shipping_hub:shipment_batch_create' %}" data-menu-link>
+              <i class="bi bi-box-seam-fill"></i>
+              <span class="menu-label">
+                Generar lote de envío
+                <small>Agrupar paquetes / Asignar recolector</small>
+              </span>
+            </a>
+            {% endif %}
+            {% if "shipping.collect" in user_capability_codes %}
+            <a href="{% url 'shipping_hub:my_pending_batches' %}" data-menu-link>
+              <i class="bi bi-clipboard-check-fill"></i>
+              <span class="menu-label">
+                Mis lotes pendientes
+                <small>Recolección / Confirmar entrega</small>
+              </span>
+            </a>
+            {% endif %}
+            {% if "shipping.view" in user_capability_codes or "shipping.execute" in user_capability_codes %}
+            <a href="{% url 'shipping_hub:incident_center' %}" data-menu-link>
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span class="menu-label">
+                Incidencias logísticas
+                <small>Faltantes / Rechazos / Devoluciones</small>
+              </span>
+            </a>
+            {% endif %}
+            {% endif %}
+
+        </section>
+          {% endif %}
+
+          {% if capability_access_all or "sales.view" in user_capability_codes or "sales.create" in user_capability_codes or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes or "crm.manage" in user_capability_codes or "messaging.operate" in user_capability_codes %}
+          <section class="menu-group" aria-labelledby="menu-comercial">
+            <h2 id="menu-comercial" class="menu-group-title">Comercial y ventas</h2>
+            {% if capability_access_all or "sales.view" in user_capability_codes or "sales.create" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="sales-toggle" class="menu-toggle" type="button" data-accion="toggleSalesMenu">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-cart-check-fill"></i>
+                  <span class="menu-label">
+                    Ventas
+                    <small>Pedidos y cobros</small>
+                  </span>
+                </span>
+                <i id="sales-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="sales-menu" class="submenu">
+                <a href="{% url 'sales:pedidos_en_curso' %}" data-menu-link>
+                  <i class="bi bi-activity"></i>
+                  <span class="menu-label">
+                    Pedidos en curso
+                    <small>Trabajo pendiente</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:incidencias_pedidos' %}" data-menu-link>
+                  <i class="bi bi-exclamation-diamond"></i>
+                  <span class="menu-label">
+                    Incidencias de pedidos
+                    <small>Resolver excepciones</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:pedidos_sin_pagar' %}" data-menu-link>
+                  <i class="bi bi-exclamation-circle"></i>
+                  <span class="menu-label">
+                    Pedidos sin pagar
+                    <small>Recuperar dinero</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:pedidos_en_revision_pago' %}" data-menu-link>
+                  <i class="bi bi-hourglass-split"></i>
+                  <span class="menu-label">
+                    En revisión de pago
+                    <small>Comprobante pendiente</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:pedidos_aprobados' %}" data-menu-link>
+                  <i class="bi bi-patch-check"></i>
+                  <span class="menu-label">
+                    Pedidos aprobados
+                    <small>Listos para almacén</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'sales:lista_pedidos' %}" data-menu-link>
+                  <i class="bi bi-receipt"></i>
+                  <span class="menu-label">
+                    Todos los pedidos
+                    <small>Buscar y filtrar</small>
+                  </span>
+                </a>
+
+                {% if capability_access_all or "sales.create" in user_capability_codes %}
+                <a href="{% url 'sales:crear_pedido' %}" data-menu-link>
+                  <i class="bi bi-plus-circle"></i>
+                  <span class="menu-label">
+                    Nuevo pedido
+                    <small>Registrar una venta</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="promotions-toggle" class="menu-toggle" type="button" data-accion="togglePromotionsMenu">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-tags-fill"></i>
+                  <span class="menu-label">
+                    Promociones
+                    <small>Combos / Ofertas</small>
+                  </span>
+                </span>
+                <i id="promotions-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="promotions-menu" class="submenu promotions-submenu">
+                {% if active_warehouse and can_operate_active_warehouse %}
+                <a href="{% url 'inventory:bundle_create' %}" data-menu-link>
+                  <i class="bi bi-boxes"></i>
+                  <span class="menu-label">
+                    Crear combo
+                    <small>Nuevo kit promocional</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                <a href="{% url 'inventory:lista_productos' %}" data-menu-link>
+                  <i class="bi bi-grid-3x3-gap-fill"></i>
+                  <span class="menu-label">
+                    Catálogo comercial
+                    <small>Productos y combos</small>
+                  </span>
+                </a>
+
+                {% if active_warehouse_is_all %}
+                <div class="submenu-info">
+                  <i class="bi bi-info-circle"></i>
+                  <span>Selecciona una bodega específica para crear combos.</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "crm.manage" in user_capability_codes %}
+            <a href="/crm/" data-menu-link>
+              <i class="bi bi-people-fill"></i>
+              <span class="menu-label">
+                Clientes (CRM)
+                <small>Seguimiento y oportunidades</small>
+              </span>
+            </a>
+            {% endif %}
+
+            {% if capability_access_all or "messaging.operate" in user_capability_codes or "messaging.supervise" in user_capability_codes or "messaging.configure" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="messaging-toggle" class="menu-toggle" type="button" data-accion="toggleMessagingMenu">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-whatsapp"></i>
+                  <span class="menu-label">
+                    WhatsApp
+                    <small>Mensajes con tus clientes</small>
+                  </span>
+                </span>
+                <i id="messaging-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="messaging-menu" class="submenu">
+                {% if capability_access_all or "messaging.configure" in user_capability_codes %}
+                <a href="{% url 'messaging:channels_list' %}" data-menu-link>
+                  <i class="bi bi-broadcast"></i>
+                  <span class="menu-label">
+                    Números de WhatsApp
+                    <small>Números conectados</small>
+                  </span>
+                </a>
+
+                {% if whatsapp_meta_direct_enabled %}
+                <a href="{% url 'messaging:meta_embedded_signup_start' %}" data-menu-link>
+                  <i class="bi bi-meta"></i>
+                  <span class="menu-label">
+                    Conectar WhatsApp con Meta
+                    <small>Alta guiada</small>
+                  </span>
+                </a>
+                {% endif %}
+                {% endif %}
+
+                {% if capability_access_all or "messaging.operate" in user_capability_codes %}
+                <a href="{% url 'messaging:chat_inbox' %}" data-menu-link>
+                  <i class="bi bi-chat-dots-fill"></i>
+                  <span class="menu-label">
+                    Bandeja de chats
+                    <small>Conversaciones</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'messaging:ai_offer_draft_list' %}" data-menu-link>
+                  <i class="bi bi-stars"></i>
+                  <span class="menu-label">
+                    Borradores IA
+                    <small>Ofertas pendientes</small>
+                  </span>
+                </a>
+                {% endif %}
+
+                {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="/admin/messaging/whatsappconfig/" data-menu-link>
+                  <i class="bi bi-gear-fill"></i>
+                  <span class="menu-label">
+                    Configuración
+                    <small>Conexión con Meta</small>
+                  </span>
+                </a>
+
+                <a href="/admin/messaging/webhookevent/" data-menu-link>
+                  <i class="bi bi-activity"></i>
+                  <span class="menu-label">
+                    Registro técnico
+                    <small>Eventos recibidos de Meta</small>
+                  </span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </section>
+          {% endif %}
+
+          {% if capability_access_all or "purchases.view" in user_capability_codes or "purchases.manage" in user_capability_codes or "suppliers.view" in user_capability_codes or "suppliers.manage" in user_capability_codes or "accounting.view" in user_capability_codes or "payments.view" in user_capability_codes %}
+          <section class="menu-group" aria-labelledby="menu-finanzas">
+            <h2 id="menu-finanzas" class="menu-group-title">Compras y finanzas</h2>
+            {% if capability_access_all or "purchases.view" in user_capability_codes or "purchases.manage" in user_capability_codes %}
+            <a href="{% url 'purchases:lista_compras' %}" data-menu-link>
+              <i class="bi bi-bag-check-fill"></i>
+              <span class="menu-label">
+                Compras
+                <small>Órdenes a proveedores</small>
+              </span>
+            </a>
+            {% endif %}
+
+            {% if capability_access_all or "suppliers.view" in user_capability_codes or "suppliers.manage" in user_capability_codes %}
+            <a href="{% url 'purchases:lista_proveedores' %}" data-menu-link>
+              <i class="bi bi-people-fill"></i>
+              <span class="menu-label">
+                Proveedores
+                <small>Directorio de proveedores</small>
+              </span>
+            </a>
+            {% endif %}
+
+            {% if capability_access_all or "accounting.view" in user_capability_codes %}
+            <div class="menu-section">
+              <button id="accounting-toggle" class="menu-toggle" type="button" data-accion="toggleAccountingMenu">
+                <span class="menu-toggle-left">
+                  <i class="bi bi-cash-coin"></i>
+                  <span class="menu-label">
+                    Finanzas
+                    <small>Reportes y contabilidad</small>
+                  </span>
+                </span>
+                <i id="accounting-arrow" class="bi bi-chevron-down"></i>
+              </button>
+
+              <div id="accounting-menu" class="submenu">
+                <a href="{% url 'accounting:financial_ai_advisor' %}" data-menu-link>
+                  <i class="bi bi-stars"></i>
+                  <span class="menu-label">
+                    Analista financiero IA
+                    <small>Pregúntale a la IA</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:financial_dashboard' %}" data-menu-link>
+                  <i class="bi bi-speedometer2"></i>
+                  <span class="menu-label">
+                    Mesa financiera
+                    <small>Resumen financiero</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:income_statement' %}" data-menu-link>
+                  <i class="bi bi-graph-up-arrow"></i>
+                  <span class="menu-label">
+                    Estado de resultados
+                    <small>Ganancias y pérdidas</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:balance_sheet' %}" data-menu-link>
+                  <i class="bi bi-building-check"></i>
+                  <span class="menu-label">
+                    Balance general
+                    <small>Lo que tienes y lo que debes</small>
+                  </span>
+                </a>
+
+                <a href="{% url 'accounting:expense_list' %}" data-menu-link>
+                  <i class="bi bi-receipt-cutoff"></i>
+                  <span class="menu-label">
+                    Gastos
+                    <small>Gastos de operación</small>
+                  </span>
+                </a>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if capability_access_all or "payments.view" in user_capability_codes %}
+            <a href="{% url 'payments:lista_pagos' %}" data-menu-link>
+              <i class="bi bi-credit-card-fill"></i>
+              <span class="menu-label">
+                Pagos
+                <small>Cobros de clientes</small>
+              </span>
+            </a>
+            {% endif %}
+          </section>
+          {% endif %}
+
+          {% endif %}
+
+          <section class="menu-group" aria-labelledby="menu-configuracion">
+
+  <h2
+    id="menu-configuracion"
+    class="menu-group-title"
+  >
+    Configuración y utilerías
+  </h2>
+
+
+  {% if request.user.is_authenticated %}
+
+    <!-- =====================================================
+         ADMINISTRACIÓN EXPLÍCITA POR CAPABILITY
+    ====================================================== -->
+
+    {% if not request.user.is_superuser %}
+
+      {% if capability_access_all or "company.configure" in user_capability_codes %}
+      <a
+        href="{% url 'companies:profile' %}"
+        data-menu-link
+        class="company-priority-menu"
+      >
+        <i class="bi bi-building-check"></i>
+        <span class="menu-label">
+          Mi empresa
+          <small>Perfil corporativo</small>
+        </span>
+      </a>
+      {% endif %}
+
+      {% if capability_access_all or "team.manage" in user_capability_codes %}
+      <div class="menu-section">
+        <button
+          id="team-toggle"
+          class="menu-toggle"
+          type="button"
+          data-accion="toggleTeamMenu"
+          aria-expanded="false"
+        >
+          <span class="menu-toggle-left">
+            <i class="bi bi-people-fill"></i>
+            <span class="menu-label">
+              Equipo
+              <small>Personas y acceso</small>
+            </span>
+          </span>
+          <i id="team-arrow" class="bi bi-chevron-down"></i>
+        </button>
+
+        <div id="team-menu" class="submenu">
+          <a
+            href="{% url 'accounts:employee_invitation_create' %}#team-directory"
+            data-menu-link
+          >
+            <i class="bi bi-person-lines-fill"></i>
+            <span>Directorio</span>
+          </a>
+
+          <a
+            href="{% url 'accounts:employee_invitation_create' %}#invite-form"
+            data-menu-link
+          >
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Invitar persona</span>
+          </a>
+
+          <a
+            href="{% url 'accounts:employee_invitation_create' %}#pending-invitations"
+            data-menu-link
+          >
+            <i class="bi bi-envelope-check-fill"></i>
+            <span>Invitaciones</span>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if capability_access_all or "company.configure" in user_capability_codes %}
+      <a
+        href="{% url 'companies:warehouse_list' %}"
+        data-menu-link
+      >
+        <i class="bi bi-buildings-fill"></i>
+        <span class="menu-label">
+          Bodegas
+          <small>Lugares de trabajo</small>
+        </span>
+      </a>
+      {% endif %}
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         IMPORTACIONES
+    ====================================================== -->
+
+    {% if capability_access_all or "imports.manage" in user_capability_codes %}
+    <a
+      href="{% url 'data_imports:dashboard' %}"
+      data-menu-link
+      {% if '/importaciones/' in request.path %}
+        class="active"
+      {% endif %}
+    >
+      <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+
+      <span class="menu-label">
+        Importaciones
+        <small>Excel / CSV</small>
+      </span>
+    </a>
+    {% endif %}
+
+
+    <!-- =====================================================
+         SUSCRIPCIONES / ADMIN DJANGO
+         SOLO STAFF / SUPERUSER
+    ====================================================== -->
+
+    {% if request.user.is_staff or request.user.is_superuser %}
+
+      <a
+        href="/admin/subscriptions/subscription/"
+        data-menu-link
+      >
+        <i class="bi bi-repeat"></i>
+
+        <span class="menu-label">
+          Suscripción
+          <small>Tu plan</small>
+        </span>
+      </a>
+
+
+      <a
+        href="/admin/"
+        data-menu-link
+      >
+        <i class="bi bi-shield-lock-fill"></i>
+
+        <span class="menu-label">
+          Administración técnica
+          <small>Solo personal autorizado</small>
+        </span>
+      </a>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         OWNER SAAS
+         SOLO SUPERUSER
+    ====================================================== -->
+
+    {% if request.user.is_superuser %}
+
+      <a
+        href="/owner/"
+        data-menu-link
+      >
+        <i class="bi bi-building-lock"></i>
+
+        <span class="menu-label">
+          Owner SaaS
+          <small>Panel propietario</small>
+        </span>
+      </a>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         CERRAR SESIÓN
+    ====================================================== -->
+
+    <div class="sidebar-logout">
+
+      <form
+        method="post"
+        action="{% url 'accounts:logout' %}"
+      >
+        {% csrf_token %}
+
+        <button
+          type="submit"
+          class="sidebar-logout-button"
+        >
+          <i class="bi bi-box-arrow-right"></i>
+
+          <span class="menu-label">
+            Cerrar sesión
+            <small>Salir de tu cuenta</small>
+          </span>
+        </button>
+
+      </form>
+
+    </div>
+
+  {% endif %}
+
+</section>
+
+</nav>
+
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+<main class="main-content" id="contenido-principal" tabindex="-1">
+        <header class="topbar">
+          <button
+            class="mobile-sidebar-button"
+            id="mobileSidebarButton"
+            type="button"
+            aria-label="Abrir navegación"
+            aria-controls="appSidebar"
+            aria-expanded="false"
+          >
+            <i class="bi bi-list"></i>
+          </button>
+
+          <div class="topbar-heading">
+            <h1>{% block page_title %} Dashboard CEO {% endblock %}</h1>
+            <p>{% block page_subtitle %} Panel general de tu negocio mayorista {% endblock %}</p>
+          </div>
+
+          <div class="topbar-actions">
+            {% if request.user.is_authenticated and warehouse_company %}
+            <form method="post" action="{% url 'accounts:seleccionar_bodega_activa' %}" class="warehouse-selector-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+
+              <label class="warehouse-selector">
+                <i class="bi bi-building"></i>
+                <span>
+                  <small>Bodega activa</small>
+                  <select name="warehouse" data-enviar-al-cambiar>
+                    <option value="all" {% if active_warehouse_is_all %}selected{% endif %}>
+                      Todas las bodegas
+                    </option>
+
+                    {% for warehouse in accessible_warehouses %}
+                    <option value="{{ warehouse.id }}" {% if active_warehouse and active_warehouse.id == warehouse.id %}selected{% endif %}>
+                      {{ warehouse.name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </span>
+              </label>
+            </form>
+            {% endif %}
+
+            {% if request.user.is_authenticated %}
+            <details class="notification-bell">
+              <summary aria-label="Abrir notificaciones">
+                <i class="bi bi-bell-fill"></i>
+                {% if notification_unread_count %}
+                <span class="notification-badge">
+                  {% if notification_unread_count > 99 %}99+{% else %}{{ notification_unread_count }}{% endif %}
+                </span>
+                {% endif %}
+              </summary>
+              <div class="notification-dropdown">
+                <div class="notification-dropdown-head">
+                  <strong>Notificaciones</strong>
+                  <span>{{ notification_unread_count }} sin leer</span>
+                </div>
+                {% for notification in notification_dropdown_items %}
+                <a href="{% url 'notifications:open' notification.id %}" class="notification-dropdown-item level-{{ notification.level }}">
+                  <i class="bi {{ notification.icon }}"></i>
+                  <span>
+                    <strong>{{ notification.title }}</strong>
+                    <small>{{ notification.message|truncatechars:105 }}</small>
+                  </span>
+                </a>
+                {% empty %}
+                <div class="notification-dropdown-empty">
+                  No tienes notificaciones nuevas.
+                </div>
+                {% endfor %}
+                <a href="{% url 'notifications:center' %}" class="notification-dropdown-footer">
+                  Ver centro de notificaciones
+                </a>
+              </div>
+            </details>
+            {% endif %}
+
+            <span class="badge bg-success topbar-estado">Sistema activo</span>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="/admin/" class="btn btn-sm btn-outline-light"> Admin </a>
+            {% endif %}
+            
+            {% if request.user.is_superuser %}
+            <a href="/owner/" class="btn btn-sm btn-warning"> Owner </a>
+            {% endif %}
+          </div>
+        </header>
+
+        {% if messages %}
+        <div hidden aria-hidden="true">
+          {% for message in messages %}
+          <div data-wms-django-message data-tags="{{ message.tags|default:'info' }}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% wms_global_navigation as wms_nav %}
+        {% include "components/global_navigation.html" with wms_nav=wms_nav only %}
+
+        {% include "components/whatsapp_overage_banner.html" %}
+
+        {% block content %}{% endblock %}
+      </main>
+
+      <nav class="mobile-bottom-nav" aria-label="Accesos rápidos">
+        {% if capability_access_all or "dashboard.view" in user_capability_codes %}
+          <a href="{% url 'dashboard:ceo_dashboard' %}" data-mobile-nav>
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>Inicio</span>
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:employee_home' %}" data-mobile-nav>
+            <i class="bi bi-house-fill"></i>
+            <span>Inicio</span>
+          </a>
+        {% endif %}
+
+        {% if capability_access_all or "sales.view" in user_capability_codes or "sales.create" in user_capability_codes %}
+          <a href="{% url 'sales:pedidos_en_curso' %}" data-mobile-nav>
+            <i class="bi bi-cart-check-fill"></i>
+            <span>Ventas</span>
+          </a>
+        {% endif %}
+
+        {% if capability_access_all or "inventory.view" in user_capability_codes or "inventory.manage" in user_capability_codes %}
+          <a href="{% url 'inventory:lista_stock' %}" data-mobile-nav>
+            <i class="bi bi-box-seam-fill"></i>
+            <span>Inventario</span>
+          </a>
+        {% endif %}
+
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'notifications:center' %}" data-mobile-nav>
+            <span class="mobile-bottom-nav__icon-wrap">
+              <i class="bi bi-bell-fill"></i>
+              {% if notification_unread_count %}
+                <em>{{ notification_unread_count }}</em>
+              {% endif %}
+            </span>
+            <span>Alertas</span>
+          </a>
+        {% endif %}
+
+        <button type="button" id="mobileBottomMenuButton" aria-label="Abrir menú completo">
+          <i class="bi bi-list"></i>
+          <span>Menú</span>
+        </button>
+      </nav>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 💳 MODAL DE BENEFICIOS PREMIUM & SISTEMA DE PAGO          -->
+    <!-- ========================================================= -->
+    <div id="premiumModal" class="modal-overlay">
+      <div class="premium-modal" role="dialog" aria-modal="true" aria-labelledby="premiumModalTitle">
+        <button type="button" class="modal-close" data-accion="closePremiumModal" aria-label="Cerrar">✕</button>
+
+        <div class="modal-header">
+          <span class="plan-empresarial-tag">Plan de pago</span>
+          <h3 id="premiumModalTitle">Activa PAKIVOX Premium</h3>
+          <p>Todo tu negocio mayorista en un solo sistema.</p>
+        </div>
+
+        <div class="benefits-list">
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Varias bodegas:</strong> entradas, salidas y transferencias entre bodegas.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>WhatsApp integrado:</strong> avisos y seguimiento a tus clientes desde el sistema.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Envíos:</strong> guías con Envia.com y Skydropx desde Shipping Hub.</span>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">✓</span>
+            <span><strong>Copiloto con IA:</strong> preguntas sobre rentabilidad e inventario, con las consultas que incluye tu plan.</span>
+          </div>
+        </div>
+
+        <p class="premium-modal-note">Verás el precio exacto en la página de pago seguro de Stripe antes de confirmar.</p>
+
+        <form method="post" action="{% url 'subscriptions:create_checkout_session' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-pay-now">
+                Continuar al pago seguro →
+            </button>
+        </form>
+      </div>
+    </div>
+
+
+{{ notification_sound_id|json_script:"notification-sound-id" }}
+{{ notification_sound_area|json_script:"notification-sound-area" }}
+{{ notification_sound_level|json_script:"notification-sound-level" }}
+{{ notification_sound_storage_key|json_script:"notification-storage-key" }}
+
+    <script src="{% static 'js/marco_sistema.js' %}"></script>
+    <script src="{% static 'js/navegacion.js' %}"></script>
+    {% include 'legal/_cookie_banner.html' %}
+    <script src="{% static 'legal/cookie-consent.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

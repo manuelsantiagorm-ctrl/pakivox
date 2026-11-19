@@ -1,0 +1,393 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Canales WhatsApp | PAKIVOX{% endblock %}
+
+{% block page_title %}Canales WhatsApp{% endblock %}
+{% block page_subtitle %}
+Administra las líneas oficiales conectadas a tu empresa.
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .messaging-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+
+  .messaging-card {
+    background: linear-gradient(180deg, #121826, #0b1020);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  }
+
+  .messaging-card span { color: #94a3b8; font-size: 13px; display: block; margin-bottom: 8px; }
+  .messaging-card strong { color: #f8fafc; font-size: 26px; display: block; }
+  .messaging-card small { color: #64748b; }
+
+  .capacity-bar { height: 6px; background: rgba(148, 163, 184, 0.16); border-radius: 999px; margin-top: 10px; overflow: hidden; }
+  .capacity-fill { height: 100%; background: #2563eb; border-radius: 999px; }
+
+  .canales-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .messaging-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .messaging-panel-header h3 { margin: 0; color: #f8fafc; font-size: 18px; }
+  .messaging-panel-header p { margin: 4px 0 0; color: #94a3b8; font-size: 13px; }
+
+  .messaging-btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .messaging-btn:hover { color: white; opacity: 0.92; }
+  .messaging-btn-muted { background: #1e293b; color: #cbd5e1; }
+  .messaging-btn-block { width: 100%; justify-content: center; }
+
+  .channel-card {
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+  }
+
+  .channel-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .channel-identity { display: flex; gap: 14px; align-items: flex-start; }
+
+  .channel-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .channel-icon svg { width: 22px; height: 22px; }
+
+  .channel-icon.status-active { background: #22c55e; }
+  .channel-icon.status-warn { background: #f59e0b; }
+  .channel-icon.status-off { background: #ef4444; }
+
+  .channel-identity h4 { margin: 0 0 4px; color: #f8fafc; font-size: 16px; }
+  .channel-identity small { color: #94a3b8; display: block; margin-top: 2px; }
+
+  .channel-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 18px 0; }
+  .meta-block .label { color: #64748b; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .meta-block .value { color: #e2e8f0; font-size: 14px; font-weight: 600; }
+
+  .status-pill { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; display: inline-block; }
+  .status-pill.ok { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+  .status-pill.warn { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
+  .status-pill.off { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+
+  .channel-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding-top: 16px; border-top: 1px solid rgba(148, 163, 184, 0.1); }
+  .stat-block .label { color: #64748b; font-size: 11.5px; margin-bottom: 4px; }
+  .stat-block .value { color: #f8fafc; font-size: 16px; font-weight: 800; }
+  .stat-block .value.warn { color: #fcd34d; }
+  .stat-block .value.bad { color: #fca5a5; }
+
+  .warning-box {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    color: #fde68a;
+    padding: 14px 16px;
+    border-radius: 16px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .empty-state { padding: 38px; text-align: center; color: #94a3b8; }
+
+  .side-card {
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+
+  .side-card h4 { margin: 0 0 14px; color: #f8fafc; font-size: 15px; }
+
+  .wizard-steps { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+  .wizard-step {
+    width: 26px; height: 26px; border-radius: 999px;
+    background: #1e293b; color: #94a3b8;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+  }
+  .wizard-step.active { background: #2563eb; color: white; }
+  .wizard-line { flex: 1; height: 2px; background: #1e293b; }
+
+  .wizard-icon-row { display: flex; justify-content: center; gap: 18px; padding: 22px 0; color: #38bdf8; }
+  .wizard-icon-row svg { width: 34px; height: 34px; }
+
+  .side-card p.hint { color: #94a3b8; font-size: 13px; text-align: center; margin: 0 0 16px; }
+  .side-note { color: #64748b; font-size: 12px; text-align: center; margin-top: 10px; }
+
+  .mobile-frame { background: #000; border-radius: 26px; padding: 10px; border: 3px solid #1e293b; }
+  .mobile-screen { background: #0b1020; border-radius: 18px; padding: 14px; }
+  .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .mobile-header strong { color: #f8fafc; font-size: 14px; }
+
+  .mobile-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); }
+  .mobile-icon { width: 26px; height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mobile-icon svg { width: 13px; height: 13px; }
+  .mobile-icon.status-active { background: #22c55e; }
+  .mobile-icon.status-warn { background: #f59e0b; }
+  .mobile-icon.status-off { background: #ef4444; }
+
+  .mobile-row-text { flex: 1; min-width: 0; }
+  .mobile-row-text strong { display: block; color: #e2e8f0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mobile-row-text small { color: #64748b; font-size: 11px; }
+
+  @media (max-width: 1100px) {
+    .messaging-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .canales-layout { grid-template-columns: 1fr; }
+    .channel-meta-grid { grid-template-columns: 1fr 1fr; }
+    .channel-stats-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 700px) {
+    .messaging-grid { grid-template-columns: 1fr; }
+    .channel-meta-grid { grid-template-columns: 1fr; }
+    .channel-stats-row { grid-template-columns: 1fr; }
+    .messaging-panel-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="warning-box">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+{% if not has_whatsapp_access %}
+  <div class="warning-box">
+    Tu plan actual no tiene WhatsApp activo. Para usar canales, agentes y chats, actualiza a un plan Pro, Premium o Enterprise.
+  </div>
+{% endif %}
+
+<section class="messaging-grid">
+  <div class="messaging-card">
+    <span>Canales activos</span>
+    <strong>{{ active_channels_count }}{% if plan %} de {{ plan.max_whatsapp_numbers }}{% else %} de 0{% endif %}</strong>
+    {% if plan and plan.max_whatsapp_numbers %}
+      <div class="capacity-bar">
+        <div class="capacity-fill" style="width: {% widthratio active_channels_count plan.max_whatsapp_numbers 100 %}%;"></div>
+      </div>
+      <small>{% widthratio active_channels_count plan.max_whatsapp_numbers 100 %}% de tu capacidad utilizada</small>
+    {% else %}
+      <small>Sin plan asignado</small>
+    {% endif %}
+  </div>
+
+  <div class="messaging-card">
+    <span>Agentes asignados</span>
+    <strong>{{ active_agents_count }}{% if plan %} de {{ plan.max_whatsapp_agents }}{% else %} de 0{% endif %}</strong>
+    <small>Agentes únicos con acceso a WhatsApp</small>
+  </div>
+
+  <div class="messaging-card">
+    <span>Conversaciones este mes</span>
+    <strong>{{ conversations_this_month_total }}</strong>
+    <small>Todos los canales combinados</small>
+  </div>
+
+  <div class="messaging-card">
+    <span>Plan actual</span>
+    <strong style="font-size:20px;">{% if plan %}{{ plan.name }}{% else %}Sin plan{% endif %}</strong>
+    <small>Suscripción vinculada</small>
+  </div>
+</section>
+
+<div class="canales-layout">
+
+  <div>
+    <section class="messaging-panel-header">
+      <div>
+        <h3>Líneas oficiales conectadas</h3>
+        <p>Asigna canales a Ventas, Soporte, Sucursal o Logística y monitorea su estado en tiempo real.</p>
+      </div>
+
+      {% if has_whatsapp_access %}
+        <a href="{% url 'messaging:channel_create' %}" class="messaging-btn">+ Conectar nuevo canal</a>
+      {% else %}
+        <span class="messaging-btn messaging-btn-muted">WhatsApp desactivado</span>
+      {% endif %}
+    </section>
+
+    {% if channels %}
+      {% for channel in channels %}
+        <div class="channel-card">
+          <div class="channel-card-top">
+            <div class="channel-identity">
+              <div class="channel-icon {% if channel.activation_status == 'active' %}status-active{% elif channel.activation_status == 'disconnected' or channel.activation_status == 'suspended' %}status-off{% else %}status-warn{% endif %}">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.07-1.32A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.2 14.15c-.22.62-1.28 1.2-1.77 1.24-.45.04-.9.2-3.05-.64-2.6-1.03-4.27-3.68-4.4-3.85-.13-.17-1.05-1.4-1.05-2.67 0-1.27.67-1.9.9-2.16.22-.25.5-.32.66-.32h.48c.16 0 .38-.06.6.45.22.53.75 1.83.82 1.96.07.13.11.28.02.45-.09.17-.14.28-.27.43-.13.15-.28.34-.4.46-.13.13-.27.28-.12.55.16.27.7 1.16 1.5 1.88 1.04.93 1.91 1.22 2.18 1.36.27.13.43.11.6-.07.16-.18.68-.79.87-1.06.18-.27.36-.22.6-.13.25.09 1.57.74 1.84.87.27.13.45.2.51.31.07.11.07.63-.15 1.25z"/></svg>
+              </div>
+              <div>
+                <h4>{{ channel.channel_name }}</h4>
+                <small>{{ channel.display_number }}</small>
+                <small>{% if channel.warehouse %}Bodega: {{ channel.warehouse.name }}{% else %}Sin bodega asignada{% endif %}</small>
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              {% if channel.activation_status == "active" %}
+                <span class="status-pill ok">Conectado</span>
+              {% elif channel.activation_status == "disconnected" %}
+                <span class="status-pill off">Desconectado</span>
+              {% elif channel.activation_status == "suspended" %}
+                <span class="status-pill off">Suspendido</span>
+              {% else %}
+                <span class="status-pill warn">{{ channel.get_activation_status_display }}</span>
+              {% endif %}
+              <br>
+              <a href="{% url 'messaging:channel_detail' channel.pk %}" class="messaging-btn messaging-btn-muted" style="margin-top:8px; display:inline-flex;">
+                Administrar
+              </a>
+            </div>
+          </div>
+
+          <div class="channel-meta-grid">
+            <div class="meta-block">
+              <div class="label">Proveedor / Integración</div>
+              <div class="value">{{ channel.get_provider_display }}</div>
+            </div>
+            <div class="meta-block">
+              <div class="label">Phone Number ID</div>
+              <div class="value">{{ channel.phone_number_id|default:"—" }}</div>
+            </div>
+            <div class="meta-block">
+              <div class="label">Última actualización</div>
+              <div class="value">{{ channel.updated_at|date:"d/m/Y H:i" }}</div>
+            </div>
+          </div>
+
+          {% with s=channel.computed_stats %}
+          <div class="channel-stats-row">
+            <div class="stat-block">
+              <div class="label">Conversaciones (este mes)</div>
+              <div class="value">{{ s.conversations_this_month }}</div>
+            </div>
+            <div class="stat-block">
+              <div class="label">Entregados</div>
+              <div class="value">{% if s.delivered_pct is not None %}{{ s.delivered_pct }}%{% else %}—{% endif %}</div>
+            </div>
+            <div class="stat-block">
+              <div class="label">Fallidos</div>
+              <div class="value {% if s.failed_pct and s.failed_pct > 5 %}bad{% endif %}">{% if s.failed_pct is not None %}{{ s.failed_pct }}%{% else %}—{% endif %}</div>
+            </div>
+            <div class="stat-block">
+              <div class="label">Webhook</div>
+              <div class="value {% if not s.webhook_healthy %}warn{% endif %}">
+                {% if s.webhook_healthy %}Operativo{% else %}Sin eventos recientes{% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% if s.failed_pct and s.failed_pct > 5 %}
+            <div class="warning-box">
+              Se detectaron fallos de entrega este mes ({{ s.failed_pct }}%). Revisa la configuración o reconecta el canal.
+            </div>
+          {% elif channel.activation_status == "disconnected" %}
+            <div class="warning-box">
+              Canal desconectado. Reconecta para reanudar el envío y la recepción de mensajes.
+            </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">Todavía no tienes líneas de WhatsApp conectadas.</div>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if has_whatsapp_access %}
+      <div class="side-card">
+        <h4>Conectar nuevo canal</h4>
+
+        <div class="wizard-steps">
+          <div class="wizard-step active">1</div>
+          <div class="wizard-line"></div>
+          <div class="wizard-step">2</div>
+          <div class="wizard-line"></div>
+          <div class="wizard-step">3</div>
+          <div class="wizard-line"></div>
+          <div class="wizard-step">4</div>
+        </div>
+
+        <div class="wizard-icon-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v9m0 0l-3-3m3 3l3-3M5 15a4 4 0 01-1-7.87A5 5 0 0113.9 5.1 4.5 4.5 0 0119 9.5a4 4 0 01-1 7.9H5z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6l8-4z"/></svg>
+        </div>
+
+        <p class="hint">Conecta tu número oficial y comienza a administrar conversaciones de negocio.</p>
+
+        <a href="{% url 'messaging:channel_create' %}" class="messaging-btn messaging-btn-block">Conectar con Meta</a>
+        <div style="height:8px;"></div>
+        <a href="{% url 'messaging:channel_create' %}" class="messaging-btn messaging-btn-muted messaging-btn-block">Configurar proveedor</a>
+
+        <p class="side-note">Conexión cifrada · Credenciales protegidas</p>
+      </div>
+    {% endif %}
+
+    {% if channels %}
+      <div class="side-card">
+        <h4>Móvil</h4>
+        <div class="mobile-frame">
+          <div class="mobile-screen">
+            <div class="mobile-header">
+              <strong>Canales WhatsApp</strong>
+              <small style="color:#64748b;">{{ active_channels_count }}/{% if plan %}{{ plan.max_whatsapp_numbers }}{% else %}0{% endif %}</small>
+            </div>
+
+            {% for channel in channels %}
+              <div class="mobile-row">
+                <div class="mobile-icon {% if channel.activation_status == 'active' %}status-active{% elif channel.activation_status == 'disconnected' or channel.activation_status == 'suspended' %}status-off{% else %}status-warn{% endif %}">
+                  <svg viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.07-1.32A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                </div>
+                <div class="mobile-row-text">
+                  <strong>{{ channel.channel_name }}</strong>
+                  <small>{{ channel.display_number }}</small>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

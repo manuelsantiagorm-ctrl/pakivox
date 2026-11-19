@@ -1,0 +1,165 @@
+/*
+  Almacén · pedidos para empacar (templates/warehouse/lista_packing.html)
+  Paleta PAKIVOX: #021024 #052659 #5483B3 #7DA0CA #C1E8FF.
+  Estados sobre fondo oscuro: listo #8EB69B, aviso #F0B856, problema #F17882.
+*/
+
+.emp {
+  --emp-navy: #021024;
+  --emp-blue-500: #5483B3;
+  --emp-blue-300: #7DA0CA;
+  --emp-blue-100: #C1E8FF;
+  --emp-text: #EAF6FF;
+  --emp-muted: #9DB6D2;
+  --emp-line: rgba(125, 160, 202, .2);
+  --emp-good: #8EB69B;
+  --emp-warn: #F0B856;
+  --emp-bad: #F17882;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  color: var(--emp-text);
+}
+
+.emp-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Aviso de consulta global */
+.emp-aviso {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid rgba(240, 184, 86, .35);
+  border-radius: 14px;
+  background: rgba(240, 184, 86, .08);
+}
+.emp-aviso > i { font-size: 20px; color: var(--emp-warn); }
+.emp-aviso strong { display: block; font-size: 15px; }
+.emp-aviso p { margin: 2px 0 0; font-size: 13.5px; color: var(--emp-muted); }
+.emp-aviso b { color: var(--emp-text); }
+
+/* Encabezado */
+.emp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.emp-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--emp-blue-300); }
+.emp-head h2 { margin: 4px 0 8px; font-size: clamp(24px, 2.4vw, 30px); font-weight: 700; letter-spacing: -.02em; color: var(--emp-text); }
+.emp-alcance {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
+  border: 1px solid var(--emp-line); border-radius: 999px; background: rgba(193, 232, 255, .06);
+  font-size: 13px; font-weight: 600; color: var(--emp-blue-100);
+}
+
+.emp-buscar { position: relative; display: flex; align-items: center; width: min(340px, 100%); }
+.emp-buscar > i { position: absolute; left: 14px; color: var(--emp-muted); pointer-events: none; }
+.emp-buscar input {
+  width: 100%; min-height: 44px; padding: 0 40px 0 40px;
+  border: 1px solid var(--emp-line); border-radius: 12px; background: rgba(2, 16, 36, .55);
+  color: var(--emp-text); font: inherit; font-size: 14.5px;
+}
+.emp-buscar input::placeholder { color: #6F88A6; }
+.emp-buscar input:focus { outline: none; border-color: var(--emp-blue-100); box-shadow: 0 0 0 3px rgba(193, 232, 255, .15); }
+.emp-limpiar { position: absolute; right: 8px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--emp-muted); }
+.emp-limpiar:hover { color: var(--emp-text); background: rgba(193, 232, 255, .08); }
+
+/* Tarjetas-filtro con conteo */
+.emp-filtros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.emp-filtro {
+  --tono: var(--emp-blue-100);
+  display: flex; flex-direction: column; gap: 6px; padding: 14px 16px;
+  border: 1px solid var(--emp-line); border-radius: 16px;
+  background: linear-gradient(170deg, rgba(5, 38, 89, .55), rgba(2, 16, 36, .9));
+  color: var(--emp-muted); text-decoration: none;
+  transition: border-color .15s, transform .15s;
+}
+.emp-filtro span { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+.emp-filtro span i { color: var(--tono); }
+.emp-filtro b { font-size: 28px; line-height: 1; font-weight: 700; color: var(--emp-text); font-variant-numeric: tabular-nums; }
+.emp-filtro:hover { border-color: var(--tono); color: var(--emp-text); transform: translateY(-1px); }
+.emp-filtro.is-pendiente { --tono: var(--emp-warn); }
+.emp-filtro.is-proceso { --tono: var(--emp-blue-300); }
+.emp-filtro.is-listo { --tono: var(--emp-good); }
+.emp-filtro.is-on { border-color: var(--tono); box-shadow: inset 0 0 0 1px var(--tono), 0 14px 30px -20px var(--tono); color: var(--emp-text); }
+
+/* Lista de pedidos */
+.emp-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.emp-item {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(150px, 1.2fr) minmax(150px, .9fr) minmax(140px, .9fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1px solid var(--emp-line);
+  border-left: 4px solid var(--emp-blue-500);
+  border-radius: 14px;
+  background: linear-gradient(170deg, rgba(5, 38, 89, .5), rgba(2, 16, 36, .88));
+  transition: border-color .15s;
+}
+.emp-item:hover { border-color: rgba(193, 232, 255, .35); }
+.emp-item.is-pending { border-left-color: var(--emp-warn); }
+.emp-item.is-in_progress { border-left-color: var(--emp-blue-300); }
+.emp-item.is-packed { border-left-color: var(--emp-good); }
+.emp-item.is-cancelled { border-left-color: var(--emp-bad); opacity: .8; }
+
+.emp-pedido strong { display: block; font-size: 16px; font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+.emp-pedido span { display: block; margin-top: 2px; font-size: 14px; color: var(--emp-blue-100); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.emp-origen span { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.emp-origen span i { color: var(--emp-blue-300); }
+.emp-origen small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--emp-muted); font-variant-numeric: tabular-nums; }
+
+.emp-datos { display: flex; gap: 18px; margin: 0; }
+.emp-datos dt { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--emp-muted); }
+.emp-datos dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.emp-estado { display: grid; justify-items: start; gap: 4px; }
+.emp-estado time { font-size: 12.5px; color: var(--emp-muted); }
+.emp-pill { padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; border: 1px solid transparent; }
+.emp-pill.is-pending { color: var(--emp-warn); border-color: rgba(240, 184, 86, .4); background: rgba(240, 184, 86, .1); }
+.emp-pill.is-in_progress { color: var(--emp-blue-100); border-color: rgba(125, 160, 202, .45); background: rgba(125, 160, 202, .12); }
+.emp-pill.is-packed { color: var(--emp-good); border-color: rgba(142, 182, 155, .45); background: rgba(142, 182, 155, .12); }
+.emp-pill.is-cancelled { color: var(--emp-bad); border-color: rgba(241, 120, 130, .45); background: rgba(241, 120, 130, .1); }
+
+.emp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border: 1px solid rgba(193, 232, 255, .3); border-radius: 12px; background: rgba(193, 232, 255, .06);
+  color: var(--emp-blue-100); font-size: 14px; font-weight: 700; text-decoration: none; white-space: nowrap;
+}
+.emp-btn:hover { border-color: var(--emp-blue-100); background: rgba(193, 232, 255, .12); color: var(--emp-blue-100); }
+.emp-btn.is-principal { background: var(--emp-blue-100); border-color: var(--emp-blue-100); color: var(--emp-navy); }
+.emp-btn.is-principal:hover { background: var(--emp-text); color: var(--emp-navy); }
+
+.emp-vacio {
+  display: grid; justify-items: center; gap: 8px; padding: 48px 20px; text-align: center;
+  border: 1px dashed var(--emp-line); border-radius: 16px; color: var(--emp-muted);
+}
+.emp-vacio > i { font-size: 34px; color: var(--emp-blue-300); }
+.emp-vacio strong { font-size: 17px; color: var(--emp-text); }
+.emp-vacio p { margin: 0; }
+.emp-vacio a:not(.emp-btn) { color: var(--emp-blue-100); }
+
+/* Tablet */
+@media (max-width: 1180px) {
+  .emp-item { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; row-gap: 12px; }
+  .emp-datos { grid-column: 1; }
+  .emp-estado { grid-column: 2; }
+  .emp-accion { grid-column: 3; grid-row: 1 / span 2; }
+}
+
+/* Celular */
+@media (max-width: 720px) {
+  .emp-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .emp-filtro { padding: 12px; }
+  .emp-filtro b { font-size: 24px; }
+  .emp-buscar { width: 100%; }
+  .emp-item { grid-template-columns: minmax(0, 1fr) auto; padding: 14px; gap: 10px 12px; }
+  .emp-pedido { grid-column: 1; }
+  .emp-estado { grid-column: 2; grid-row: 1; justify-items: end; }
+  .emp-origen, .emp-datos { grid-column: 1 / -1; }
+  .emp-accion { grid-column: 1 / -1; grid-row: auto; }
+  .emp-accion .emp-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emp-filtro, .emp-item { transition: none; }
+}
+.emp-sin-dato { font-size: 13px; font-weight: 600; color: var(--emp-muted); }

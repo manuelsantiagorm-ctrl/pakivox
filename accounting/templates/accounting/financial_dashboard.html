@@ -1,0 +1,252 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mesa Financiera | PAKIVOX{% endblock %}
+{% block page_title %}Mesa Financiera{% endblock %}
+{% block page_subtitle %}
+Estado financiero consolidado de {{ company.name }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="financial-page">
+
+  <form method="get" class="financial-toolbar">
+    <div class="financial-filter">
+      <div class="financial-field">
+        <label>Desde</label>
+        <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+      </div>
+
+      <div class="financial-field">
+        <label>Hasta</label>
+        <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+      </div>
+
+      <button class="financial-button" type="submit">
+        <i class="bi bi-funnel-fill"></i>
+        Aplicar periodo
+      </button>
+    </div>
+
+    <div class="financial-actions">
+      <a class="financial-button"
+         href="{% url 'accounting:income_statement' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}">
+        Estado de resultados
+      </a>
+
+      <a class="financial-button"
+         href="{% url 'accounting:balance_sheet' %}?as_of_date={{ end_date|date:'Y-m-d' }}">
+        Balance general
+      </a>
+
+      {% if can_manage_accounting %}
+        <a class="financial-button success"
+           href="{% url 'accounting:expense_create' %}">
+          <i class="bi bi-plus-circle"></i>
+          Registrar gasto
+        </a>
+      {% endif %}
+      <a
+      class="financial-button success"
+      href="{% url 'accounting:export_financial_excel' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}">
+      <i class="bi bi-file-earmark-excel-fill"></i>
+      Exportar Excel
+    </a>
+    <a
+    class="financial-button"
+    href="{% url 'accounting:financial_ai_advisor' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+    >
+    <i class="bi bi-stars"></i>
+    Analizar con IA
+</a>
+    </div>
+  </form>
+
+  <section class="financial-kpis">
+    <article class="financial-kpi info">
+      <span>Ventas netas</span>
+      <strong>${{ income_statement.net_sales|floatformat:2 }}</strong>
+      <small>{{ income_statement.orders_count }} pedidos entregados</small>
+    </article>
+
+    <article class="financial-kpi success">
+      <span>Utilidad bruta</span>
+      <strong>${{ income_statement.gross_profit|floatformat:2 }}</strong>
+      <small>Margen {{ income_statement.gross_margin_percent|floatformat:2 }}%</small>
+    </article>
+
+    <article class="financial-kpi warning">
+      <span>Gastos operativos</span>
+      <strong>${{ income_statement.operating_expenses|floatformat:2 }}</strong>
+      <small>Gastos contabilizados</small>
+    </article>
+
+    <article class="financial-kpi {% if income_statement.net_profit < 0 %}danger{% else %}success{% endif %}">
+      <span>Utilidad neta</span>
+      <strong>${{ income_statement.net_profit|floatformat:2 }}</strong>
+      <small>Margen neto {{ income_statement.net_margin_percent|floatformat:2 }}%</small>
+    </article>
+  </section>
+
+  <section class="financial-kpis">
+    <article class="financial-kpi info">
+      <span>Caja y bancos</span>
+      <strong>${{ balance_sheet.assets.cash_and_banks|floatformat:2 }}</strong>
+      <small>Disponibilidad estimada al corte</small>
+    </article>
+
+    <article class="financial-kpi warning">
+      <span>Cuentas por cobrar</span>
+      <strong>${{ balance_sheet.assets.accounts_receivable|floatformat:2 }}</strong>
+      <small>Pedidos entregados pendientes</small>
+    </article>
+
+    <article class="financial-kpi info">
+      <span>Inventario</span>
+      <strong>${{ balance_sheet.assets.inventory|floatformat:2 }}</strong>
+      <small>Stock físico por costo actual</small>
+    </article>
+
+    <article class="financial-kpi danger">
+      <span>Cuentas por pagar</span>
+      <strong>${{ balance_sheet.liabilities.accounts_payable|floatformat:2 }}</strong>
+      <small>Mercancía recibida pendiente</small>
+    </article>
+  </section>
+
+  {% if balance_sheet.is_balanced %}
+    <div class="financial-alert success">
+      <strong>Balance cuadrado.</strong>
+      Activos = Pasivos + Capital.
+    </div>
+  {% else %}
+    <div class="financial-alert warning">
+      <strong>Balance pendiente de cuadrar.</strong>
+      Existe una diferencia de
+      ${{ balance_sheet.difference|floatformat:2 }}.
+      Esto normalmente indica que faltan saldos iniciales de caja,
+      bancos, capital, préstamos o activos fijos.
+    </div>
+  {% endif %}
+
+  <section class="financial-grid">
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h3>Resumen del resultado</h3>
+        <a class="financial-button"
+           href="{% url 'accounting:income_statement' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}">
+          Ver detalle
+        </a>
+      </div>
+
+      <table class="statement-table">
+        <tr>
+          <td>Ventas netas</td>
+          <td>${{ income_statement.net_sales|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Costo de ventas</td>
+          <td>${{ income_statement.cost_of_sales|floatformat:2 }}</td>
+        </tr>
+        <tr class="subtotal">
+          <td>Utilidad bruta</td>
+          <td>${{ income_statement.gross_profit|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Ingresos por envío</td>
+          <td>${{ income_statement.shipping_income|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Gastos operativos</td>
+          <td>${{ income_statement.operating_expenses|floatformat:2 }}</td>
+        </tr>
+        <tr class="total">
+          <td>Utilidad neta</td>
+          <td>${{ income_statement.net_profit|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </article>
+
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h3>Resumen del balance</h3>
+        <a class="financial-button"
+           href="{% url 'accounting:balance_sheet' %}?as_of_date={{ end_date|date:'Y-m-d' }}">
+          Ver detalle
+        </a>
+      </div>
+
+      <table class="statement-table">
+        <tr>
+          <td>Total activos</td>
+          <td>${{ balance_sheet.assets.total_assets|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Total pasivos</td>
+          <td>${{ balance_sheet.liabilities.total_liabilities|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Total capital</td>
+          <td>${{ balance_sheet.equity.total_equity|floatformat:2 }}</td>
+        </tr>
+        <tr class="total">
+          <td>Pasivo + Capital</td>
+          <td>${{ balance_sheet.liabilities_and_equity|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </article>
+  </section>
+
+  <article class="financial-panel">
+    <div class="financial-panel-header">
+      <h3>Gastos recientes</h3>
+
+      <a class="financial-button"
+         href="{% url 'accounting:expense_list' %}">
+        Ver todos
+      </a>
+    </div>
+
+    <div class="financial-table-wrap">
+      <table class="financial-data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Categoría</th>
+            <th>Cuenta</th>
+            <th>Estado</th>
+            <th>Importe</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for expense in recent_expenses %}
+            <tr>
+              <td>{{ expense.expense_date|date:"d/m/Y" }}</td>
+              <td>{{ expense.description }}</td>
+              <td>{{ expense.category.name }}</td>
+              <td>{{ expense.payment_account.name }}</td>
+              <td>
+                <span class="financial-badge {{ expense.status }}">
+                  {{ expense.get_status_display }}
+                </span>
+              </td>
+              <td>${{ expense.amount|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">No hay gastos registrados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+</section>
+{% endblock %}

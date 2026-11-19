@@ -1,0 +1,826 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+  Crear combo | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+  Crear combo de productos
+{% endblock %}
+
+{% block page_subtitle %}
+  Combina SKUs sin duplicar el inventario físico
+{% endblock %}
+
+{% block content %}
+<style>
+  .bundle-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .bundle-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 23px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 17px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(14, 165, 233, 0.15),
+        transparent 40%
+      ),
+      #0f172a;
+  }
+
+  .bundle-hero h2 {
+    margin: 0 0 6px;
+    color: #f8fafc;
+    font-size: 23px;
+    font-weight: 900;
+  }
+
+  .bundle-hero p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .bundle-warehouse {
+    padding: 9px 12px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .bundle-form {
+    display: grid;
+    gap: 20px;
+  }
+
+  .bundle-card {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.17);
+    border-radius: 15px;
+    background: #0f172a;
+  }
+
+  .bundle-card-header {
+    padding: 16px 19px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  }
+
+  .bundle-card-header h3 {
+    margin: 0 0 4px;
+    color: #f8fafc;
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .bundle-card-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .bundle-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 19px;
+  }
+
+  .bundle-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .bundle-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .bundle-field label {
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 9px;
+    outline: none;
+    background: #07101f;
+    color: #f8fafc;
+  }
+
+  .form-control:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  }
+
+  .bundle-error-box {
+    padding: 14px;
+    border: 1px solid rgba(239, 68, 68, 0.36);
+    border-radius: 11px;
+    background: rgba(127, 29, 29, 0.25);
+    color: #fecaca;
+  }
+
+  .bundle-field-error {
+    color: #fca5a5;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .component-list {
+    display: grid;
+    gap: 11px;
+    padding: 18px;
+  }
+
+  .component-row {
+    display: grid;
+    grid-template-columns:
+      auto minmax(220px, 1fr)
+      minmax(125px, 160px)
+      minmax(110px, 140px);
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    background: #0b1220;
+  }
+
+  .component-check {
+    width: 19px;
+    height: 19px;
+    cursor: pointer;
+  }
+
+  .component-info strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #f8fafc;
+  }
+
+  .component-info span {
+    display: block;
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .component-info small {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  .component-quantity {
+    display: grid;
+    gap: 5px;
+  }
+
+  .component-quantity label,
+  .component-stock small {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .component-quantity input {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    outline: none;
+    background: #07101f;
+    color: #f8fafc;
+  }
+
+  .component-stock {
+    text-align: right;
+  }
+
+  .component-stock strong {
+    display: block;
+    color: #4ade80;
+    font-size: 17px;
+  }
+
+  .bundle-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 18px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    background: #07101f;
+  }
+
+  .bundle-preview span {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .bundle-preview strong {
+    color: #38bdf8;
+    font-size: 20px;
+  }
+
+  .bundle-active {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 10px;
+    background: #07101f;
+  }
+
+  .bundle-active label {
+    color: #e2e8f0;
+    font-weight: 900;
+  }
+
+  .bundle-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .bundle-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 43px;
+    padding: 10px 17px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 900;
+  }
+
+  .bundle-button.cancel {
+    border: 1px solid rgba(148, 163, 184, 0.23);
+    background: rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+  }
+
+  .bundle-button.submit {
+    border: 0;
+    background: #0ea5e9;
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .bundle-button.submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .bundle-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  @media (max-width: 850px) {
+    .bundle-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .bundle-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .component-row {
+      grid-template-columns: auto 1fr;
+    }
+
+    .component-quantity,
+    .component-stock {
+      grid-column: 2;
+      text-align: left;
+    }
+  }
+    .product-capacity {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 20px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 15px;
+    background: #0f172a;
+  }
+
+  .product-capacity.is-full {
+    border-color: rgba(245, 158, 11, 0.42);
+    background:
+      linear-gradient(
+        135deg,
+        rgba(120, 53, 15, 0.18),
+        rgba(15, 23, 42, 1)
+      );
+  }
+
+  .product-capacity-copy {
+    min-width: 0;
+  }
+
+  .product-capacity-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 9px;
+  }
+
+  .product-capacity-heading strong {
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .product-capacity-heading span {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .product-capacity.is-full .product-capacity-heading span {
+    color: #fbbf24;
+  }
+
+  .product-capacity-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #020617;
+  }
+
+  .product-capacity-track span {
+    display: block;
+    height: 100%;
+    max-width: 100%;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      #22c55e,
+      #06b6d4
+    );
+  }
+
+  .product-capacity.is-full .product-capacity-track span {
+    background: linear-gradient(
+      90deg,
+      #f59e0b,
+      #ef4444
+    );
+  }
+
+  .product-capacity-copy p {
+    margin: 9px 0 0;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .product-capacity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 13px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 11px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .product-capacity.is-full .product-capacity-badge {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(120, 53, 15, 0.24);
+    color: #fbbf24;
+  }
+
+  .bundle-limit-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid rgba(245, 158, 11, 0.38);
+    border-radius: 12px;
+    background: rgba(120, 53, 15, 0.2);
+    color: #fde68a;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .bundle-limit-message i {
+    margin-top: 2px;
+    color: #fbbf24;
+  }
+
+  @media (max-width: 700px) {
+    .product-capacity {
+      grid-template-columns: 1fr;
+    }
+
+    .product-capacity-badge {
+      width: fit-content;
+    }
+  }
+</style>
+
+<section class="bundle-page">
+  <div class="bundle-hero">
+    <div>
+      <h2>Constructor de combos</h2>
+
+      <p>
+        Selecciona por lo menos dos productos. El inventario seguirá
+        perteneciendo a sus componentes originales.
+      </p>
+    </div>
+
+    <div class="bundle-warehouse">
+      <i class="bi bi-building"></i>
+      Disponibilidad en {{ warehouse.name }}
+    </div>
+   </div>
+
+  {% if product_limit %}
+    <section
+      class="product-capacity {% if product_limit_reached %}is-full{% endif %}"
+      aria-label="Capacidad del catálogo"
+    >
+      <div class="product-capacity-copy">
+        <div class="product-capacity-heading">
+          <strong>Capacidad de tu catálogo</strong>
+
+          <span>
+            {{ products_used }} de {{ product_limit }} productos
+          </span>
+        </div>
+
+        <div
+          class="product-capacity-track"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="{{ product_limit }}"
+          aria-valuenow="{{ products_used }}"
+        >
+          <span
+            style="width: {% widthratio products_used product_limit 100 %}%;"
+          ></span>
+        </div>
+
+        <p>
+          {% if product_limit_reached %}
+            Alcanzaste el máximo permitido por tu plan.
+            Tus productos actuales permanecen seguros, pero no puedes
+            crear productos o combos nuevos hasta ampliar tu capacidad.
+          {% else %}
+            Este combo utilizará un espacio del catálogo.
+            Después de crearlo tendrás
+            {{ product_spaces_remaining|add:"-1" }}
+            espacios disponibles.
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="product-capacity-badge">
+        {% if product_limit_reached %}
+          <i class="bi bi-lock-fill"></i>
+          Límite alcanzado
+        {% else %}
+          <i class="bi bi-box-seam"></i>
+          {{ product_spaces_remaining }} disponibles
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if product_limit_reached %}
+    <div class="bundle-limit-message">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+
+      <div>
+        <strong>No puedes crear otro combo.</strong>
+        Tu plan admite un máximo de {{ product_limit }} productos.
+        Actualiza tu plan para seguir ampliando el catálogo.
+      </div>
+    </div>
+  {% endif %}
+
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="bundle-form"
+  >
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="bundle-error-box">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="bundle-card">
+      <div class="bundle-card-header">
+        <h3>Datos comerciales del combo</h3>
+        <p>
+          El combo tendrá su propio nombre, SKU y precios.
+        </p>
+      </div>
+
+      <div class="bundle-fields">
+        <div class="bundle-field">
+          <label for="{{ form.name.id_for_label }}">
+            Nombre del combo
+          </label>
+
+          {{ form.name }}
+
+          {% for error in form.name.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-field">
+          <label for="{{ form.sku.id_for_label }}">
+            SKU del combo
+          </label>
+
+          {{ form.sku }}
+
+          {% for error in form.sku.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-field full">
+          <label for="{{ form.description.id_for_label }}">
+            Descripción
+          </label>
+
+          {{ form.description }}
+
+          {% for error in form.description.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-field full">
+          <label for="{{ form.image.id_for_label }}">
+            Imagen del combo
+          </label>
+
+          {{ form.image }}
+
+          {% for error in form.image.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="bundle-card">
+      <div class="bundle-card-header">
+        <h3>Productos que forman el combo</h3>
+
+        <p>
+          Las cantidades se expresan en unidades internas de inventario.
+        </p>
+      </div>
+
+      {% if component_rows %}
+        <div class="component-list">
+          {% for row in component_rows %}
+            <article class="component-row">
+              <input
+                type="checkbox"
+                name="component_ids"
+                value="{{ row.variant.id }}"
+                class="component-check"
+                data-available="{{ row.available_internal }}"
+                data-quantity-input="quantity-{{ row.variant.id }}"
+                {% if row.selected %}checked{% endif %}
+                onchange="updateBundlePreview()"
+              />
+
+              <div class="component-info">
+                <strong>{{ row.product.name }}</strong>
+                <span>{{ row.variant.sku }}</span>
+
+                <small>
+                  1 {{ row.commercial_unit }} =
+                  {{ row.conversion_factor }}
+                  {{ row.base_unit }} internas
+                </small>
+              </div>
+
+              <div class="component-quantity">
+                <label for="quantity-{{ row.variant.id }}">
+                  Cantidad interna
+                </label>
+
+                <input
+                  type="number"
+                  id="quantity-{{ row.variant.id }}"
+                  name="quantity_{{ row.variant.id }}"
+                  value="{{ row.quantity }}"
+                  min="1"
+                  step="1"
+                  oninput="updateBundlePreview()"
+                />
+              </div>
+
+              <div class="component-stock">
+                <small>Disponible</small>
+                <strong>{{ row.available_internal }}</strong>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-preview">
+          <span>
+            <strong id="selectedComponentsCount">0</strong>
+            productos seleccionados
+          </span>
+
+          <span>
+            Combos posibles:
+            <strong id="possibleBundlesCount">0</strong>
+          </span>
+        </div>
+      {% else %}
+        <div class="bundle-empty">
+          Esta bodega no tiene productos disponibles para formar un combo.
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="bundle-card">
+      <div class="bundle-card-header">
+        <h3>Precios y estado</h3>
+        <p>
+          El costo será calculado con los componentes seleccionados.
+        </p>
+      </div>
+
+      <div class="bundle-fields">
+        <div class="bundle-field">
+          <label for="{{ form.sale_price.id_for_label }}">
+            Precio de venta
+          </label>
+
+          {{ form.sale_price }}
+
+          {% for error in form.sale_price.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-field">
+          <label for="{{ form.wholesale_price.id_for_label }}">
+            Precio de mayoreo
+          </label>
+
+          {{ form.wholesale_price }}
+
+          {% for error in form.wholesale_price.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="bundle-field full">
+          <div class="bundle-active">
+            {{ form.is_active }}
+
+            <label for="{{ form.is_active.id_for_label }}">
+              Combo activo y disponible para venta
+            </label>
+          </div>
+
+          {% for error in form.is_active.errors %}
+            <div class="bundle-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <div class="bundle-actions">
+      <a
+        href="{% url 'inventory:lista_productos' %}"
+        class="bundle-button cancel"
+      >
+        Cancelar
+      </a>
+      <button
+      type="submit"
+      id="createBundleButton"
+      class="bundle-button submit"
+      data-product-limit-reached="{% if product_limit_reached %}true{% else %}false{% endif %}"
+      disabled
+      >
+      {% if product_limit_reached %}
+      <i class="bi bi-lock-fill"></i>
+      Límite de productos alcanzado
+      {% else %}
+      <i class="bi bi-boxes"></i>
+      Crear combo
+      {% endif %}
+    </button>
+</div>
+</form>
+</section>
+
+<script>
+  function updateBundlePreview() {
+    const checkboxes = Array.from(
+      document.querySelectorAll(".component-check")
+    );
+
+    const selected = checkboxes.filter(function (checkbox) {
+      return checkbox.checked;
+    });
+
+    let possibleBundles = null;
+
+    selected.forEach(function (checkbox) {
+      const available = Number(
+        checkbox.dataset.available || 0
+      );
+
+      const quantityInput = document.getElementById(
+        checkbox.dataset.quantityInput
+      );
+
+      const quantity = Math.max(
+        1,
+        Number(quantityInput ? quantityInput.value : 1)
+      );
+
+      const possible = Math.floor(
+        available / quantity
+      );
+
+      if (
+        possibleBundles === null
+        || possible < possibleBundles
+      ) {
+        possibleBundles = possible;
+      }
+    });
+
+    document.getElementById(
+      "selectedComponentsCount"
+    ).textContent = selected.length;
+
+    document.getElementById(
+      "possibleBundlesCount"
+    ).textContent = possibleBundles === null
+      ? 0
+      : possibleBundles;
+
+    const submitButton = document.getElementById(
+      "createBundleButton"
+    );
+    const productLimitReached = (
+      submitButton.dataset.productLimitReached === "true"
+    );
+
+    submitButton.disabled = (
+      productLimitReached
+      || selected.length < 2
+    );
+  }
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    updateBundlePreview
+  );
+</script>
+{% endblock %}

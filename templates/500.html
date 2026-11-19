@@ -1,0 +1,30 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Algo salió mal | PAKIVOX</title>
+  <link rel="stylesheet" href="{% static 'style/errores.css' %}">
+</head>
+<body class="error-solo">
+  <main class="error-pagina">
+    <div class="error-tarjeta">
+      <a class="error-marca" href="/">PAKIVOX</a>
+      <div class="error-icono" aria-hidden="true">!</div>
+      <span class="error-codigo">Error 500</span>
+      <h1>Algo salió mal de nuestro lado</h1>
+      <p>
+        Si estabas registrando algo, revisa en unos segundos si quedó guardado
+        antes de intentarlo otra vez, para no duplicarlo. Si el problema sigue,
+        avísale a soporte con la hora en que ocurrió.
+      </p>
+      <div class="error-acciones">
+        <button type="button" class="es-secundaria" data-error-regresar="/">Regresar</button>
+        <a class="es-principal" href="/">Ir al inicio</a>
+      </div>
+    </div>
+  </main>
+  <script src="{% static 'js/errores.js' %}" defer></script>
+</body>
+</html>

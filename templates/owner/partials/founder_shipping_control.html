@@ -1,0 +1,109 @@
+﻿<section class="fv3-section" id="shipping-control">
+
+  <div class="fv3-section-head">
+
+    <div>
+      <h2>Shipping Control</h2>
+
+      <p>
+        Riesgo operativo y financiero de las compras de guías.
+      </p>
+    </div>
+
+    <span class="fv3-badge">
+      SHIPPING PURCHASE ENGINE
+    </span>
+
+  </div>
+
+
+  <div class="fv3-grid-4">
+
+    <article class="fv3-stat">
+
+      <span>
+        Operaciones
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.total }}
+      </strong>
+
+      <small>
+        Total observado actualmente.
+      </small>
+
+    </article>
+
+
+    <article class="
+      fv3-stat
+      {% if founder.system.shipping_purchases.waiting %}warn{% else %}good{% endif %}
+    ">
+
+      <span>
+        Esperando
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.waiting }}
+      </strong>
+
+      <small>
+        Procesos todavía no terminados.
+      </small>
+
+    </article>
+
+
+    <article class="
+      fv3-stat
+      {% if founder.system.shipping_purchases.manual_review %}warn{% else %}good{% endif %}
+    ">
+
+      <span>
+        Revisión manual
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.manual_review }}
+      </strong>
+
+      <small>
+        Necesitan intervención humana.
+      </small>
+
+    </article>
+
+
+    <article class="
+      fv3-stat
+      {% if founder.system.shipping_purchases.possible_charge %}bad{% else %}good{% endif %}
+    ">
+
+      <span>
+        Cobro incierto
+      </span>
+
+      <strong>
+        {{ founder.system.shipping_purchases.possible_charge }}
+      </strong>
+
+      <small>
+        No deben recomprarse sin conciliación.
+      </small>
+
+    </article>
+
+  </div>
+
+
+  <div class="fv3-note">
+
+    El margen financiero por guía todavía no se muestra porque PAKIVOX
+    debe almacenar primero una fuente confiable para costo del proveedor,
+    precio cobrado al cliente y moneda por cada transacción.
+
+  </div>
+
+</section>

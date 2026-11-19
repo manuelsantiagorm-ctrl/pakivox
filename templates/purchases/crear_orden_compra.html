@@ -1,0 +1,327 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Nueva orden de compra | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Nueva orden de compra
+{% endblock %}
+
+{% block page_subtitle %}
+Crear compra a proveedor para entrada futura de inventario
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .purchase-form-page {
+    max-width: 980px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .form-card {
+    padding: 22px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .form-card h3 {
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font-size: 24px;
+  }
+
+  .form-card p {
+    margin: 0 0 20px;
+    color: #93c5fd;
+  }
+
+  .purchase-form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .purchase-form label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-weight: 900;
+    font-size: 13px;
+  }
+
+  .purchase-form input,
+  .purchase-form select,
+  .purchase-form textarea {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    outline: none;
+  }
+
+  .purchase-form textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .primary-btn,
+  .ghost-btn {
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .primary-btn {
+    border: 0;
+    color: #020617;
+    background: #38bdf8;
+  }
+
+  .ghost-btn {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .quick-help {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    background: rgba(14, 165, 233, 0.09);
+    color: #bae6fd;
+  }
+
+  .quick-help strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #7dd3fc;
+  }
+
+  @media (max-width: 800px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<section class="purchase-form-page">
+  <div class="form-card">
+    <h3>Crear orden de compra</h3>
+
+    <p>
+      Primero crea la orden. Después agregas productos y la envías al proveedor.
+    </p>
+
+    <form method="post" class="purchase-form">
+      {% csrf_token %}
+
+      <div class="form-grid">
+
+        {# ===================================================== #}
+        {# PROVEEDOR                                             #}
+        {# ===================================================== #}
+
+        <label>
+          Proveedor
+
+          <select name="supplier" required>
+            <option value="">
+              Seleccionar proveedor
+            </option>
+
+            {% for supplier in suppliers %}
+              <option value="{{ supplier.id }}">
+                {{ supplier.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+
+        {# ===================================================== #}
+        {# BODEGA DESTINO                                        #}
+        {# ===================================================== #}
+
+        <label>
+          Bodega destino
+
+          <select name="warehouse" required>
+            <option value="">
+              Seleccionar bodega
+            </option>
+
+            {% for warehouse in warehouses %}
+              <option value="{{ warehouse.id }}">
+                {{ warehouse.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+
+        {# ===================================================== #}
+        {# FECHA ESPERADA                                        #}
+        {# ===================================================== #}
+
+        <label>
+          Fecha esperada
+
+          <input
+            type="date"
+            name="expected_date"
+          />
+        </label>
+
+        {# ===================================================== #}
+        {# IMPORTES FINANCIEROS                                  #}
+        {#                                                       #}
+        {# Solo aparecen si el usuario tiene                     #}
+        {# purchases.costs.edit                                  #}
+        {# ===================================================== #}
+
+        {% if can_edit_purchase_costs %}
+
+          <label>
+            IVA / Impuestos
+
+            <input
+              type="number"
+              name="tax"
+              step="0.01"
+              min="0"
+              value="0.00"
+            />
+          </label>
+
+          <label>
+            Costo de envío
+
+            <input
+              type="number"
+              name="shipping_cost"
+              step="0.01"
+              min="0"
+              value="0.00"
+            />
+          </label>
+
+          <label>
+            Descuento
+
+            <input
+              type="number"
+              name="discount"
+              step="0.01"
+              min="0"
+              value="0.00"
+            />
+          </label>
+
+        {% endif %}
+
+      </div>
+
+      {# ======================================================= #}
+      {# MENSAJE DE COSTOS RESTRINGIDOS                          #}
+      {# ======================================================= #}
+
+      {% if not can_edit_purchase_costs %}
+        <div
+          style="
+            margin-top:16px;
+            padding:14px 16px;
+            border-radius:14px;
+            border:1px solid rgba(245, 158, 11, 0.35);
+            background:rgba(245, 158, 11, 0.08);
+            color:#fde68a;
+            font-size:13px;
+            line-height:1.55;
+          "
+        >
+          <strong style="display:block; margin-bottom:4px;">
+            Información financiera restringida
+          </strong>
+
+          Puedes crear la orden de compra, pero no tienes autorización
+          para capturar IVA, costo de envío o descuentos.
+
+          Estos importes podrán ser registrados posteriormente por un
+          usuario con permiso de costos de compra.
+        </div>
+      {% endif %}
+
+      {# ======================================================= #}
+      {# NOTAS                                                   #}
+      {# ======================================================= #}
+
+      <label style="margin-top:18px;">
+        Notas
+
+        <textarea
+          name="notes"
+          placeholder="Condiciones, referencias, observaciones del proveedor..."
+        ></textarea>
+      </label>
+
+      {# ======================================================= #}
+      {# ACCIONES                                                #}
+      {# ======================================================= #}
+
+      <div class="form-actions">
+        <a
+          href="{% url 'purchases:lista_compras' %}"
+          class="ghost-btn"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="primary-btn"
+        >
+          Crear orden
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ========================================================= #}
+  {# AYUDA DEL FLUJO                                           #}
+  {# ========================================================= #}
+
+  <div class="quick-help">
+    <strong>Flujo de compras</strong>
+
+    Crear orden
+    →
+    Agregar productos
+    →
+    Enviar al proveedor
+    →
+    Crear recepción
+    →
+    Confirmar recepción
+    →
+    Stock aumenta.
+  </div>
+</section>
+{% endblock %}

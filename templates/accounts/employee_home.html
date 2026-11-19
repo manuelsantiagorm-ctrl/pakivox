@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio · PAKIVOX{% endblock %}
+
+{% block page_title %}Inicio{% endblock %}
+
+{% block page_subtitle %}Espacio personal de trabajo{% endblock %}
+
+{% block extra_head %}
+
+<style>
+  .employee-home {
+    --eh-bg: #07111f;
+    --eh-card: rgba(12, 27, 46, 0.92);
+    --eh-card-soft: rgba(15, 34, 57, 0.72);
+    --eh-border: rgba(54, 130, 174, 0.28);
+    --eh-text: #f3f8fc;
+    --eh-muted: #8fa9bd;
+    --eh-cyan: #22d3ee;
+    --eh-green: #34d399;
+    --eh-amber: #fbbf24;
+    color: var(--eh-text);
+    min-height: calc(100vh - 40px);
+    padding: 4px 4px 38px;
+  }
+
+  .eh-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 30px 32px;
+    border: 1px solid var(--eh-border);
+    border-radius: 22px;
+    background:
+      radial-gradient(
+        circle at 86% 15%,
+        rgba(34, 211, 238, 0.14),
+        transparent 31%
+      ),
+      linear-gradient(135deg, rgba(13, 32, 54, 0.98), rgba(7, 20, 35, 0.98));
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  }
+
+  .eh-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+    color: var(--eh-cyan);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .eh-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.75rem, 3vw, 2.65rem);
+    line-height: 1.12;
+  }
+
+  .eh-hero p {
+    max-width: 660px;
+    margin: 12px 0 0;
+    color: var(--eh-muted);
+    font-size: 0.98rem;
+    line-height: 1.65;
+  }
+
+  .eh-profile {
+    min-width: 220px;
+    padding: 16px 18px;
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    border-radius: 16px;
+    background: rgba(5, 15, 27, 0.5);
+  }
+
+  .eh-profile strong,
+  .eh-profile span {
+    display: block;
+  }
+
+  .eh-profile strong {
+    color: #fff;
+    font-size: 0.94rem;
+  }
+  .eh-profile span {
+    margin-top: 5px;
+    color: var(--eh-muted);
+    font-size: 0.78rem;
+  }
+
+  .eh-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(290px, 0.8fr);
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .eh-panel {
+    border: 1px solid var(--eh-border);
+    border-radius: 18px;
+    background: var(--eh-card);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.16);
+  }
+
+  .eh-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px 15px;
+  }
+
+  .eh-panel-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  .eh-panel-head span {
+    color: var(--eh-muted);
+    font-size: 0.75rem;
+  }
+
+  .eh-areas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0 18px 20px;
+  }
+
+  .eh-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 17px;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid rgba(74, 126, 162, 0.22);
+    border-radius: 15px;
+    background: var(--eh-card-soft);
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .eh-area:hover {
+    color: inherit;
+    transform: translateY(-2px);
+    border-color: rgba(34, 211, 238, 0.5);
+    background: rgba(18, 43, 69, 0.92);
+  }
+
+  .eh-icon {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    font-size: 1.05rem;
+  }
+
+  .eh-icon.cyan {
+    color: var(--eh-cyan);
+    background: rgba(34, 211, 238, 0.12);
+  }
+  .eh-icon.green {
+    color: var(--eh-green);
+    background: rgba(52, 211, 153, 0.12);
+  }
+  .eh-icon.amber {
+    color: var(--eh-amber);
+    background: rgba(251, 191, 36, 0.12);
+  }
+
+  .eh-area-copy {
+    min-width: 0;
+  }
+  .eh-area-copy strong {
+    display: block;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+  .eh-area-copy span {
+    display: block;
+    margin-top: 5px;
+    color: var(--eh-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .eh-notifications {
+    padding: 0 18px 20px;
+  }
+
+  .eh-notice {
+    display: flex;
+    gap: 13px;
+    padding: 16px;
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 14px;
+    background: rgba(52, 211, 153, 0.075);
+  }
+
+  .eh-notice i {
+    margin-top: 3px;
+    color: var(--eh-green);
+  }
+  .eh-notice strong {
+    display: block;
+    color: #fff;
+    font-size: 0.84rem;
+  }
+  .eh-notice p {
+    margin: 5px 0 0;
+    color: var(--eh-muted);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+
+  .eh-notice + .eh-notice {
+    margin-top: 10px;
+  }
+  .eh-notice.warning {
+    border-color: rgba(251, 191, 36, 0.24);
+    background: rgba(251, 191, 36, 0.075);
+  }
+  .eh-notice.warning i {
+    color: var(--eh-amber);
+  }
+  .eh-notice.critical {
+    border-color: rgba(248, 113, 113, 0.25);
+    background: rgba(248, 113, 113, 0.075);
+  }
+  .eh-notice.critical i {
+    color: #f87171;
+  }
+  .eh-notice.info i {
+    color: var(--eh-cyan);
+  }
+
+  .eh-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .eh-kpi {
+    padding: 18px;
+    border: 1px solid var(--eh-border);
+    border-radius: 16px;
+    background: var(--eh-card);
+  }
+
+  .eh-kpi span {
+    color: var(--eh-muted);
+    font-size: 0.75rem;
+  }
+
+  .eh-kpi strong {
+    display: block;
+    margin-top: 7px;
+    color: #fff;
+    font-size: 1.35rem;
+  }
+
+  .eh-payments {
+    margin-top: 18px;
+  }
+  .eh-payment-list {
+    padding: 0 18px 20px;
+  }
+  .eh-payment {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 3px;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(74, 126, 162, 0.18);
+  }
+  .eh-payment:last-child {
+    border-bottom: 0;
+  }
+  .eh-payment:hover {
+    color: inherit;
+  }
+  .eh-payment strong {
+    display: block;
+    color: #fff;
+    font-size: 0.83rem;
+  }
+  .eh-payment small {
+    color: var(--eh-muted);
+    font-size: 0.72rem;
+  }
+  .eh-payment-amount {
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.84rem;
+  }
+  .eh-status {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(34, 211, 238, 0.1);
+    color: var(--eh-cyan);
+    font-size: 0.68rem;
+    font-weight: 800;
+  }
+
+  .eh-day {
+    margin-top: 12px;
+    padding: 17px;
+    border: 1px solid rgba(74, 126, 162, 0.22);
+    border-radius: 14px;
+    background: rgba(7, 18, 32, 0.45);
+  }
+
+  .eh-day-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--eh-muted);
+    font-size: 0.76rem;
+  }
+
+  .eh-progress {
+    height: 7px;
+    margin-top: 13px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #081522;
+  }
+
+  .eh-progress span {
+    display: block;
+    width: 35%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0891b2, #22d3ee);
+  }
+
+  .eh-empty {
+    grid-column: 1 / -1;
+    padding: 24px;
+    color: var(--eh-muted);
+    text-align: center;
+    border: 1px dashed rgba(143, 169, 189, 0.25);
+    border-radius: 14px;
+  }
+
+  @media (max-width: 980px) {
+    .eh-grid {
+      grid-template-columns: 1fr;
+    }
+    .eh-today-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .eh-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 680px) {
+    .employee-home {
+      padding: 0 0 28px;
+    }
+    .eh-hero {
+      align-items: flex-start;
+      flex-direction: column;
+      padding: 23px;
+    }
+    .eh-profile {
+      width: 100%;
+      min-width: 0;
+    }
+    .eh-areas {
+      grid-template-columns: 1fr;
+    }
+    .eh-today-grid {
+      grid-template-columns: 1fr;
+    }
+    .eh-kpis {
+      grid-template-columns: 1fr;
+    }
+    .eh-payment {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .eh-status {
+      display: none;
+    }
+  }
+
+  .eh-today-work {
+    margin-top: 18px;
+  }
+
+  .eh-today-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0 18px 20px;
+  }
+
+  .eh-task {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    min-height: 104px;
+    padding: 16px;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid rgba(74, 126, 162, 0.22);
+    border-radius: 15px;
+    background: rgba(15, 34, 57, 0.72);
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .eh-task:hover {
+    color: inherit;
+    transform: translateY(-2px);
+    border-color: rgba(34, 211, 238, 0.5);
+    background: rgba(18, 43, 69, 0.92);
+  }
+
+  .eh-task-count {
+    min-width: 46px;
+    text-align: right;
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+
+  .eh-task-copy {
+    min-width: 0;
+  }
+
+  .eh-task-copy small,
+  .eh-task-copy strong,
+  .eh-task-copy span {
+    display: block;
+  }
+
+  .eh-task-copy small {
+    color: var(--eh-cyan);
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .eh-task-copy strong {
+    margin-top: 4px;
+    color: #fff;
+    font-size: 0.88rem;
+  }
+
+  .eh-task-copy span {
+    margin-top: 4px;
+    color: var(--eh-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+</style>
+{% endblock %} {% block content %}
+
+<section class="employee-home">
+  <!-- ========================================================= -->
+  <!-- BIENVENIDA DEL EMPLEADO                                   -->
+  <!-- ========================================================= -->
+  <header class="eh-hero">
+    <div>
+      <div class="eh-eyebrow">
+        <i class="fa-solid fa-sparkles"></i>
+        Inicio personal
+      </div>
+
+      <h1>Buenos días, {{ first_name }}</h1>
+
+      <p>
+        Bienvenido a tu espacio de trabajo. Aquí encontrarás únicamente las
+        actividades y herramientas que tienes autorizadas dentro de {{ company.name }}.
+      </p>
+    </div>
+
+    <div class="eh-profile">
+      <strong>{{ simple_nav_items|length }} actividades</strong>
+      <span>{{ company.name }}</span>
+      <span>{{ today|date:"l, d \\d\\e F \\d\\e Y" }}</span>
+    </div>
+  </header>
+
+
+  <!-- ========================================================= -->
+  <!-- TU TRABAJO DE HOY · PS-5A                                -->
+  <!-- ========================================================= -->
+  <article class="eh-panel eh-today-work" data-today-work>
+    <div class="eh-panel-head">
+      <div>
+        <h2>Tu trabajo de hoy</h2>
+        <span>Prioridades dentro de tus áreas autorizadas</span>
+      </div>
+
+      <span>
+        {{ today_work_pending_areas }}
+        {% if today_work_pending_areas == 1 %} área con pendientes
+        {% else %} áreas con pendientes
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="eh-today-grid">
+      {% for task in today_work_items %}
+      <a
+        class="eh-task"
+        href="{{ task.url }}"
+        data-today-work-code="{{ task.code }}"
+        data-today-work-activity="{{ task.activity_code }}"
+      >
+        <span class="eh-icon cyan">
+          <i class="bi {{ task.icon }}"></i>
+        </span>
+
+        <span class="eh-task-copy">
+          <small>{{ task.activity_label }}</small>
+          <strong>{{ task.title }}</strong>
+          <span>{{ task.description }}</span>
+        </span>
+
+        <strong class="eh-task-count">{{ task.count_label }}</strong>
+      </a>
+      {% empty %}
+      <div class="eh-empty">
+        No tienes pendientes operativos inmediatos en las áreas que tienes
+        autorizadas.
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <!-- ========================================================= -->
+  <!-- ÁREAS AUTORIZADAS Y NOTIFICACIONES                         -->
+  <!-- ========================================================= -->
+  <div class="eh-grid">
+    <!-- Actividades humanas -->
+    <article class="eh-panel">
+      <div class="eh-panel-head">
+        <h2>Tu trabajo</h2>
+        <span>{{ simple_nav_items|length }} actividades</span>
+      </div>
+
+      <div class="eh-areas">
+        {% for item in simple_nav_items %}
+        <a
+          class="eh-area"
+          href="{{ item.url }}"
+          data-home-activity-code="{{ item.code }}"
+        >
+          <span class="eh-icon cyan">
+            <i class="bi {{ item.icon }}"></i>
+          </span>
+
+          <span class="eh-area-copy">
+            <strong>{{ item.name }}</strong>
+            <span>{{ item.description }}</span>
+          </span>
+        </a>
+        {% empty %}
+        <div class="eh-empty">
+          No tienes actividades operativas asignadas. Si cuentas con accesos
+          administrativos o herramientas especiales, estarán disponibles en el menú.
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if simple_tool_nav_items %}
+      <div class="eh-panel-head" style="margin-top: 18px;">
+        <h2>Herramientas autorizadas</h2>
+        <span>{{ simple_tool_nav_items|length }} disponibles</span>
+      </div>
+
+      <div class="eh-areas">
+        {% for item in simple_tool_nav_items %}
+        <a
+          class="eh-area"
+          href="{{ item.url }}"
+          data-home-tool-code="{{ item.code }}"
+        >
+          <span class="eh-icon green">
+            <i class="bi {{ item.icon }}"></i>
+          </span>
+
+          <span class="eh-area-copy">
+            <strong>{{ item.name }}</strong>
+            <span>{{ item.description }}</span>
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </article>
+
+    <!-- Notificaciones -->
+    <aside class="eh-panel">
+      <div class="eh-panel-head">
+        <h2>Notificaciones</h2>
+
+        <span>
+          {{ notification_count }} {% if notification_count == 1 %} nueva {% else %} nuevas {% endif %}
+        </span>
+      </div>
+
+      <div class="eh-notifications">
+        {% for notification in notification_items %}
+        <a
+          href="{% url 'notifications:open' notification.id %}"
+          class="eh-notice {{ notification.level }}"
+          style="text-decoration: none; color: inherit"
+        >
+          <i class="bi {{ notification.icon }}"></i>
+
+          <div>
+            <strong>{{ notification.title }}</strong>
+
+            <p>{{ notification.message|truncatechars:145 }}</p>
+          </div>
+        </a>
+        {% empty %}
+
+        <div class="eh-empty">
+          No tienes notificaciones pendientes en tus áreas autorizadas.
+        </div>
+
+        {% endfor %}
+
+        <div class="eh-day">
+          <div class="eh-day-row">
+            <span>Inicio de jornada</span>
+            <strong>{{ today|date:"H:i" }}</strong>
+          </div>
+
+          <div class="eh-progress">
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+
+</section>
+
+{% endblock %}

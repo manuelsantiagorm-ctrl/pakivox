@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bandeja de conversaciones | PAKIVOX{% endblock %}
+{% block page_title %}Bandeja de conversaciones{% endblock %}
+{% block page_subtitle %}Atención comercial conectada a tus canales.{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/messaging_chat_exact.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="mx-shell" id="mxChatShell">
+  <aside class="mx-column mx-inbox" data-mx-pane="inbox">
+    <header class="mx-inbox-head">
+      <div>
+        <h2>Conversaciones</h2>
+        <span>{{ conversation_rows|length }} visibles</span>
+      </div>
+    </header>
+
+    <label class="mx-search">
+      <i class="bi bi-search"></i>
+      <input id="mxSearch" type="search" placeholder="Buscar conversación" autocomplete="off">
+    </label>
+
+    <div class="mx-tabs" role="tablist" aria-label="Filtros de conversaciones">
+      <button type="button" class="is-active" data-mx-filter="all">Todos <b>{{ conversation_rows|length }}</b></button>
+      <button type="button" data-mx-filter="unassigned">Sin asignar</button>
+      <button type="button" data-mx-filter="mine">Míos</button>
+      <button type="button" data-mx-filter="unread">Sin responder</button>
+    </div>
+
+    <div class="mx-conversation-list" id="mxConversationList">
+      {% for row in conversation_rows %}
+        <a href="{% url 'messaging:chat_detail' row.conversation.pk %}"
+           class="mx-conversation {% if row.conversation.pk == conversation.pk %}is-active{% endif %}"
+           data-assigned="{% if row.conversation.assigned_agent_id %}1{% else %}0{% endif %}"
+           data-mine="{% if row.conversation.assigned_agent_id == request.user.id %}1{% else %}0{% endif %}"
+           data-pending="{{ row.pending_reply_count|default:0 }}"
+           data-search="{{ row.conversation.customer.name|default:'' }} {{ row.conversation.customer.phone }} {{ row.conversation.whatsapp_number.channel_name }}">
+          <span class="mx-avatar mx-avatar-{{ forloop.counter|divisibleby:5|yesno:'violet,green' }}">
+            {{ row.conversation.customer.name|default:row.conversation.customer.phone|slice:":1"|upper }}
+          </span>
+          <span class="mx-conversation-copy">
+            <strong>{{ row.conversation.customer.name|default:row.conversation.customer.phone }}</strong>
+            <small>{{ row.conversation.get_status_display }} · {{ row.conversation.whatsapp_number.channel_name }}</small>
+            {% if row.last_message %}
+              <p>{{ row.last_message.body|default:row.last_message.message_type|truncatechars:48 }}</p>
+            {% else %}
+              <p>Sin mensajes todavía</p>
+            {% endif %}
+          </span>
+          <span class="mx-conversation-meta">
+            <time>{% if row.last_message %}{{ row.last_message.created_at|date:"H:i" }}{% endif %}</time>
+            {% if row.pending_reply_count %}<b title="{{ row.pending_reply_count }} mensaje{{ row.pending_reply_count|pluralize }} pendiente{{ row.pending_reply_count|pluralize }} de respuesta">{{ row.pending_reply_count }}</b>{% endif %}
+          </span>
+        </a>
+      {% empty %}
+        <div class="mx-empty">No hay conversaciones disponibles.</div>
+      {% endfor %}
+    </div>
+
+    <footer class="mx-list-footer">
+      <span>Mostrando {{ conversation_rows|length }} conversaciones</span>
+      <a href="{% url 'messaging:chat_inbox' %}" aria-label="Abrir bandeja completa"><i class="bi bi-arrow-up-right"></i></a>
+    </footer>
+  </aside>
+
+  <main class="mx-column mx-chat is-active" data-mx-pane="chat">
+    <header class="mx-chat-head">
+      <button type="button" class="mx-mobile-back" data-mx-open="inbox" aria-label="Volver a conversaciones"><i class="bi bi-arrow-left"></i></button>
+      <span class="mx-avatar">
+        {{ conversation.customer.name|default:conversation.customer.phone|slice:":1"|upper }}
+      </span>
+      <div class="mx-chat-person">
+        <h2>{{ conversation.customer.name|default:conversation.customer.phone }}</h2>
+        <span>{{ conversation.get_status_display }} · {{ conversation.whatsapp_number.channel_name }}</span>
+      </div>
+      <div class="mx-head-actions">
+        <form method="post" action="{% url 'messaging:chat_assign_me' conversation.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="mx-select-button"><i class="bi bi-person"></i>
+            {% if conversation.assigned_agent_id == request.user.id %}Asignado a mí{% elif conversation.assigned_agent %}{{ conversation.assigned_agent.username }}{% else %}Asignarme{% endif %}
+            <i class="bi bi-chevron-down"></i>
+          </button>
+        </form>
+        {% if conversation.status == "closed" %}
+          <form method="post" action="{% url 'messaging:chat_reopen' conversation.pk %}">{% csrf_token %}<button type="submit" class="mx-status-button is-closed">Reabrir</button></form>
+        {% else %}
+          <span class="mx-status-button">{{ conversation.get_status_display }} <i class="bi bi-chevron-down"></i></span>
+        {% endif %}
+        <button type="button" class="mx-icon-button" data-mx-open="customer" aria-label="Ver información del cliente"><i class="bi bi-info-circle"></i></button>
+      </div>
+    </header>
+
+    <div class="mx-security"><span><i class="bi bi-lock"></i> Conexión segura y cifrada</span><span><i class="bi bi-shield-check"></i> Auditoría activa</span></div>
+
+    <div class="mx-thread" id="chat-messages">
+      <div class="mx-date"><span>{{ conversation.last_message_at|date:"j \d\e F \d\e Y"|default:"Conversación" }}</span></div>
+      {% for chat_message in chat_messages %}
+        <article class="mx-message {% if chat_message.direction == 'outbound' %}is-outbound{% elif chat_message.direction == 'system' %}is-system{% endif %}"
+                 data-message-id="{{ chat_message.internal_id }}">
+          <p>{{ chat_message.body|default:chat_message.message_type }}</p>
+
+          {% if chat_message.status == "pending_authorization" %}
+            <span
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 6px;
+                padding: 3px 9px;
+                border-radius: 999px;
+                background: rgba(120, 53, 15, 0.35);
+                border: 1px solid rgba(251, 191, 36, 0.4);
+                color: #fde68a;
+                font-size: 11px;
+                font-weight: 700;
+                line-height: 1.3;
+              "
+            >
+              <i class="bi bi-pause-circle" aria-hidden="true"></i>
+              No enviado: esperando autorización del dueño
+            </span>
+          {% endif %}
+
+          <time>{{ chat_message.created_at|date:"H:i" }}
+            {% if chat_message.direction == "outbound" %}
+            <span class="mx-check {% if chat_message.status == 'read' %}is-read{% endif %}"
+            title="{% if chat_message.status == 'pending_authorization' %}No enviado: esperando autorización del dueño{% elif chat_message.status == 'read' %}Leído{% elif chat_message.status == 'delivered' %}Entregado{% elif chat_message.status == 'failed' %}Fallido{% with errors=chat_message.raw_payload.failure_errors %}{% if errors %}{% with first_error=errors.0 %}: {{ first_error.friendly_message|default:first_error.title }}{% endwith %}{% endif %}{% endwith %}{% else %}Enviado{% endif %}">
+            {% if chat_message.status == "pending_authorization" %}<i class="bi bi-pause-circle"></i>{% elif chat_message.status == "failed" %}<i class="bi bi-exclamation-circle"></i>{% elif chat_message.status == "sent" %}✓{% else %}✓✓{% endif %}
+              </span>
+            {% endif %}
+          </time>
+        </article>
+      {% empty %}
+        <div class="mx-empty-thread"><i class="bi bi-chat-dots"></i><strong>Inicia la conversación</strong><span>Los mensajes reales aparecerán aquí.</span></div>
+      {% endfor %}
+      <div class="mx-typing" hidden><span></span><span></span><span></span> El cliente está escribiendo…</div>
+    </div>
+
+    <footer class="mx-composer">
+      {% if can_reply and conversation.status != "closed" %}
+        <form method="post" action="{% url 'messaging:chat_reply' conversation.pk %}" id="mxReplyForm">
+          {% csrf_token %}
+          <div class="mx-input-wrap">
+            {{ reply_form.body }}
+          </div>
+          <div class="mx-compose-actions">
+            <button type="submit" class="mx-send-button"><i class="bi bi-send-fill"></i> Enviar</button>
+          </div>
+        </form>
+        <div class="mx-quick-replies"><span>Respuestas rápidas:</span><button type="button" data-mx-reply="Gracias, en un momento lo reviso.">Gracias</button><button type="button" data-mx-reply="Sí, tenemos disponibilidad.">Disponibilidad</button><button type="button" data-mx-reply="Permíteme revisar el estado de tu pedido.">Estado</button><button type="button" data-mx-reply="Con gusto te comparto la información de entrega.">Entrega</button></div>
+      {% elif conversation.status == "closed" %}
+        <div class="mx-composer-disabled">Esta conversación está cerrada. Reábrela para responder.</div>
+      {% else %}
+        <div class="mx-composer-disabled">No tienes permiso para responder en este canal.</div>
+      {% endif %}
+    </footer>
+  </main>
+
+  <aside class="mx-column mx-customer" data-mx-pane="customer">
+    <header class="mx-side-head">
+      <button type="button" class="mx-mobile-back" data-mx-open="chat"><i class="bi bi-arrow-left"></i></button>
+      <h2>Información del cliente</h2><i class="bi bi-shield-check" title="Información protegida por permisos"></i>
+    </header>
+    <div class="mx-customer-body">
+      <section class="mx-profile-summary">
+        <span class="mx-avatar mx-avatar-large">{{ conversation.customer.name|default:conversation.customer.phone|slice:":1"|upper }}</span>
+        <div><strong>{{ conversation.customer.name|default:"Sin nombre" }}</strong><small>Cliente verificado</small></div>
+      </section>
+
+      <dl class="mx-data-list">
+        <div><dt>Empresa</dt><dd>{{ conversation.company.name }}</dd></div>
+        <div><dt>Teléfono</dt><dd>{{ conversation.customer.phone }}</dd></div>
+        <div><dt>Canal</dt><dd>{{ conversation.whatsapp_number.channel_name }}</dd></div>
+        <div><dt>Agente asignado</dt><dd>{% if conversation.assigned_agent %}{{ conversation.assigned_agent.username }}{% else %}Sin asignar{% endif %}</dd></div>
+      </dl>
+
+      <section class="mx-side-section">
+        <h3>Indicadores clave</h3>
+        <div class="mx-kpi-grid"><article><span>Tiempo de respuesta</span><strong>{{ avg_response_time_display }}</strong></article><article><span>Mensajes</span><strong>{{ chat_messages|length }}</strong></article></div>
+      </section>
+
+      {% if whatsapp_smart_profile.found %}
+      <section class="mx-side-section">
+        <h3>Resumen comercial</h3>
+        <dl class="mx-summary-list">
+          <div><dt>Última compra</dt><dd>{% if whatsapp_smart_profile.last_order %}{{ whatsapp_smart_profile.last_order.created_at|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+          <div><dt>Último pedido</dt><dd>{% if whatsapp_smart_profile.last_order %}{{ whatsapp_smart_profile.last_order.folio }}{% else %}—{% endif %}</dd></div>
+          <div><dt>Total de compras</dt><dd>${{ whatsapp_smart_profile.total_purchased|floatformat:2 }}</dd></div>
+          <div><dt>Saldo pendiente</dt><dd class="is-warning">${{ whatsapp_smart_profile.pending_balance|floatformat:2 }}</dd></div>
+          <div><dt>Crédito disponible</dt><dd>${{ conversation.whatsapp_number.creditos_disponibles|default:0 }}</dd></div>
+        </dl>
+        <a href="{{ whatsapp_smart_profile.profile_url }}" class="mx-outline-action"><i class="bi bi-person"></i> Ver perfil</a>
+      </section>
+      {% else %}
+      <section class="mx-side-section mx-unlinked">
+        {% if whatsapp_smart_profile.restricted %}
+        <h3>Resumen comercial restringido</h3>
+        {% else %}
+        <h3>Cliente no vinculado</h3>
+        {% endif %}
+        <p>{{ whatsapp_smart_profile.message }}</p>
+      </section>
+      {% endif %}
+
+      <section class="mx-side-actions">
+        {% if can_create_order %}<form method="post" action="{% url 'messaging:chat_create_order' conversation.pk %}">{% csrf_token %}<button type="submit" class="mx-primary-action"><i class="bi bi-cart"></i> Crear pedido</button></form>{% endif %}
+        <form method="post" action="{% url 'messaging:chat_assign_me' conversation.pk %}">{% csrf_token %}<button type="submit" class="mx-secondary-action"><i class="bi bi-person-check"></i> Asignarme conversación</button></form>
+        {% if conversation.status != "closed" %}<form method="post" action="{% url 'messaging:chat_close' conversation.pk %}" onsubmit="return confirm('¿Cerrar esta conversación?');">{% csrf_token %}<button type="submit" class="mx-danger-action"><i class="bi bi-x-circle"></i> Cerrar conversación</button></form>{% endif %}
+      </section>
+    </div>
+  </aside>
+
+  <nav class="mx-mobile-nav" aria-label="Navegación móvil">
+    <button type="button" data-mx-open="inbox"><i class="bi bi-inbox"></i><span>Bandeja</span></button>
+    <button type="button" class="is-active" data-mx-open="chat"><i class="bi bi-chat-dots"></i><span>Chat</span></button>
+    <button type="button" data-mx-open="customer"><i class="bi bi-person"></i><span>Cliente</span></button>
+  </nav>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/messaging_chat_exact.js' %}" defer></script>
+{% endblock %}

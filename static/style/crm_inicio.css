@@ -1,0 +1,278 @@
+/*
+  CRM · inicio (templates/crm/home.html)
+  Estilos movidos desde la plantilla.
+*/
+
+/* Buscador Inteligente */
+.customer-search-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    background: rgba(15, 23, 42, 0.4) !important;
+    padding: 8px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-input-wrapper {
+    flex: 1;
+}
+
+.customer-search-box input {
+    width: 100%;
+    background: #090d16 !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    color: #f8fafc !important;
+    border-radius: 10px;
+    padding: 12px 16px;
+    outline: none;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.customer-search-box input:focus {
+    border-color: rgba(16, 185, 129, 0.65) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.customer-search-box input::placeholder {
+    color: #64748b;
+}
+
+.search-status-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 18px;
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+#customerSearchCounter {
+    color: #10b981;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+/* Tabla WMS Blindada */
+.wms-custom-table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+    margin-top: -10px;
+    background: transparent !important;
+}
+
+.wms-custom-table thead th {
+    background: transparent !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border: none !important;
+    padding: 12px 16px !important;
+}
+
+.wms-custom-table tbody tr td {
+    background: #111827 !important;
+    color: #cbd5e1 !important;
+    padding: 16px !important;
+    border: none !important;
+    transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.wms-custom-table tbody tr:hover td {
+    background: #1f2937 !important;
+}
+
+.wms-custom-table tbody tr td:first-child {
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+
+.wms-custom-table tbody tr td:last-child {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+}
+
+.customer-row {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.customer-row.is-hidden {
+    display: none !important;
+}
+
+/* Contenido de Celdas */
+.client-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.client-name {
+    font-weight: 600 !important;
+    color: #f1f5f9 !important;
+    font-size: 0.95rem;
+}
+
+.client-business {
+    font-size: 0.8rem !important;
+    color: #64748b !important;
+    margin-top: 2px;
+}
+
+/* Badges */
+.badge-wms {
+    display: inline-flex !important;
+    align-items: center;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+}
+
+.badge-wms-vip {
+    background: rgba(147, 51, 234, 0.2) !important;
+    color: #c084fc !important;
+    border: 1px solid rgba(147, 51, 234, 0.4) !important;
+}
+
+.badge-wms-lead {
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #fde047 !important;
+    border: 1px solid rgba(234, 179, 8, 0.3) !important;
+}
+
+.badge-wms-normal {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+.whatsapp-link {
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.whatsapp-link:hover {
+    color: #10b981 !important;
+}
+
+.source-text {
+    color: #94a3b8 !important;
+    font-size: 0.9rem;
+}
+
+/* Botón Perfil Inteligente */
+.btn-smart-profile {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #10b981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    display: inline-block;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-smart-profile:hover {
+    background: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Línea de Tiempo Actividades */
+.timeline-container {
+    position: relative;
+    padding-left: 20px;
+    margin-top: 15px;
+}
+
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: rgba(148, 163, 184, 0.1);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: -19px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50px;
+    background: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.timeline-content {
+    background: rgba(15, 23, 42, 0.3) !important;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.timeline-title {
+    display: block;
+    font-weight: 600;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+}
+
+.timeline-meta {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.timeline-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 24px 0;
+}
+
+@media (max-width: 768px) {
+    .customer-search-box {
+        flex-direction: column;
+    }
+
+    .search-status-row {
+        display: grid;
+    }
+
+    #customerSearchCounter {
+        white-space: normal;
+    }
+}
+
+.kpi-vip { color: #C1E8FF; }
+.crm-vacio { color: #9DB6D2; }
+
+/* Celular y tablet: la tabla se desplaza dentro de su tarjeta, la página no se ensancha */
+.dashboard-grid.crm-inicio-grid { grid-template-columns: minmax(0, 1fr); }
+.crm-inicio-grid > .panel { min-width: 0; }
+@media (min-width: 1200px) {
+  .dashboard-grid.crm-inicio-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .customer-search-box { flex-direction: column; }
+  .panel-header { flex-wrap: wrap; gap: 10px; }
+}

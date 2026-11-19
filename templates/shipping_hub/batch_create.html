@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Generar lote de envÃo | PAKIVOX{% endblock %}{% block content %}
+<style>
+.bc{max-width:1450px;margin:auto;padding:24px}
+.bc-card{background:#1e293b;border:1px solid rgba(148,163,184,.25);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 12px 32px rgba(15,23,42,.25);color:#e2e8f0}
+.bc-card h1,.bc-card h2{color:#f1f5f9}
+.bc-card p,.bc-card small{color:#94a3b8}
+.bc select{width:100%;padding:10px;border:1px solid #475569;border-radius:10px;background:#0f172a;color:#f1f5f9;margin-bottom:12px}
+.bc select option{background:#0f172a;color:#f1f5f9}
+.bc label{color:#cbd5e1;font-weight:600;display:block;margin-bottom:6px}
+.bc button,.bc-btn{display:inline-block;padding:10px 15px;border:0;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;cursor:pointer}
+.bc table{width:100%;border-collapse:collapse;color:#e2e8f0}
+.bc th{padding:13px;border-bottom:1px solid #334155;text-align:left;color:#94a3b8;font-weight:600}
+.bc td{padding:13px;border-bottom:1px solid #334155;text-align:left}
+.bc-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bc-check{width:18px;height:18px}
+.bc-empty{padding:20px;text-align:center;color:#64748b}
+@media(max-width:800px){.bc-row{grid-template-columns:1fr}.bc-scroll{overflow:auto}.bc table{min-width:750px}}
+</style>
+
+<main class="bc"><a href="{% url 'shipping_hub:tracking_center' %}" class="bc-btn">← Volver al centro</a><section class="bc-card"><h1>Generar lote de envÃo</h1><p>{{ warehouse.name }} · Selecciona los paquetes listos, el punto de recolección y quién los llevará a las paqueterÃas.</p></section>
+<form method="post" action="{% url 'shipping_hub:shipment_batch_create_submit' %}">{% csrf_token %}
+<section class="bc-card"><div class="bc-row">
+<div><label>Punto de recolección (QR)</label><select name="collection_point" required><option value="">Selecciona un punto</option>{% for point in collection_points %}<option value="{{ point.pk }}">{{ point.name }}</option>{% endfor %}</select>{% if not collection_points %}<small>No hay puntos de recolección activos en esta bodega. Crea uno antes de continuar.</small>{% endif %}</div>
+<div><label>Recolector asignado</label><select name="assigned_to" required><option value="">Selecciona un recolector</option>{% for access in recolectores %}<option value="{{ access.user.pk }}">{{ access.user.get_full_name|default:access.user.username }}</option>{% endfor %}</select>{% if not recolectores %}<small>No hay usuarios con acceso de operación/aprobación en esta bodega.</small>{% endif %}</div>
+</div></section>
+<section class="bc-card bc-scroll"><h2>Paquetes listos para agrupar</h2><table><thead><tr><th></th><th>Pedido</th><th>Paquete</th><th>PaqueterÃa</th><th>GuÃa</th></tr></thead><tbody>{% for package in packages %}<tr><td><input class="bc-check" type="checkbox" name="package_ids" value="{{ package.pk }}"></td><td>{{ package.carrier_shipment.shipping_order.order.folio }}</td><td>#{{ package.package_number }} · {{ package.description|default:"—" }}</td><td>{{ package.carrier_shipment.carrier_name|default:package.carrier_shipment.get_provider_display }}</td><td>{{ package.tracking_number|default:"—" }}</td></tr>{% empty %}<tr><td colspan="5" class="bc-empty">No hay paquetes con guÃa lista pendientes de agrupar en esta bodega.</td></tr>{% endfor %}</tbody></table></section>
+<section class="bc-card"><button type="submit">Crear lote</button></section>
+</form></main>{% endblock %}

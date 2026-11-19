@@ -1,0 +1,104 @@
+﻿{% load crm_extras %}
+
+<section class="kanban-board">
+    {% for stage in stages %}
+        <div class="kanban-column">
+            <div class="kanban-column-header">
+                <div>
+                    <h3>{{ stage.name }}</h3>
+                    <small>Etapa comercial</small>
+                </div>
+
+                <span>{{ deals_by_stage|get_item:stage.id|length }}</span>
+            </div>
+
+            <div
+                class="kanban-dropzone"
+                data-stage-id="{{ stage.id }}"
+                data-stage-name="{{ stage.name }}"
+            >
+                {% for deal in deals_by_stage|get_item:stage.id %}
+                    <div
+                        class="deal-card premium-deal-card"
+                        data-deal-id="{{ deal.id }}"
+                        hx-get="{% url 'deal_detail_modal' deal.id %}"
+                        hx-target="#deal-modal-content"
+                        hx-swap="innerHTML"
+                        onclick="openDealModal()"
+                    >
+                        <div class="deal-amount">
+                            ${{ deal.amount|floatformat:0 }}
+                        </div>
+
+                        <div class="deal-badges">
+                            {% if deal.probability >= 70 %}
+                                <span class="deal-badge deal-hot">Caliente</span>
+                            {% elif deal.probability >= 40 %}
+                                <span class="deal-badge deal-warm">Tibia</span>
+                            {% else %}
+                                <span class="deal-badge deal-cold">Fría</span>
+                            {% endif %}
+
+                            {% if deal.expected_close_date %}
+                                <span class="deal-badge deal-date">
+                                    Cierre {{ deal.expected_close_date|date:"d/m" }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="deal-title">
+                            {{ deal.title }}
+                        </div>
+
+                        <div class="deal-company">
+                            {{ deal.customer.full_name }}
+                        </div>
+
+                        <div class="deal-user">
+                            <div class="avatar">
+                                {% if deal.assigned_to %}
+                                    {{ deal.assigned_to.username|first|upper }}
+                                {% else %}
+                                    W
+                                {% endif %}
+                            </div>
+
+                            <span>
+                                {% if deal.assigned_to %}
+                                    {{ deal.assigned_to.username }}
+                                {% else %}
+                                    PAKIVOX
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="probability-row">
+                            <span>Probabilidad</span>
+                            <strong>{{ deal.probability }}%</strong>
+                        </div>
+
+                        <div class="probability-bar">
+                            <div style="width: {{ deal.probability }}%;"></div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-stage">Sin oportunidades</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="panel">
+            <h3>No hay etapas creadas</h3>
+            <p class="text-muted">
+                Crea etapas como: Nuevo Lead, Contactado, Cotización enviada,
+                Negociación, Pago pendiente, Ganado.
+            </p>
+
+            {% if request.user.is_staff %}
+            <a href="/admin/crm/pipelinestage/add/" class="btn btn-primary">
+                Crear primera etapa
+            </a>
+            {% endif %}
+        </div>
+    {% endfor %}
+</section>

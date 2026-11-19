@@ -1,0 +1,50 @@
+﻿{% extends "base.html" %}
+{% block title %}Centro de impresión | PAKIVOX{% endblock %}
+{% block page_title %}Centro de impresión{% endblock %}
+{% block page_subtitle %}Prepara e imprime etiquetas de envío en lote, sin hacerlo una por una.{% endblock %}
+{% block content %}
+<style>
+  .pc-wrap{max-width:1500px;margin:0 auto;padding:0}
+  .pc-head,.pc-card{background:#0b1322;border:1px solid rgba(148,163,184,.18);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+  .pc-head{padding:22px;margin-bottom:18px}
+  .pc-title{margin:0;font-size:20px;color:#f8fafc}
+  .pc-sub{color:#94a3b8;margin:7px 0 0;font-size:13px}
+  .pc-filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;margin-top:18px}
+  .pc-filters input,.pc-filters select,.pc-reason{padding:11px 12px;border:1px solid rgba(148,163,184,.24);border-radius:10px;background:#020617;color:#f8fafc}
+  .pc-filters input::placeholder,.pc-reason::placeholder{color:#64748b}
+  .pc-btn{border:0;border-radius:10px;padding:11px 16px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+  .pc-btn.alt{background:#0f172a;border:1px solid rgba(148,163,184,.24)}
+  .pc-card{overflow:hidden;margin-bottom:18px}
+  .pc-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(148,163,184,.14);flex-wrap:wrap;color:#cbd5e1}
+  .pc-table{width:100%;border-collapse:collapse}
+  .pc-table th,.pc-table td{padding:13px 14px;border-bottom:1px solid rgba(148,163,184,.10);text-align:left;color:#cbd5e1}
+  .pc-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;background:rgba(15,23,42,.6)}
+  .pc-badge{padding:5px 9px;border-radius:999px;background:rgba(37,99,235,.15);color:#93c5fd;font-size:12px;font-weight:700}
+  .pc-empty{padding:38px;text-align:center;color:#64748b}
+  .pc-history{padding:18px}
+  .pc-history h2{margin:0 0 10px;color:#f8fafc;font-size:16px}
+  .pc-history-row{display:grid;grid-template-columns:90px 1fr 100px 140px;gap:12px;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.10);color:#cbd5e1;font-size:13px}
+  @media(max-width:850px){.pc-filters{grid-template-columns:1fr}.pc-table{display:block;overflow:auto}.pc-history-row{grid-template-columns:1fr 1fr}}
+</style>
+<div class="pc-wrap">
+  <section class="pc-head">
+    <h1 class="pc-title">Centro de impresión</h1>
+    <p class="pc-sub">{{ warehouse.name }} · Etiquetas ordenadas por envío y número de bulto.</p>
+    <form class="pc-filters" method="get">
+      <input name="q" value="{{ query }}" placeholder="Buscar folio o número de rastreo">
+      <select name="source"><option value="">Todas las modalidades</option>{% for value,label in source_choices %}<option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select name="status"><option value="">Todos los estados</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="pc-btn" type="submit">Filtrar</button>
+    </form>
+  </section>
+  <form method="post" action="{% url 'shipping_hub:print_job_create' %}">{% csrf_token %}
+    <section class="pc-card">
+      <div class="pc-toolbar"><label><input id="select-all" type="checkbox"> Seleccionar visibles</label><div><input class="pc-reason" name="reason" maxlength="250" placeholder="Motivo si es reimpresión"><button class="pc-btn alt" type="submit">Preparar impresión</button></div></div>
+      {% if packages %}<table class="pc-table"><thead><tr><th></th><th>Pedido</th><th>Modalidad</th><th>Bulto</th><th>Formato</th><th>Estado</th><th>Impresiones</th></tr></thead><tbody>
+      {% for package in packages %}<tr><td><input class="package-check" type="checkbox" name="package_ids" value="{{ package.pk }}"></td><td>{{ package.carrier_shipment.shipping_order.order.folio|default:package.carrier_shipment.shipping_order_id }}</td><td>{{ package.carrier_shipment.get_source_display }}</td><td>{{ package.package_number }} de {{ package.carrier_shipment.package_count }}</td><td>{{ package.label_format|upper }}</td><td><span class="pc-badge">{{ package.get_status_display }}</span></td><td>{{ package.print_count }}</td></tr>{% endfor %}
+      </tbody></table>{% else %}<div class="pc-empty">No hay etiquetas imprimibles con estos filtros.</div>{% endif %}
+    </section>
+  </form>
+  <section class="pc-card pc-history"><h2>Historial reciente</h2>{% for job in history %}<div class="pc-history-row"><strong>#{{ job.pk }}</strong><span>{{ job.requested_by|default:"Usuario eliminado" }}</span><span>{{ job.item_count }} etiqueta{{ job.item_count|pluralize }}</span><span>{{ job.created_at|date:"d/m/Y H:i" }}</span></div>{% empty %}<p class="pc-empty">Aún no existen trabajos de impresión.</p>{% endfor %}</section>
+</div>
+{% endblock %}

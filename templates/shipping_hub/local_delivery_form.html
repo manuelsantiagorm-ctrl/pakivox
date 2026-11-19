@@ -1,0 +1,327 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Entrega propia | PAKIVOX{% endblock %}
+
+{% block content %}
+<style>
+  .local-page {
+    min-height: calc(100vh - 80px);
+    padding: 32px 20px;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+  .local-container {
+    width: min(820px, 100%);
+    margin: 0 auto;
+  }
+
+  .local-header {
+    margin-bottom: 24px;
+  }
+
+  .local-back {
+    display: inline-flex;
+    margin-bottom: 18px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .local-back:hover {
+    color: #ffffff;
+  }
+
+  .local-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #c084fc;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+
+  .local-header h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 4vw, 2.35rem);
+    font-weight: 900;
+  }
+
+  .local-header p {
+    margin: 9px 0 0;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .local-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .summary-card {
+    padding: 16px;
+    border: 1px solid rgba(71, 85, 105, 0.55);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.82);
+  }
+
+  .summary-card span {
+    display: block;
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .summary-card strong {
+    color: #f8fafc;
+    font-size: 0.94rem;
+  }
+
+  .local-panel {
+    padding: 26px;
+    border: 1px solid rgba(71, 85, 105, 0.55);
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  }
+
+  .form-group + .form-group {
+    margin-top: 19px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 850;
+  }
+
+  .form-control {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 13px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    outline: none;
+    background: #020617;
+    color: #f8fafc;
+    resize: vertical;
+  }
+
+  .form-control:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
+  }
+
+  textarea.form-control {
+    min-height: 115px;
+  }
+
+  .field-error,
+  .form-errors {
+    margin-top: 7px;
+    color: #fca5a5;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .form-errors {
+    margin: 0 0 18px;
+    padding: 13px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    background: rgba(127, 29, 29, 0.2);
+  }
+
+  .local-information {
+    margin-top: 20px;
+    padding: 14px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 11px;
+    background: rgba(139, 92, 246, 0.09);
+    color: #ddd6fe;
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+
+  .local-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 11px;
+    margin-top: 24px;
+  }
+
+  .local-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 45px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 850;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .local-button-secondary {
+    border: 1px solid #334155;
+    background: transparent;
+    color: #cbd5e1;
+  }
+
+  .local-button-primary {
+    border: 0;
+    background: #7c3aed;
+    color: #ffffff;
+  }
+
+  @media (max-width: 650px) {
+    .local-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .local-panel {
+      padding: 18px;
+    }
+
+    .local-actions {
+      flex-direction: column-reverse;
+    }
+
+    .local-button {
+      width: 100%;
+    }
+  }
+</style>
+
+<main class="local-page">
+  <div class="local-container">
+
+    <header class="local-header">
+      <a
+        href="{% url 'shipping_hub:shipping_cubication' shipping_order.id %}"
+        class="local-back"
+      >
+        ← Volver a cubicación
+      </a>
+
+      <span class="local-eyebrow">LOGÍSTICA PROPIA</span>
+
+      <h1>Configurar entrega propia</h1>
+
+      <p>
+        Prepara el pedido para reparto interno, recolección o entrega directa.
+      </p>
+    </header>
+
+    <section class="local-summary">
+      <article class="summary-card">
+        <span>Orden de envío</span>
+        <strong>#{{ shipping_order.id }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Empresa</span>
+        <strong>{{ company.name|default:company }}</strong>
+      </article>
+    </section>
+
+    <form method="post" class="local-panel" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="{{ form.carrier_name.id_for_label }}">
+          {{ form.carrier_name.label }}
+        </label>
+
+        {{ form.carrier_name }}
+
+        {% for error in form.carrier_name.errors %}
+          <div class="field-error">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="local-summary" style="margin-top:19px">
+        <div class="form-group">
+          <label for="{{ form.driver.id_for_label }}">{{ form.driver.label }}</label>
+          {{ form.driver }}
+          {% for error in form.driver.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.vehicle.id_for_label }}">{{ form.vehicle.label }}</label>
+          {{ form.vehicle }}
+          {% for error in form.vehicle.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.route_name.id_for_label }}">{{ form.route_name.label }}</label>
+          {{ form.route_name }}
+          {% for error in form.route_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.scheduled_date.id_for_label }}">{{ form.scheduled_date.label }}</label>
+          {{ form.scheduled_date }}
+          {% for error in form.scheduled_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.stop_order.id_for_label }}">{{ form.stop_order.label }}</label>
+          {{ form.stop_order }}
+          {% for error in form.stop_order.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="local-information">
+        ¿Aún no tienes choferes o vehículos? <a href="{% url 'shipping_hub:local_delivery_resources' %}" style="color:#c4b5fd;font-weight:800">Regístralos aquí</a>.
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.notes.id_for_label }}">
+          {{ form.notes.label }}
+        </label>
+
+        {{ form.notes }}
+
+        {% for error in form.notes.errors %}
+          <div class="field-error">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="local-information">
+        Esta acción solamente dejará preparada la entrega propia. No despacha
+        el pedido ni descuenta inventario hasta ejecutar el despacho.
+      </div>
+
+      <div class="local-actions">
+        <a
+          href="{% url 'shipping_hub:shipping_cubication' shipping_order.id %}"
+          class="local-button local-button-secondary"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="local-button local-button-primary"
+        >
+          Configurar entrega
+        </button>
+      </div>
+    </form>
+
+  </div>
+</main>
+{% endblock %}

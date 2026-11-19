@@ -1,0 +1,56 @@
+.ceo-grid {
+
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 25px;
+
+    margin-top: 25px;
+
+
+}
+
+
+
+
+.funnel-row {
+
+
+    display: flex;
+
+
+    justify-content: space-between;
+
+
+    padding: 12px;
+
+
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+
+
+}
+
+
+
+
+.client-row {
+
+
+    padding: 12px;
+
+
+}
+
+
+
+.activity-row {
+
+
+    padding: 15px;
+
+
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+
+
+}

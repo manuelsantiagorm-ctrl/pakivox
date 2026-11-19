@@ -1,0 +1,2403 @@
+﻿{% extends "base.html" %} {% block title %}Mapa Visual de Bodega | PAKIVOX{% endblock %} {% block page_title %} Mapa Visual de Bodega {% endblock %} {% block page_subtitle %} Diseñador interactivo de layout, racks, andenes y zonas
+bloqueadas {% endblock %} {% block content %} {% csrf_token %}
+<script id="warehouse-layout-data" type="application/json">
+  {{ layout_data_json|safe }}
+</script>
+<script id="warehouse-layout-locations" type="application/json">
+  {{ layout_locations_json|safe }}
+</script>
+
+<section class="layout-page">
+  <div class="layout-hero">
+    <div>
+      <span class="eyebrow">Diseño visual de la bodega</span>
+      <h1>Diseñador de Bodega Inteligente</h1>
+      <p>
+        Dibuja la distribución real de tu almacén. Pinta racks, andenes, mesas
+        de empaque y obstáculos sobre la cuadrícula.
+      </p>
+    </div>
+
+    <div class="layout-actions">
+      <a href="{% url 'warehouse:lista_ubicaciones' %}" class="btn-secondary">
+        Ver ubicaciones
+      </a>
+
+      <button type="button" class="btn-primary" onclick="saveWarehouseLayout()">
+        Guardar Layout
+      </button>
+    </div>
+  </div>
+
+  <div class="layout-shell">
+    <aside class="tool-panel">
+      <div class="tool-section">
+        <h3>Herramientas</h3>
+        <p>Selecciona un elemento y pinta la cuadrícula.</p>
+
+        <button type="button" class="tool-btn active" data-tool="rack">
+          <span class="tool-icon rack"></span>
+          <span>
+            Rack / Anaquel
+            <small>Zona de almacenamiento</small>
+          </span>
+        </button>
+
+        <button type="button" class="tool-btn" data-tool="dock">
+          <span class="tool-icon dock"></span>
+          <span>
+            Andén de carga
+            <small>Entrada o salida de mercancía</small>
+          </span>
+        </button>
+
+        <button type="button" class="tool-btn" data-tool="packing">
+          <span class="tool-icon packing"></span>
+          <span>
+            Mesa de empaque
+            <small>Zona de packing</small>
+          </span>
+        </button>
+
+        <button type="button" class="tool-btn" data-tool="blocked">
+          <span class="tool-icon blocked"></span>
+          <span>
+            Obstáculo / Pilar
+            <small>Área no transitable</small>
+          </span>
+        </button>
+
+        <button type="button" class="tool-btn" data-tool="eraser">
+          <span class="tool-icon eraser"></span>
+          <span>
+            Borrador
+            <small>Regresar a pasillo libre</small>
+          </span>
+        </button>
+      </div>
+
+      <div class="route-panel">
+        <h3>Ruta de Picking</h3>
+        <p>
+          Agrega varias ubicaciones destino, ordénalas manualmente o deja que
+          PAKIVOX optimice el viaje automáticamente.
+        </p>
+
+        <label class="route-label">
+          Agregar parada
+          <div class="route-add-row">
+            <select id="routeAddSelect">
+              <option value="">Selecciona ubicación vinculada</option>
+            </select>
+
+            <button type="button" onclick="addRouteStopFromSelect()">
+              Agregar
+            </button>
+          </div>
+        </label>
+
+        <div class="route-stops-box">
+          <div class="route-stops-head">
+            <strong>Paradas del viaje</strong>
+            <small id="routeStopsCounter">0 paradas</small>
+          </div>
+
+          <div id="routeStopsList" class="route-stops-list">
+            <div class="route-empty">
+              Vincula racks con ubicaciones y agrega paradas para simular el
+              picking.
+            </div>
+          </div>
+        </div>
+
+        <div class="route-actions">
+          <button
+            type="button"
+            class="route-btn-primary"
+            onclick="simulatePickingRoute()"
+          >
+            Simular ruta
+          </button>
+
+          <button
+            type="button"
+            class="route-btn-secondary"
+            onclick="optimizeRouteStops()"
+          >
+            Optimizar
+          </button>
+        </div>
+
+        <div class="route-actions">
+          <button
+            type="button"
+            class="route-btn-secondary"
+            onclick="clearPickingRoute()"
+          >
+            Limpiar ruta
+          </button>
+
+          <button
+            type="button"
+            class="route-btn-danger"
+            onclick="clearRouteStops()"
+          >
+            Vaciar paradas
+          </button>
+        </div>
+
+        <small id="routeStatus">
+          Primero vincula un rack con una ubicación real.
+        </small>
+      </div>
+      <div class="layout-stats">
+        <div>
+          <span>Racks</span>
+          <strong id="rackCount">0</strong>
+        </div>
+
+        <div>
+          <span>Andenes</span>
+          <strong id="dockCount">0</strong>
+        </div>
+
+        <div>
+          <span>Empaque</span>
+          <strong id="packingCount">0</strong>
+        </div>
+
+        <div>
+          <span>Bloqueadas</span>
+          <strong id="blockedCount">0</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="canvas-panel">
+      <div class="canvas-topbar">
+        <div>
+          <h3>Plano principal</h3>
+          <p>Layout: {{ layout_key }}</p>
+        </div>
+
+        <div class="dimension-controls">
+          <div class="dimension-field">
+            <label for="gridRowsInput">Filas</label>
+            <input
+              type="number"
+              id="gridRowsInput"
+              min="5"
+              max="50"
+              value="{{ layout_rows|default:20 }}"
+            />
+          </div>
+
+          <div class="dimension-field">
+            <label for="gridColsInput">Columnas</label>
+            <input
+              type="number"
+              id="gridColsInput"
+              min="5"
+              max="50"
+              value="{{ layout_cols|default:20 }}"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="dimension-update-btn"
+            onclick="updateGridDimensions()"
+          >
+            Actualizar dimensiones
+          </button>
+        </div>
+
+        <div class="legend">
+          <span><i class="legend-dot rack"></i>Rack</span>
+          <span><i class="legend-dot dock"></i>Andén</span>
+          <span><i class="legend-dot packing"></i>Empaque</span>
+          <span><i class="legend-dot blocked"></i>Bloqueado</span>
+          <span><i class="legend-dot aisle"></i>Pasillo</span>
+        </div>
+      </div>
+
+      <div class="canvas-scroll">
+        <div id="coordinateBoard" class="coordinate-board">
+          <div class="axis-corner"></div>
+          <div id="columnAxis" class="column-axis"></div>
+          <div id="rowAxis" class="row-axis"></div>
+          <div id="warehouseCanvas" class="warehouse-canvas"></div>
+        </div>
+      </div>
+
+      <div class="canvas-footer">
+        <span>
+          Tip: mantén presionado el mouse y arrastra para pintar más rápido.
+          Doble clic en un rack para vincularlo con una ubicación real.
+        </span>
+        <span id="saveStatus">Sin cambios pendientes</span>
+      </div>
+    </main>
+  </div>
+</section>
+
+<div id="locationModal" class="location-modal">
+  <div class="location-modal-card">
+    <div class="modal-head">
+      <div>
+        <span class="eyebrow">Rack inteligente</span>
+        <h3>Vincular ubicación real</h3>
+        <p>
+          Asocia esta celda del mapa con una ubicación física como LOC-1A-4.
+        </p>
+      </div>
+
+      <button type="button" onclick="closeLocationModal()">×</button>
+    </div>
+
+    <label class="field-label">
+      Ubicación real
+      <select id="locationSelect">
+        <option value="">Sin ubicación vinculada</option>
+      </select>
+    </label>
+
+    <label class="field-label">
+      Etiqueta visible
+      <input type="text" id="locationLabelInput" placeholder="Ej. LOC-1A-4" />
+    </label>
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="btn-secondary"
+        onclick="clearSelectedRackLocation()"
+      >
+        Quitar vínculo
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        onclick="saveSelectedRackLocation()"
+      >
+        Guardar vínculo
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .layout-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .layout-hero,
+  .tool-panel,
+  .canvas-panel {
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto auto;
+    min-height: auto;
+    align-self: start;
+  }
+
+  .layout-hero {
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 950;
+  }
+
+  .layout-hero h1 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .layout-hero p {
+    margin: 0;
+    color: #94a3b8;
+    max-width: 780px;
+    line-height: 1.45;
+  }
+
+  .layout-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .btn-secondary {
+    background: #020617;
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+
+  .layout-shell {
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .tool-panel {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 660px;
+  }
+
+  .tool-panel h3 {
+    color: #f8fafc;
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .tool-panel p {
+    color: #94a3b8;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .tool-btn {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: #020617;
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 10px;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+
+  .tool-btn:hover,
+  .tool-btn.active {
+    border-color: rgba(56, 189, 248, 0.65);
+    transform: translateY(-1px);
+  }
+
+  .tool-btn span:not(.tool-icon) {
+    display: grid;
+    gap: 3px;
+    font-weight: 900;
+  }
+
+  .tool-btn small {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .tool-icon,
+  .legend-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .tool-icon.rack,
+  .legend-dot.rack,
+  .wms-layout-cell.rack {
+    background: #2563eb;
+    border-color: #60a5fa;
+  }
+
+  .tool-icon.dock,
+  .legend-dot.dock,
+  .wms-layout-cell.dock {
+    background: #059669;
+    border-color: #34d399;
+  }
+
+  .tool-icon.packing,
+  .legend-dot.packing,
+  .wms-layout-cell.packing {
+    background: #9333ea;
+    border-color: #c084fc;
+  }
+
+  .tool-icon.blocked,
+  .legend-dot.blocked,
+  .wms-layout-cell.blocked {
+    background: #dc2626;
+    border-color: #f87171;
+  }
+
+  .tool-icon.eraser,
+  .legend-dot.aisle,
+  .wms-layout-cell.aisle {
+    background: #020617;
+    border-color: rgba(148, 163, 184, 0.18);
+  }
+
+  .layout-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .layout-stats div {
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .layout-stats span {
+    color: #94a3b8;
+    font-size: 11px;
+    display: block;
+  }
+
+  .layout-stats strong {
+    color: #38bdf8;
+    font-size: 22px;
+    font-weight: 950;
+  }
+  .canvas-topbar {
+    padding: 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .canvas-topbar h3 {
+    color: #f8fafc;
+    margin: 0 0 4px;
+    font-weight: 950;
+  }
+
+  .canvas-topbar p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 12px;
+  }
+  .dimension-controls {
+    display: flex;
+    align-items: end;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px;
+    background: rgba(2, 6, 23, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 16px;
+  }
+
+  .dimension-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .dimension-field label {
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .dimension-field input {
+    width: 82px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #020617;
+    color: #f8fafc;
+    padding: 9px 11px;
+    outline: none;
+    font-weight: 950;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.8);
+  }
+
+  .dimension-field input:focus {
+    border-color: rgba(56, 189, 248, 0.75);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+  }
+
+  .dimension-update-btn {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    background:
+      linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(37, 99, 235, 0.12)),
+      #020617;
+    color: #7dd3fc;
+    border-radius: 12px;
+    padding: 10px 13px;
+    font-weight: 950;
+    cursor: pointer;
+    transition:
+      transform 0.14s ease,
+      border-color 0.14s ease,
+      background 0.14s ease;
+  }
+
+  .dimension-update-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(56, 189, 248, 0.75);
+    background:
+      linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(37, 99, 235, 0.18)),
+      #020617;
+  }
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .legend span {
+    color: #cbd5e1;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+
+  .canvas-scroll {
+    overflow: auto;
+    padding: 18px;
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.08),
+        transparent 28%
+      ),
+      #020617;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: auto;
+    height: auto;
+  }
+  .warehouse-canvas {
+    display: grid;
+    gap: 4px;
+    width: max-content;
+    height: max-content;
+    min-width: max-content;
+    min-height: max-content;
+    padding: 14px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 18px;
+    margin: 0 auto;
+  }
+
+  .wms-layout-cell {
+    width: 30px;
+    height: 30px;
+    border: 1px solid;
+    border-radius: 8px;
+    cursor: pointer;
+    transition:
+      transform 0.08s ease,
+      filter 0.08s ease;
+    position: relative;
+    display: grid;
+    place-items: center;
+    color: #f8fafc;
+    font-size: 7px;
+    font-weight: 950;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .wms-layout-cell:hover {
+    transform: scale(1.08);
+    filter: brightness(1.2);
+    z-index: 2;
+  }
+
+  .wms-layout-cell.linked::after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #f8fafc;
+    position: absolute;
+    top: 3px;
+    right: 3px;
+  }
+
+  .wms-layout-cell.aisle:hover {
+    background: #1e293b;
+  }
+
+  .canvas-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  #saveStatus {
+    color: #7dd3fc;
+    font-weight: 900;
+  }
+
+  .location-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 18px;
+  }
+
+  .location-modal.open {
+    display: flex;
+  }
+
+  .location-modal-card {
+    width: min(520px, 100%);
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 22px;
+    padding: 18px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .modal-head h3 {
+    color: #f8fafc;
+    margin: 5px 0;
+    font-size: 22px;
+    font-weight: 950;
+  }
+
+  .modal-head p {
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .modal-head button {
+    border: 0;
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .field-label {
+    display: grid;
+    gap: 7px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+
+  .field-label select,
+  .field-label input {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020617;
+    color: #f8fafc;
+    padding: 12px 13px;
+    outline: none;
+    font-weight: 800;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .route-panel {
+    margin: 14px 0;
+    padding: 14px;
+    border-radius: 16px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(250, 204, 21, 0.1),
+        transparent 34%
+      ),
+      #020617;
+    border: 1px solid rgba(250, 204, 21, 0.2);
+  }
+
+  .route-panel h3 {
+    color: #f8fafc;
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .route-panel p {
+    color: #94a3b8;
+    margin: 0 0 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .route-label {
+    display: grid;
+    gap: 7px;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .route-label select {
+    width: 100%;
+    min-height: 112px;
+    border-radius: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020617;
+    color: #f8fafc;
+    padding: 10px;
+    outline: none;
+    font-weight: 800;
+  }
+
+  .route-label option {
+    padding: 7px;
+  }
+
+  .route-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .route-btn-primary,
+  .route-btn-secondary {
+    flex: 1;
+    border-radius: 12px;
+    padding: 10px 11px;
+    font-weight: 950;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .route-btn-primary {
+    background: #facc15;
+    color: #422006;
+  }
+
+  .route-btn-secondary {
+    background: #020617;
+    color: #7dd3fc;
+    border-color: rgba(56, 189, 248, 0.25);
+  }
+
+  #routeStatus {
+    display: block;
+    margin-top: 10px;
+    color: #facc15;
+    line-height: 1.4;
+    font-weight: 800;
+  }
+
+  .wms-layout-cell.route {
+    background: #facc15 !important;
+    border-color: #fde047 !important;
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.65);
+  }
+
+  .wms-layout-cell.route-start {
+    background: #22c55e !important;
+    border-color: #86efac !important;
+    box-shadow: 0 0 14px rgba(34, 197, 94, 0.7);
+  }
+
+  .wms-layout-cell.route-target {
+    outline: 3px solid #facc15;
+    outline-offset: 1px;
+    box-shadow: 0 0 18px rgba(250, 204, 21, 0.75);
+  }
+
+  @media (max-width: 1200px) {
+    .tool-panel {
+      min-height: auto;
+    }
+
+    .canvas-topbar {
+      grid-template-columns: 1fr;
+    }
+
+    .legend {
+      justify-content: flex-start;
+    }
+  }
+
+  .layout-shell {
+    align-items: start !important;
+  }
+
+  .tool-panel {
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .canvas-panel {
+    min-height: auto !important;
+    height: auto !important;
+    align-self: start !important;
+  }
+
+  .canvas-scroll {
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .warehouse-canvas {
+    height: max-content !important;
+    min-height: max-content !important;
+  }
+
+  /* ==========================================================
+   COORDENADAS DEL MAPA
+   ========================================================== */
+
+.coordinate-board {
+  display: grid;
+  grid-template-columns: 34px max-content;
+  grid-template-rows: 28px max-content;
+  gap: 6px;
+  width: max-content;
+  margin: 0 auto;
+}
+
+.axis-corner {
+  width: 34px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .95);
+  border: 1px solid rgba(148, 163, 184, .14);
+}
+
+.column-axis {
+  display: grid;
+  gap: 4px;
+}
+
+.row-axis {
+  display: grid;
+  gap: 4px;
+}
+
+.axis-label {
+  display: grid;
+  place-items: center;
+  color: #7dd3fc;
+  font-size: 10px;
+  font-weight: 950;
+  background: rgba(15, 23, 42, .95);
+  border: 1px solid rgba(148, 163, 184, .14);
+  border-radius: 7px;
+  user-select: none;
+}
+
+.column-axis .axis-label {
+  width: 30px;
+  height: 24px;
+}
+
+.row-axis .axis-label {
+  width: 30px;
+  height: 30px;
+}
+
+/* ==========================================================
+   CROSSHAIR / MIRA TELESCÓPICA
+   ========================================================== */
+
+.wms-layout-cell.crosshair-row,
+.wms-layout-cell.crosshair-col {
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .35);
+  filter: brightness(1.16);
+}
+
+.wms-layout-cell.crosshair-focus {
+  box-shadow:
+    inset 0 0 0 2px rgba(250, 204, 21, .85),
+    0 0 12px rgba(250, 204, 21, .45);
+  filter: brightness(1.32);
+  z-index: 4;
+}
+
+/* ==========================================================
+   LISTA DINÁMICA DE PARADAS
+   ========================================================== */
+
+.route-add-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.route-add-row select,
+.route-add-row button {
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: #020617;
+  color: #f8fafc;
+  font-weight: 850;
+  padding: 9px 10px;
+}
+
+.route-add-row button {
+  background: #38bdf8;
+  color: #020617;
+  border: 0;
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.route-stops-box {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, .76);
+  border: 1px solid rgba(148, 163, 184, .14);
+}
+
+.route-stops-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.route-stops-head strong {
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.route-stops-head small {
+  color: #facc15;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.route-stops-list {
+  display: grid;
+  gap: 8px;
+  min-height: 52px;
+}
+
+.route-stop {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 13px;
+  background: rgba(15, 23, 42, .95);
+  border: 1px solid rgba(56, 189, 248, .18);
+  color: #f8fafc;
+  cursor: grab;
+}
+
+.route-stop.dragging {
+  opacity: .45;
+  cursor: grabbing;
+}
+
+.route-stop-handle {
+  color: #94a3b8;
+  font-weight: 950;
+  cursor: grab;
+}
+
+.route-stop-main {
+  display: grid;
+  gap: 2px;
+}
+
+.route-stop-main strong {
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.route-stop-main small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.route-stop-remove {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid rgba(248, 113, 113, .25);
+  background: rgba(127, 29, 29, .25);
+  color: #fca5a5;
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.route-empty {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .65);
+  border: 1px dashed rgba(148, 163, 184, .20);
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.route-btn-danger {
+  flex: 1;
+  border-radius: 12px;
+  padding: 10px 11px;
+  font-weight: 950;
+  cursor: pointer;
+  border: 1px solid rgba(248, 113, 113, .25);
+  background: rgba(127, 29, 29, .22);
+  color: #fca5a5;
+}
+</style>
+<script>
+  let GRID_ROWS = Number("{{ layout_rows|default:20 }}");
+  let GRID_COLS = Number("{{ layout_cols|default:20 }}");
+  const LAYOUT_KEY = "{{ layout_key|default:'main' }}";
+
+
+const MAX_GRID_ROWS = 50;
+const MAX_GRID_COLS = 50;
+const MAX_GRID_CELLS = 2500;
+
+  let activeTool = "rack";
+  let isMouseDown = false;
+  let hasUnsavedChanges = false;
+  let selectedRackCell = null;
+
+  const canvas = document.getElementById("warehouseCanvas");
+
+  let initialCells = [];
+  let availableLocations = [];
+
+  try {
+    const layoutDataNode = document.getElementById("warehouse-layout-data");
+
+    if (layoutDataNode) {
+      initialCells = JSON.parse(layoutDataNode.textContent || "[]");
+    }
+  } catch (error) {
+    console.error("Error leyendo layout guardado:", error);
+    initialCells = [];
+  }
+
+  try {
+    const locationsNode = document.getElementById("warehouse-layout-locations");
+
+    if (locationsNode) {
+      availableLocations = JSON.parse(locationsNode.textContent || "[]");
+    }
+  } catch (error) {
+    console.error("Error leyendo ubicaciones iniciales:", error);
+    availableLocations = [];
+  }
+
+  if (!Array.isArray(initialCells)) {
+    initialCells = [];
+  }
+
+  if (!Array.isArray(availableLocations)) {
+    availableLocations = [];
+  }
+
+  console.log("WMS layout saved cells loaded:", initialCells.length);
+  console.log(
+    "WMS layout locations loaded from HTML:",
+    availableLocations.length,
+  );
+
+  const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+  const csrfToken = csrfInput ? csrfInput.value : "";
+
+  const cellMap = new Map();
+
+  function cellKey(x, y) {
+    return `${x}-${y}`;
+  }
+
+  function validateGridSize(rows, cols) {
+  if (rows > MAX_GRID_ROWS || cols > MAX_GRID_COLS) {
+    alert(`El tamaño máximo permitido es ${MAX_GRID_ROWS}x${MAX_GRID_COLS}.`);
+    return false;
+  }
+
+  if ((rows * cols) > MAX_GRID_CELLS) {
+    alert(
+      `El mapa no puede superar ${MAX_GRID_CELLS} celdas. ` +
+      "Divide bodegas grandes por zonas: Zona A, Zona B, Mezzanine o Piso 2."
+    );
+    return false;
+  }
+
+  return true;
+}
+
+  function setSaveStatus(text) {
+    const el = document.getElementById("saveStatus");
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  function setRouteStatus(message) {
+    const el = document.getElementById("routeStatus");
+
+    if (el) {
+      el.textContent = message;
+    }
+  }
+
+  function markUnsaved() {
+    hasUnsavedChanges = true;
+    setSaveStatus("Cambios sin guardar");
+  }
+
+  function updateCanvasGridTemplate() {
+  canvas.style.gridTemplateColumns = `repeat(${GRID_COLS}, 30px)`;
+  canvas.style.gridTemplateRows = `repeat(${GRID_ROWS}, 30px)`;
+
+  const columnAxis = document.getElementById("columnAxis");
+  const rowAxis = document.getElementById("rowAxis");
+
+  if (columnAxis) {
+    columnAxis.style.gridTemplateColumns = `repeat(${GRID_COLS}, 30px)`;
+    columnAxis.innerHTML = "";
+
+    for (let y = 0; y < GRID_COLS; y++) {
+      const label = document.createElement("div");
+      label.className = "axis-label";
+      label.textContent = y + 1;
+      columnAxis.appendChild(label);
+    }
+  }
+
+  if (rowAxis) {
+    rowAxis.style.gridTemplateRows = `repeat(${GRID_ROWS}, 30px)`;
+    rowAxis.innerHTML = "";
+
+    for (let x = 0; x < GRID_ROWS; x++) {
+      const label = document.createElement("div");
+      label.className = "axis-label";
+      label.textContent = x + 1;
+      rowAxis.appendChild(label);
+    }
+  }
+}
+
+  function updateStats() {
+    const cells = document.querySelectorAll(".wms-layout-cell");
+
+    let rack = 0;
+    let dock = 0;
+    let packing = 0;
+    let blocked = 0;
+
+    cells.forEach(function (cell) {
+      if (cell.dataset.type === "rack") rack++;
+      if (cell.dataset.type === "dock") dock++;
+      if (cell.dataset.type === "packing") packing++;
+      if (cell.dataset.type === "blocked") blocked++;
+    });
+
+    document.getElementById("rackCount").textContent = rack;
+    document.getElementById("dockCount").textContent = dock;
+    document.getElementById("packingCount").textContent = packing;
+    document.getElementById("blockedCount").textContent = blocked;
+  }
+
+  function getCurrentCellData() {
+    const data = [];
+
+    document.querySelectorAll(".wms-layout-cell").forEach(function (cell) {
+      const type = cell.dataset.type;
+
+      if (type === "aisle") {
+        return;
+      }
+
+      data.push({
+        x: Number(cell.dataset.x),
+        y: Number(cell.dataset.y),
+        type: type,
+        label: cell.dataset.label || "",
+        location_id: cell.dataset.locationId || "",
+      });
+    });
+
+    return data;
+  }
+
+  function applyCellType(cell, type, markChange = true, extraData = {}) {
+    if (!cell) {
+      return;
+    }
+
+    if (type === "eraser") {
+      type = "aisle";
+    }
+
+    cell.dataset.type = type;
+
+    if (type === "aisle") {
+      cell.dataset.label = "";
+      cell.dataset.locationId = "";
+      cell.textContent = "";
+    } else if (type === "rack") {
+      cell.dataset.label = extraData.label || cell.dataset.label || "";
+      cell.dataset.locationId =
+        extraData.location_id || cell.dataset.locationId || "";
+
+      cell.textContent = cell.dataset.label
+        ? cell.dataset.label.replace("LOC-", "")
+        : "";
+    } else {
+      cell.dataset.label = "";
+      cell.dataset.locationId = "";
+      cell.textContent = "";
+    }
+
+    cell.className = `wms-layout-cell ${type}`;
+
+    if (cell.dataset.locationId) {
+      cell.classList.add("linked");
+    }
+
+    const labelText = cell.dataset.label || "";
+    const locationText = cell.dataset.locationId
+      ? ` · Ubicación #${cell.dataset.locationId}`
+      : "";
+
+    cell.title =
+      `Fila ${Number(cell.dataset.x) + 1}, Columna ${Number(cell.dataset.y) + 1}` +
+      ` · ${type}${labelText ? " · " + labelText : ""}${locationText}`;
+
+    if (markChange) {
+      markUnsaved();
+    }
+
+    updateStats();
+  }
+
+  function paintCell(cell) {
+    applyCellType(cell, activeTool);
+    refreshRouteLocationSelectFromLinkedRacks();
+  }
+  function clearCrosshair() {
+  document.querySelectorAll(".wms-layout-cell.crosshair-row, .wms-layout-cell.crosshair-col, .wms-layout-cell.crosshair-focus")
+    .forEach(function (cell) {
+      cell.classList.remove("crosshair-row", "crosshair-col", "crosshair-focus");
+    });
+}
+
+function applyCrosshair(targetCell) {
+  if (!targetCell) {
+    return;
+  }
+
+  clearCrosshair();
+
+  const x = targetCell.dataset.x;
+  const y = targetCell.dataset.y;
+
+  document.querySelectorAll(`.wms-layout-cell[data-x="${x}"]`)
+    .forEach(function (cell) {
+      cell.classList.add("crosshair-row");
+    });
+
+  document.querySelectorAll(`.wms-layout-cell[data-y="${y}"]`)
+    .forEach(function (cell) {
+      cell.classList.add("crosshair-col");
+    });
+
+  targetCell.classList.add("crosshair-focus");
+}
+
+  function buildGrid(seedData = []) {
+    canvas.innerHTML = "";
+    cellMap.clear();
+    updateCanvasGridTemplate();
+
+    const seedMap = new Map();
+
+    seedData.forEach(function (item) {
+      seedMap.set(cellKey(Number(item.x), Number(item.y)), item);
+    });
+
+    for (let x = 0; x < GRID_ROWS; x++) {
+      for (let y = 0; y < GRID_COLS; y++) {
+        const cell = document.createElement("div");
+
+        cell.dataset.x = x;
+        cell.dataset.y = y;
+        cell.dataset.type = "aisle";
+        cell.dataset.label = "";
+        cell.dataset.locationId = "";
+        cell.className = "wms-layout-cell aisle";
+        cell.title = `Fila ${x + 1}, Columna ${y + 1}`;
+
+        cell.addEventListener("mousedown", function (event) {
+          event.preventDefault();
+          isMouseDown = true;
+          paintCell(cell);
+        });
+
+        cell.addEventListener("mouseenter", function () {
+            applyCrosshair(cell);
+            if (isMouseDown) {
+                paintCell(cell);
+            }
+        });
+
+        cell.addEventListener("click", function () {
+          paintCell(cell);
+        });
+
+        cell.addEventListener("dblclick", function (event) {
+          event.preventDefault();
+
+          if (cell.dataset.type !== "rack") {
+            applyCellType(cell, "rack");
+          }
+
+          openLocationModal(cell);
+        });
+
+        canvas.appendChild(cell);
+        cellMap.set(cellKey(x, y), cell);
+
+        const saved = seedMap.get(cellKey(x, y));
+
+        if (saved) {
+          applyCellType(cell, saved.type, false, {
+            label: saved.label || "",
+            location_id: saved.location_id || "",
+          });
+        }
+      }
+    }
+
+    updateStats();
+    refreshRouteLocationSelectFromLinkedRacks();
+
+    console.log(
+      "WMS layout cells created:",
+      document.querySelectorAll(".wms-layout-cell").length,
+    );
+  }
+
+  canvas.addEventListener("mouseleave", function () {
+  clearCrosshair();
+});
+function updateGridDimensions() {
+  const currentData = getCurrentCellData();
+
+  const newRows = clampDimension(
+    document.getElementById("gridRowsInput").value
+  );
+
+  const newCols = clampDimension(
+    document.getElementById("gridColsInput").value
+  );
+
+  if (!validateGridSize(newRows, newCols)) {
+    document.getElementById("gridRowsInput").value = GRID_ROWS;
+    document.getElementById("gridColsInput").value = GRID_COLS;
+    setSaveStatus("Cambio de dimensiones bloqueado por límite de seguridad");
+    return;
+  }
+
+  const dimensionsDidNotChange =
+    newRows === GRID_ROWS && newCols === GRID_COLS;
+
+  if (dimensionsDidNotChange) {
+    setSaveStatus("Las dimensiones no cambiaron");
+    return;
+  }
+
+  const hasPaintedCells = currentData.length > 0;
+
+  const cellsThatWillBeLost = currentData.filter(function (item) {
+    return item.x >= newRows || item.y >= newCols;
+  });
+
+  if (hasPaintedCells) {
+    let message = "¿Estás seguro de cambiar las dimensiones del layout?";
+
+    if (cellsThatWillBeLost.length > 0) {
+      message +=
+        `\n\nAtención: ${cellsThatWillBeLost.length} elemento(s) pintado(s) quedarán fuera del nuevo tamaño y se eliminarán del plano.`;
+    }
+
+    message +=
+      "\n\nEsta acción no se guardará hasta que presiones Guardar Layout.";
+
+    const confirmed = confirm(message);
+
+    if (!confirmed) {
+      document.getElementById("gridRowsInput").value = GRID_ROWS;
+      document.getElementById("gridColsInput").value = GRID_COLS;
+      setSaveStatus("Cambio de dimensiones cancelado");
+      return;
+    }
+  }
+
+  GRID_ROWS = newRows;
+  GRID_COLS = newCols;
+
+  document.getElementById("gridRowsInput").value = GRID_ROWS;
+  document.getElementById("gridColsInput").value = GRID_COLS;
+
+  const filteredData = currentData.filter(function (item) {
+    return item.x < GRID_ROWS && item.y < GRID_COLS;
+  });
+
+  buildGrid(filteredData);
+  markUnsaved();
+
+  if (cellsThatWillBeLost.length > 0) {
+    setSaveStatus(
+      `Dimensiones actualizadas · ${cellsThatWillBeLost.length} elemento(s) fuera del nuevo tamaño`
+    );
+  } else {
+    setSaveStatus(`Dimensiones actualizadas a ${GRID_ROWS}x${GRID_COLS}`);
+  }
+}
+
+  function getPayloadCells() {
+    const cells = document.querySelectorAll(".wms-layout-cell");
+    const payload = [];
+
+    cells.forEach(function (cell) {
+      const type = cell.dataset.type;
+
+      if (type === "aisle") {
+        return;
+      }
+
+      payload.push({
+        x: Number(cell.dataset.x),
+        y: Number(cell.dataset.y),
+        type: type,
+        label: cell.dataset.label || "",
+        location_id: cell.dataset.locationId || "",
+      });
+    });
+
+    console.log("Payload layout enviado:", payload);
+
+    return payload;
+  }
+
+  function populateLocationSelect() {
+    const modalSelect = document.getElementById("locationSelect");
+
+    function renderLocations(locations) {
+      if (!modalSelect) {
+        return;
+      }
+
+      modalSelect.innerHTML = "";
+
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Sin ubicación vinculada";
+      defaultOption.dataset.code = "";
+
+      modalSelect.appendChild(defaultOption);
+
+      locations.forEach(function (location) {
+        const optionLabel =
+          location.code +
+          (location.bin_code && location.bin_code !== location.code
+            ? " · " + location.bin_code
+            : "") +
+          (location.warehouse ? " · " + location.warehouse : "");
+
+        const option = document.createElement("option");
+        option.value = location.id;
+        option.textContent = optionLabel;
+        option.dataset.code = location.code;
+
+        modalSelect.appendChild(option);
+      });
+
+      console.log("WMS layout locations loaded:", locations.length);
+    }
+
+    fetch("{% url 'warehouse:layout_locations_api' %}")
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        availableLocations = data.locations || [];
+
+        if (!Array.isArray(availableLocations)) {
+          availableLocations = [];
+        }
+
+        renderLocations(availableLocations);
+      })
+      .catch(function (error) {
+        console.error("Error cargando ubicaciones del layout:", error);
+        renderLocations(availableLocations || []);
+      });
+
+    if (modalSelect) {
+      modalSelect.addEventListener("change", function () {
+        const option = modalSelect.options[modalSelect.selectedIndex];
+        const code = option ? option.dataset.code : "";
+
+        if (code) {
+          document.getElementById("locationLabelInput").value = code;
+        }
+      });
+    }
+  }
+
+  function openLocationModal(cell) {
+    selectedRackCell = cell;
+
+    const modal = document.getElementById("locationModal");
+    const select = document.getElementById("locationSelect");
+    const input = document.getElementById("locationLabelInput");
+
+    if (!modal || !select || !input) {
+      return;
+    }
+
+    select.value = cell.dataset.locationId || "";
+    input.value = cell.dataset.label || "";
+
+    modal.classList.add("open");
+  }
+
+  function closeLocationModal() {
+    selectedRackCell = null;
+
+    const modal = document.getElementById("locationModal");
+
+    if (modal) {
+      modal.classList.remove("open");
+    }
+  }
+
+function refreshRouteLocationSelectFromLinkedRacks() {
+  const linkedOptions = getLinkedRouteOptions();
+
+  const validIds = new Set(
+    linkedOptions.map(function (optionData) {
+      return String(optionData.id);
+    })
+  );
+
+  routeStops = routeStops.filter(function (stop) {
+    return validIds.has(String(stop.id));
+  });
+
+  renderRouteAddSelect();
+  renderRouteStops();
+
+  if (linkedOptions.length === 0) {
+    setRouteStatus("Primero vincula un rack con una ubicación real.");
+  } else {
+    setRouteStatus(
+      `${linkedOptions.length} ubicación(es) vinculada(s) disponibles para ruta.`
+    );
+  }
+
+  console.log("Ubicaciones vinculadas detectadas:", linkedOptions);
+}
+
+  function saveSelectedRackLocation() {
+    if (!selectedRackCell) {
+      setSaveStatus("No hay rack seleccionado.");
+      return;
+    }
+
+    const select = document.getElementById("locationSelect");
+    const input = document.getElementById("locationLabelInput");
+
+    if (!select || !input) {
+      setSaveStatus("No se encontró el selector de ubicación.");
+      return;
+    }
+
+    const selectedOption = select.options[select.selectedIndex];
+
+    const locationId = select.value || "";
+    const locationCode = selectedOption
+      ? selectedOption.dataset.code || ""
+      : "";
+    const label = input.value || locationCode || "";
+
+    selectedRackCell.dataset.locationId = locationId;
+    selectedRackCell.dataset.label = label;
+
+    applyCellType(selectedRackCell, "rack", true, {
+      location_id: locationId,
+      label: label,
+    });
+
+    refreshRouteLocationSelectFromLinkedRacks();
+
+    console.log("Rack vinculado:", {
+      x: selectedRackCell.dataset.x,
+      y: selectedRackCell.dataset.y,
+      location_id: selectedRackCell.dataset.locationId,
+      label: selectedRackCell.dataset.label,
+    });
+
+    closeLocationModal();
+  }
+
+  function clearSelectedRackLocation() {
+    if (!selectedRackCell) {
+      return;
+    }
+
+    selectedRackCell.dataset.locationId = "";
+    selectedRackCell.dataset.label = "";
+
+    applyCellType(selectedRackCell, "rack", true, {
+      location_id: "",
+      label: "",
+    });
+
+    refreshRouteLocationSelectFromLinkedRacks();
+    closeLocationModal();
+  }
+
+  function clearPickingRoute() {
+    document.querySelectorAll(".wms-layout-cell").forEach(function (cell) {
+      cell.classList.remove("route", "route-start", "route-target");
+    });
+
+    setRouteStatus("Ruta limpiada.");
+  }
+
+  function isWalkableCell(cell) {
+    if (!cell) {
+      return false;
+    }
+
+    const type = cell.dataset.type;
+
+    return type === "aisle" || type === "dock" || type === "packing";
+  }
+
+  function getCellAt(x, y) {
+    return document.querySelector(
+      `.wms-layout-cell[data-x="${x}"][data-y="${y}"]`,
+    );
+  }
+
+  function getNeighbors(position) {
+    const directions = [
+      { x: 0, y: -1 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: -1, y: 0 },
+    ];
+
+    const neighbors = [];
+
+    directions.forEach(function (direction) {
+      const nx = position.x + direction.x;
+      const ny = position.y + direction.y;
+      const cell = getCellAt(nx, ny);
+
+      if (isWalkableCell(cell)) {
+        neighbors.push({
+          x: nx,
+          y: ny,
+        });
+      }
+    });
+
+    return neighbors;
+  }
+
+  function positionKey(position) {
+    return `${position.x}-${position.y}`;
+  }
+
+  function bfsShortestPath(start, target) {
+    const queue = [start];
+    const visited = new Set([positionKey(start)]);
+    const previous = new Map();
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+
+      if (current.x === target.x && current.y === target.y) {
+        const path = [];
+        let cursor = current;
+
+        while (cursor) {
+          path.unshift(cursor);
+          cursor = previous.get(positionKey(cursor));
+        }
+
+        return path;
+      }
+
+      getNeighbors(current).forEach(function (neighbor) {
+        const key = positionKey(neighbor);
+
+        if (visited.has(key)) {
+          return;
+        }
+
+        visited.add(key);
+        previous.set(key, current);
+        queue.push(neighbor);
+      });
+    }
+
+    return null;
+  }
+
+  function getStartCellForRoute() {
+    let startCell = document.querySelector(
+      '.wms-layout-cell[data-type="dock"]',
+    );
+
+    if (!startCell) {
+      startCell = document.querySelector(
+        '.wms-layout-cell[data-type="packing"]',
+      );
+    }
+
+    return startCell;
+  }
+
+  function getRackCellsForLocation(locationId) {
+    return Array.from(document.querySelectorAll(".wms-layout-cell")).filter(
+      function (cell) {
+        return (
+          cell.dataset.type === "rack" &&
+          String(cell.dataset.locationId || "") === String(locationId)
+        );
+      },
+    );
+  }
+
+  function getWalkableTargetsAroundRack(rackCell) {
+    const x = Number(rackCell.dataset.x);
+    const y = Number(rackCell.dataset.y);
+
+    const candidates = [
+      { x: x, y: y - 1 },
+      { x: x + 1, y: y },
+      { x: x, y: y + 1 },
+      { x: x - 1, y: y },
+    ];
+
+    return candidates.filter(function (position) {
+      return isWalkableCell(getCellAt(position.x, position.y));
+    });
+  }
+
+function getSelectedRouteLocationIds() {
+  console.log("Paradas actuales para simular:", routeStops);
+
+  if (!Array.isArray(routeStops)) {
+    return [];
+  }
+
+  return routeStops
+    .map(function (stop) {
+      return String(stop.id || "").trim();
+    })
+    .filter(Boolean);
+}
+
+  function findBestPathToLocation(currentPosition, locationId) {
+    const rackCells = getRackCellsForLocation(locationId);
+
+    if (rackCells.length === 0) {
+      return null;
+    }
+
+    let bestPath = null;
+    let bestRackCell = null;
+
+    rackCells.forEach(function (rackCell) {
+      const targets = getWalkableTargetsAroundRack(rackCell);
+
+      targets.forEach(function (target) {
+        const path = bfsShortestPath(currentPosition, target);
+
+        if (!path) {
+          return;
+        }
+
+        if (!bestPath || path.length < bestPath.length) {
+          bestPath = path;
+          bestRackCell = rackCell;
+        }
+      });
+    });
+
+    if (!bestPath) {
+      return null;
+    }
+
+    return {
+      path: bestPath,
+      rackCell: bestRackCell,
+    };
+  }
+
+  let routeStops = [];
+
+function getLinkedRouteOptions() {
+  const linkedRackCells = Array.from(
+    document.querySelectorAll(".wms-layout-cell")
+  ).filter(function (cell) {
+    return (
+      cell.dataset.type === "rack" &&
+      cell.dataset.locationId &&
+      cell.dataset.locationId !== "None" &&
+      cell.dataset.locationId !== "null"
+    );
+  });
+
+  const seenLocations = new Map();
+
+  linkedRackCells.forEach(function (cell) {
+    const locationId = String(cell.dataset.locationId || "").trim();
+    const label = (cell.dataset.label || `Ubicación #${locationId}`).trim();
+
+    if (!locationId || seenLocations.has(locationId)) {
+      return;
+    }
+
+    seenLocations.set(locationId, {
+      id: locationId,
+      label: label
+    });
+  });
+
+  return Array.from(seenLocations.values());
+}
+function renderRouteAddSelect() {
+  const addSelect = document.getElementById("routeAddSelect");
+
+  if (!addSelect) {
+    return;
+  }
+
+  const options = getLinkedRouteOptions();
+
+  const used = new Set(
+    routeStops.map(function (stop) {
+      return String(stop.id);
+    })
+  );
+
+  addSelect.innerHTML = "";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Selecciona ubicación vinculada";
+  addSelect.appendChild(defaultOption);
+
+  options.forEach(function (optionData) {
+    if (used.has(String(optionData.id))) {
+      return;
+    }
+
+    const option = document.createElement("option");
+    option.value = optionData.id;
+    option.textContent = optionData.label;
+
+    addSelect.appendChild(option);
+  });
+
+  console.log("Opciones disponibles para agregar parada:", options);
+}
+
+function renderRouteStops() {
+  const list = document.getElementById("routeStopsList");
+  const counter = document.getElementById("routeStopsCounter");
+
+  if (!list) {
+    return;
+  }
+
+  list.innerHTML = "";
+
+  if (counter) {
+    counter.textContent = `${routeStops.length} parada(s)`;
+  }
+
+  if (routeStops.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "route-empty";
+    empty.textContent = "Agrega ubicaciones vinculadas para calcular una ruta.";
+    list.appendChild(empty);
+    renderRouteAddSelect();
+    return;
+  }
+
+  routeStops.forEach(function (stop, index) {
+    const item = document.createElement("div");
+    item.className = "route-stop";
+    item.draggable = true;
+    item.dataset.index = index;
+
+    item.innerHTML = `
+      <span class="route-stop-handle">☰</span>
+      <span class="route-stop-main">
+        <strong>${index + 1}. ${stop.label}</strong>
+        <small>Arrastra para reordenar manualmente</small>
+      </span>
+      <button type="button" class="route-stop-remove" onclick="removeRouteStop('${stop.id}')">×</button>
+    `;
+
+    item.addEventListener("dragstart", function () {
+      item.classList.add("dragging");
+    });
+
+    item.addEventListener("dragend", function () {
+      item.classList.remove("dragging");
+      syncRouteStopsFromDom();
+    });
+
+    list.appendChild(item);
+  });
+
+  list.addEventListener("dragover", handleRouteStopDragOver);
+
+  renderRouteAddSelect();
+}
+
+function handleRouteStopDragOver(event) {
+  event.preventDefault();
+
+  const list = document.getElementById("routeStopsList");
+  const dragging = list.querySelector(".dragging");
+
+  if (!dragging) {
+    return;
+  }
+
+  const afterElement = getDragAfterElement(list, event.clientY);
+
+  if (!afterElement) {
+    list.appendChild(dragging);
+  } else {
+    list.insertBefore(dragging, afterElement);
+  }
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [
+    ...container.querySelectorAll(".route-stop:not(.dragging)")
+  ];
+
+  return draggableElements.reduce(function (closest, child) {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+
+    if (offset < 0 && offset > closest.offset) {
+      return {
+        offset: offset,
+        element: child
+      };
+    }
+
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function syncRouteStopsFromDom() {
+  const items = document.querySelectorAll("#routeStopsList .route-stop");
+  const newOrder = [];
+
+  items.forEach(function (item) {
+    const oldIndex = Number(item.dataset.index);
+    const stop = routeStops[oldIndex];
+
+    if (stop) {
+      newOrder.push(stop);
+    }
+  });
+
+  routeStops = newOrder;
+  renderRouteStops();
+  clearPickingRoute();
+  setRouteStatus("Orden de paradas actualizado manualmente.");
+}
+
+function addRouteStopFromSelect() {
+  const addSelect = document.getElementById("routeAddSelect");
+
+  if (!addSelect || !addSelect.value) {
+    setRouteStatus("Selecciona una ubicación vinculada para agregarla a la ruta.");
+    return;
+  }
+
+  const selectedOption = addSelect.options[addSelect.selectedIndex];
+
+  routeStops.push({
+    id: String(addSelect.value),
+    label: selectedOption ? selectedOption.textContent : `Ubicación #${addSelect.value}`
+  });
+
+  renderRouteStops();
+  clearPickingRoute();
+  setRouteStatus(`${routeStops.length} parada(s) listas para simular.`);
+}
+
+function removeRouteStop(locationId) {
+  routeStops = routeStops.filter(function (stop) {
+    return String(stop.id) !== String(locationId);
+  });
+
+  renderRouteStops();
+  clearPickingRoute();
+  setRouteStatus("Parada eliminada.");
+}
+
+function clearRouteStops() {
+  routeStops = [];
+  renderRouteStops();
+  clearPickingRoute();
+  setRouteStatus("Paradas vaciadas.");
+}
+
+function getStartPositionForRoute() {
+  const startCell = getStartCellForRoute();
+
+  if (!startCell) {
+    return null;
+  }
+
+  return {
+    x: Number(startCell.dataset.x),
+    y: Number(startCell.dataset.y)
+  };
+}
+
+function getShortestDistanceToLocation(currentPosition, locationId) {
+  const candidate = findBestPathToLocation(currentPosition, locationId);
+
+  if (!candidate) {
+    return null;
+  }
+
+  return {
+    distance: candidate.path.length,
+    candidate: candidate
+  };
+}
+
+function optimizeRouteStops() {
+  const startPosition = getStartPositionForRoute();
+
+  if (!startPosition) {
+    setRouteStatus("Primero pinta un Andén o Mesa de empaque para optimizar.");
+    return;
+  }
+
+  if (routeStops.length <= 1) {
+    setRouteStatus("Agrega dos o más paradas para optimizar el viaje.");
+    return;
+  }
+
+  let currentPosition = startPosition;
+  let pending = [...routeStops];
+  let optimized = [];
+
+  while (pending.length > 0) {
+    let bestIndex = -1;
+    let bestDistance = null;
+    let bestCandidate = null;
+
+    pending.forEach(function (stop, index) {
+      const result = getShortestDistanceToLocation(currentPosition, stop.id);
+
+      if (!result) {
+        return;
+      }
+
+      if (bestDistance === null || result.distance < bestDistance) {
+        bestDistance = result.distance;
+        bestIndex = index;
+        bestCandidate = result.candidate;
+      }
+    });
+
+    if (bestIndex === -1 || !bestCandidate) {
+      setRouteStatus("No se pudo optimizar una o más paradas. Revisa pasillos libres.");
+      return;
+    }
+
+    optimized.push(pending[bestIndex]);
+
+    const lastStep = bestCandidate.path[bestCandidate.path.length - 1];
+
+    currentPosition = {
+      x: lastStep.x,
+      y: lastStep.y
+    };
+
+    pending.splice(bestIndex, 1);
+  }
+
+  routeStops = optimized;
+  renderRouteStops();
+  clearPickingRoute();
+  setRouteStatus("Ruta optimizada por cercanía desde el punto de inicio.");
+}
+
+  function simulatePickingRoute() {
+    clearPickingRoute();
+
+    const startCell = getStartCellForRoute();
+
+    if (!startCell) {
+      setRouteStatus(
+        "Primero pinta un Andén de carga o Mesa de empaque para iniciar la ruta.",
+      );
+      return;
+    }
+
+    const selectedLocationIds = getSelectedRouteLocationIds();
+    console.log("IDs de ruta seleccionados:", selectedLocationIds);
+    if (selectedLocationIds.length === 0) {
+        setRouteStatus("Agrega al menos una parada al viaje.");
+        return;
+}
+
+    let currentPosition = {
+      x: Number(startCell.dataset.x),
+      y: Number(startCell.dataset.y),
+    };
+
+    startCell.classList.add("route-start");
+
+    let pendingLocations = [...selectedLocationIds];
+    let fullRoute = [];
+    let targetRackCells = [];
+
+    while (pendingLocations.length > 0) {
+      let bestCandidate = null;
+      let bestIndex = -1;
+
+      pendingLocations.forEach(function (locationId, index) {
+        const candidate = findBestPathToLocation(currentPosition, locationId);
+
+        if (!candidate) {
+          return;
+        }
+
+        if (
+          !bestCandidate ||
+          candidate.path.length < bestCandidate.path.length
+        ) {
+          bestCandidate = candidate;
+          bestIndex = index;
+        }
+      });
+
+      if (!bestCandidate) {
+        setRouteStatus(
+          "No se encontró camino para una o más ubicaciones. Revisa obstáculos/racks bloqueando pasillos.",
+        );
+        break;
+      }
+
+      fullRoute = fullRoute.concat(bestCandidate.path);
+      targetRackCells.push(bestCandidate.rackCell);
+
+      const lastStep = bestCandidate.path[bestCandidate.path.length - 1];
+
+      currentPosition = {
+        x: lastStep.x,
+        y: lastStep.y,
+      };
+
+      pendingLocations.splice(bestIndex, 1);
+    }
+
+    fullRoute.forEach(function (position, index) {
+      const cell = getCellAt(position.x, position.y);
+
+      if (!cell) {
+        return;
+      }
+
+      if (index === 0) {
+        cell.classList.add("route-start");
+      } else {
+        cell.classList.add("route");
+      }
+    });
+
+    targetRackCells.forEach(function (rackCell) {
+      rackCell.classList.add("route-target");
+    });
+
+    if (fullRoute.length > 0) {
+      setRouteStatus(
+        `Ruta calculada: ${fullRoute.length} pasos aproximados para ${targetRackCells.length} ubicación(es).`,
+      );
+    }
+  }
+
+  function saveWarehouseLayout() {
+    const payload = {
+      layout_key: LAYOUT_KEY,
+      rows: GRID_ROWS,
+      cols: GRID_COLS,
+      cells: getPayloadCells(),
+    };
+
+    console.log("Guardando layout:", payload);
+
+    setSaveStatus("Guardando...");
+
+    fetch("{% url 'warehouse:guardar_layout' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        console.log("Respuesta guardar layout:", data);
+
+        if (data.status === "success") {
+          hasUnsavedChanges = false;
+          setSaveStatus(
+            `Guardado correctamente (${data.saved_cells} celdas · ${data.rows}x${data.cols})`,
+          );
+        } else {
+          setSaveStatus(data.message || "Error al guardar");
+        }
+      })
+      .catch(function (error) {
+        console.error("Error guardando layout:", error);
+        setSaveStatus("Error de conexión al guardar");
+      });
+  }
+
+  document.querySelectorAll(".tool-btn").forEach(function (button) {
+    button.addEventListener("click", function () {
+      document.querySelectorAll(".tool-btn").forEach(function (btn) {
+        btn.classList.remove("active");
+      });
+
+      button.classList.add("active");
+      activeTool = button.dataset.tool;
+    });
+  });
+
+  document.addEventListener("mouseup", function () {
+    isMouseDown = false;
+  });
+
+  const locationModal = document.getElementById("locationModal");
+
+  if (locationModal) {
+    locationModal.addEventListener("click", function (event) {
+      if (event.target.id === "locationModal") {
+        closeLocationModal();
+      }
+    });
+  }
+
+  window.addEventListener("beforeunload", function (event) {
+    if (!hasUnsavedChanges) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+  populateLocationSelect();
+  buildGrid(initialCells);
+  refreshRouteLocationSelectFromLinkedRacks();
+  setSaveStatus("Sin cambios pendientes");
+</script>
+
+{% endblock %}

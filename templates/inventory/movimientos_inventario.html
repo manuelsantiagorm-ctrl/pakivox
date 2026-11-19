@@ -1,0 +1,75 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Movimientos de Inventario | PAKIVOX{% endblock %}
+{% block page_title %}Movimientos de Inventario{% endblock %}
+{% block page_subtitle %}Bitácora ejecutiva y trazabilidad de existencias{% endblock %}
+
+{% block content %}
+<section class="mov-page">
+  <header class="mov-hero">
+    <div>
+      <span class="mov-eyebrow"><i class="bi bi-shield-check"></i> Auditoría de inventario</span>
+      <h2>Movimientos</h2>
+      <p>Consulta qué cambió, dónde ocurrió y quién realizó cada operación.</p>
+    </div>
+    <div class="mov-actions">
+      <a class="mov-btn mov-btn-secondary" href="{% url 'inventory:lista_stock' %}"><i class="bi bi-boxes"></i> Stock global</a>
+      <a class="mov-btn mov-btn-primary" href="{% url 'inventory:seleccionar_producto_entrada_stock' %}"><i class="bi bi-plus-lg"></i> Nueva entrada</a>
+    </div>
+  </header>
+
+  <div class="mov-kpis">
+    <article class="mov-kpi kpi-green"><span><i class="bi bi-arrow-down-left"></i></span><div><small>Entradas</small><strong>{{ entradas }}</strong><p>Movimientos del filtro</p></div></article>
+    <article class="mov-kpi kpi-red"><span><i class="bi bi-arrow-up-right"></i></span><div><small>Salidas</small><strong>{{ salidas }}</strong><p>Salidas, consumo y merma</p></div></article>
+    <article class="mov-kpi kpi-purple"><span><i class="bi bi-sliders"></i></span><div><small>Ajustes</small><strong>{{ ajustes }}</strong><p>Correcciones registradas</p></div></article>
+    <article class="mov-kpi kpi-blue"><span><i class="bi bi-arrow-left-right"></i></span><div><small>Total</small><strong>{{ total_movements }}</strong><p>Resultados encontrados</p></div></article>
+  </div>
+
+  <form method="get" class="mov-filters">
+    <div class="mov-filter-search">
+      <label for="mov-q">Buscar movimiento</label>
+      <div class="mov-input-icon"><i class="bi bi-search"></i><input id="mov-q" type="search" name="q" value="{{ q }}" maxlength="120" placeholder="SKU, producto, referencia o nota"></div>
+    </div>
+    <div><label for="mov-type">Tipo</label><select id="mov-type" name="movement_type"><option value="">Todos los tipos</option>{% for value, label in movement_type_choices %}<option value="{{ value }}" {% if movement_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label for="mov-warehouse">Bodega</label><select id="mov-warehouse" name="warehouse"><option value="">Todas las autorizadas</option>{% for warehouse in warehouses %}<option value="{{ warehouse.id }}" {% if warehouse_id == warehouse.id|stringformat:"s" %}selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}</select></div>
+    <div><label for="mov-from">Desde</label><input id="mov-from" type="date" name="date_from" value="{{ date_from }}"></div>
+    <div><label for="mov-to">Hasta</label><input id="mov-to" type="date" name="date_to" value="{{ date_to }}"></div>
+    <div class="mov-filter-actions"><button type="submit"><i class="bi bi-funnel"></i> Aplicar</button><a href="{% url 'inventory:movimientos_inventario' %}" title="Limpiar filtros"><i class="bi bi-arrow-counterclockwise"></i></a></div>
+  </form>
+
+  <section class="mov-table-card">
+    <div class="mov-table-head"><div><h3>Bitácora de movimientos</h3><p>{{ total_movements }} resultado{{ total_movements|pluralize }} · 40 por página</p></div><span class="mov-live"><i></i> Datos reales</span></div>
+    <div class="mov-table-wrap">
+      <table class="mov-table">
+        <thead><tr><th>Fecha y hora</th><th>Producto</th><th>Movimiento</th><th>Cantidad</th><th>Bodega</th><th>Referencia</th><th>Responsable</th><th></th></tr></thead>
+        <tbody>
+        {% for movement in movements %}
+          <tr>
+            <td data-label="Fecha"><strong>{{ movement.created_at|date:"d M Y" }}</strong><small>{{ movement.created_at|date:"H:i" }} h</small></td>
+            <td data-label="Producto"><a class="mov-product" href="{% url 'inventory:detalle_producto' movement.variant.product_id %}">{{ movement.variant.product.name }}</a><small class="mov-sku">{{ movement.variant.sku }}</small></td>
+            <td data-label="Movimiento"><span class="mov-badge badge-{{ movement.movement_type }}">{{ movement.get_movement_type_display }}</span></td>
+            <td data-label="Cantidad"><strong class="mov-qty qty-{{ movement.movement_type }}">{% if movement.movement_type == 'in' or movement.movement_type == 'release' %}+{% elif movement.movement_type == 'out' or movement.movement_type == 'consume_reserved' or movement.movement_type == 'damage' %}−{% endif %}{{ movement.quantity }}</strong>{% if movement.stock_before is not None and movement.stock_after is not None %}<small>{{ movement.stock_before }} → {{ movement.stock_after }}</small>{% endif %}</td>
+            <td data-label="Bodega"><span class="mov-warehouse"><i class="bi bi-building"></i>{{ movement.warehouse.name }}</span></td>
+            <td data-label="Referencia"><strong class="mov-reference">{{ movement.reference|default:"Sin referencia" }}</strong>{% if movement.notes %}<small title="{{ movement.notes }}">{{ movement.notes|truncatechars:42 }}</small>{% endif %}</td>
+            <td data-label="Responsable"><span class="mov-user"><i class="bi bi-person-circle"></i>{% if movement.created_by %}{{ movement.created_by.get_full_name|default:movement.created_by.username }}{% else %}Sistema{% endif %}</span></td>
+            <td class="mov-row-action"><a href="{% url 'inventory:detalle_producto' movement.variant.product_id %}" title="Abrir producto"><i class="bi bi-chevron-right"></i></a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8"><div class="mov-empty"><span><i class="bi bi-arrow-left-right"></i></span><h3>No hay movimientos con estos filtros</h3><p>Ajusta la búsqueda o registra una nueva entrada de stock.</p><a href="{% url 'inventory:seleccionar_producto_entrada_stock' %}">Registrar entrada</a></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mov-pagination" aria-label="Paginación"><span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span><div>{% if page_obj.has_previous %}<a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i> Anterior</a>{% endif %}{% if page_obj.has_next %}<a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente <i class="bi bi-chevron-right"></i></a>{% endif %}</div></nav>
+    {% endif %}
+  </section>
+</section>
+
+<style>
+.mov-page{display:grid;gap:20px;color:#e5e7eb}.mov-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:3px 2px}.mov-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#38bdf8;text-transform:uppercase;font-size:11px;letter-spacing:.1em;font-weight:900}.mov-hero h2{margin:5px 0 3px;color:#f8fafc;font-size:32px;line-height:1.1}.mov-hero p{margin:0;color:#94a3b8}.mov-actions{display:flex;gap:10px;flex-wrap:wrap}.mov-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border-radius:9px;text-decoration:none;font-weight:800;font-size:13px}.mov-btn-primary{background:#1597e5;color:#fff;box-shadow:0 7px 20px rgba(21,151,229,.2)}.mov-btn-secondary{background:#111827;border:1px solid #263348;color:#dbeafe}.mov-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.mov-kpi{position:relative;overflow:hidden;display:flex;align-items:center;gap:13px;padding:17px;background:linear-gradient(145deg,#101927,#0d1522);border:1px solid #223047;border-radius:13px}.mov-kpi:after{content:"";position:absolute;inset:auto -15px -30px auto;width:85px;height:85px;border-radius:50%;background:currentColor;opacity:.035}.mov-kpi>span{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;border-radius:10px;background:currentColor}.mov-kpi>span i{color:#07111f;font-size:18px}.mov-kpi div{min-width:0}.mov-kpi small{display:block;color:#94a3b8;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.mov-kpi strong{display:block;color:#f8fafc;font-size:25px;line-height:1.15}.mov-kpi p{margin:2px 0 0;color:#64748b;font-size:11px}.kpi-green{color:#34d399}.kpi-red{color:#fb7185}.kpi-purple{color:#a78bfa}.kpi-blue{color:#38bdf8}.mov-filters{display:grid;grid-template-columns:minmax(220px,1.7fr) repeat(4,minmax(130px,1fr)) auto;align-items:end;gap:11px;padding:16px;background:#101927;border:1px solid #223047;border-radius:13px}.mov-filters label{display:block;margin:0 0 7px;color:#94a3b8;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.mov-filters input,.mov-filters select{width:100%;height:41px;padding:0 11px;background:#09111d;border:1px solid #25344a;border-radius:8px;color:#e5e7eb;outline:none}.mov-filters input:focus,.mov-filters select:focus{border-color:#1597e5;box-shadow:0 0 0 3px rgba(21,151,229,.1)}.mov-input-icon{position:relative}.mov-input-icon i{position:absolute;left:12px;top:12px;color:#64748b}.mov-input-icon input{padding-left:35px}.mov-filter-actions{display:flex;gap:7px}.mov-filter-actions button,.mov-filter-actions a{height:41px;border:0;border-radius:8px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}.mov-filter-actions button{padding:0 14px;background:#1597e5;color:#fff}.mov-filter-actions a{width:41px;background:#1d293a;color:#cbd5e1;text-decoration:none}.mov-table-card{overflow:hidden;background:#101927;border:1px solid #223047;border-radius:13px}.mov-table-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px 19px;border-bottom:1px solid #223047}.mov-table-head h3{margin:0 0 3px;color:#f8fafc;font-size:16px}.mov-table-head p{margin:0;color:#64748b;font-size:12px}.mov-live{display:inline-flex;align-items:center;gap:7px;color:#94a3b8;font-size:11px;font-weight:700}.mov-live i{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.09)}.mov-table-wrap{overflow-x:auto}.mov-table{width:100%;border-collapse:collapse;min-width:1060px}.mov-table th{padding:11px 14px;background:#0c1421;color:#64748b;text-align:left;text-transform:uppercase;letter-spacing:.06em;font-size:10px}.mov-table td{padding:13px 14px;border-top:1px solid rgba(34,48,71,.7);vertical-align:middle;font-size:12px}.mov-table tbody tr:hover{background:rgba(30,64,110,.12)}.mov-table td strong{display:block;color:#e5e7eb}.mov-table td small{display:block;margin-top:3px;color:#64748b;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mov-product{display:block;max-width:210px;color:#f1f5f9;text-decoration:none;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mov-product:hover{color:#38bdf8}.mov-sku{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.mov-badge{display:inline-flex;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:900;white-space:nowrap;background:rgba(56,189,248,.1);color:#7dd3fc}.badge-in{background:rgba(52,211,153,.1);color:#6ee7b7}.badge-out,.badge-consume_reserved{background:rgba(251,113,133,.1);color:#fda4af}.badge-adjustment,.badge-transfer{background:rgba(167,139,250,.1);color:#c4b5fd}.badge-reservation{background:rgba(251,191,36,.1);color:#fcd34d}.badge-release{background:rgba(34,211,238,.1);color:#67e8f9}.badge-damage,.badge-quarantine{background:rgba(251,146,60,.1);color:#fdba74}.mov-qty{font-size:15px!important}.qty-in,.qty-release{color:#34d399!important}.qty-out,.qty-consume_reserved,.qty-damage{color:#fb7185!important}.mov-warehouse,.mov-user{display:inline-flex;align-items:center;gap:6px;max-width:155px;color:#cbd5e1}.mov-reference{max-width:185px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mov-row-action a{display:grid;place-items:center;width:30px;height:30px;border-radius:7px;color:#64748b;text-decoration:none}.mov-row-action a:hover{color:#38bdf8;background:rgba(56,189,248,.1)}.mov-empty{text-align:center;padding:48px 15px}.mov-empty>span{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:rgba(56,189,248,.09);color:#38bdf8;font-size:22px}.mov-empty h3{margin:0 0 6px;color:#f8fafc}.mov-empty p{margin:0 0 16px;color:#64748b}.mov-empty a{display:inline-flex;padding:9px 13px;border-radius:8px;background:#1597e5;color:#fff;text-decoration:none;font-weight:800}.mov-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 18px;border-top:1px solid #223047;color:#64748b;font-size:12px}.mov-pagination div{display:flex;gap:8px}.mov-pagination a{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #2a3950;border-radius:7px;color:#cbd5e1;text-decoration:none}
+@media(max-width:1250px){.mov-kpis{grid-template-columns:repeat(2,1fr)}.mov-filters{grid-template-columns:repeat(3,1fr)}.mov-filter-search{grid-column:span 2}}
+@media(max-width:720px){.mov-hero{align-items:stretch;flex-direction:column}.mov-actions{display:grid;grid-template-columns:1fr 1fr}.mov-kpis{grid-template-columns:1fr 1fr}.mov-filters{grid-template-columns:1fr}.mov-filter-search{grid-column:auto}.mov-filter-actions button{flex:1}.mov-table{min-width:0}.mov-table thead{display:none}.mov-table,.mov-table tbody,.mov-table tr,.mov-table td{display:block;width:100%}.mov-table tr{padding:12px;border-top:1px solid #223047}.mov-table td{display:grid;grid-template-columns:105px minmax(0,1fr);gap:8px;padding:7px 5px;border:0}.mov-table td:before{content:attr(data-label);color:#64748b;font-size:10px;font-weight:800;text-transform:uppercase}.mov-row-action{display:none!important}.mov-pagination{align-items:flex-start;flex-direction:column}}
+@media(max-width:460px){.mov-actions,.mov-kpis{grid-template-columns:1fr}.mov-hero h2{font-size:28px}}
+</style>
+{% endblock %}

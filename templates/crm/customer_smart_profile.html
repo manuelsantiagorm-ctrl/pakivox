@@ -1,0 +1,2337 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Perfil Cliente 360 | {{ customer.full_name }} | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Perfil Cliente 360
+{% endblock %}
+
+{% block page_subtitle %}
+Vista comercial, financiera, logística y operativa del cliente
+{% endblock %}
+
+{% block content %}
+<section class="profile360">
+
+  <section class="profile360-hero segment-{{ segment.class }}">
+    <div class="profile360-identity">
+      <div class="profile360-avatar" aria-hidden="true">
+        {{ initials }}
+      </div>
+
+      <div class="profile360-name">
+        <div class="profile360-heading-row">
+          <div>
+            <span class="profile360-eyebrow">
+              Cliente #{{ customer.id }}
+              {% if was_imported %}
+                · Importado
+              {% endif %}
+            </span>
+
+            <h2>{{ customer.full_name }}</h2>
+          </div>
+
+          <span class="profile360-segment {{ segment.class }}">
+            {{ segment.label }}
+          </span>
+        </div>
+
+        <p class="profile360-commercial-name">
+          {% if customer.business_name %}
+            {{ customer.business_name }}
+          {% else %}
+            Sin nombre comercial
+          {% endif %}
+        </p>
+
+        <div class="profile360-meta">
+          <span>
+            <i class="bi bi-receipt"></i>
+            RFC: {{ customer.rfc|default:"Sin RFC" }}
+          </span>
+
+          <span>
+            <i class="bi bi-building"></i>
+            {{ business_sector }}
+          </span>
+
+          <span>
+            <i class="bi bi-diagram-3"></i>
+            {{ import_source_label }}
+          </span>
+
+          <span>
+            <i class="bi bi-person-badge"></i>
+            {{ assigned_salesperson }}
+          </span>
+        </div>
+
+        <p class="profile360-segment-description">
+          {{ segment.description }}
+        </p>
+      </div>
+    </div>
+
+    <div class="profile360-hero-actions">
+      {% if whatsapp_number %}
+        <a
+          href="https://wa.me/{{ whatsapp_number }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="profile360-button whatsapp"
+        >
+          <i class="bi bi-whatsapp"></i>
+          WhatsApp
+        </a>
+      {% endif %}
+
+      {% if customer.phone %}
+        <a
+          href="tel:{{ customer.phone }}"
+          class="profile360-icon-button"
+          title="Llamar al cliente"
+          aria-label="Llamar al cliente"
+        >
+          <i class="bi bi-telephone"></i>
+        </a>
+      {% endif %}
+
+      {% if customer.email %}
+        <a
+          href="mailto:{{ customer.email }}"
+          class="profile360-icon-button"
+          title="Enviar correo"
+          aria-label="Enviar correo"
+        >
+          <i class="bi bi-envelope"></i>
+        </a>
+      {% endif %}
+
+      <a
+        href="{% url 'customer_edit' customer.id %}"
+        class="profile360-button secondary"
+      >
+        <i class="bi bi-pencil-square"></i>
+        Editar perfil
+      </a>
+    </div>
+  </section>
+
+  <section class="profile360-contact-strip">
+    <div>
+      <span>Teléfono</span>
+      <strong>{{ customer.phone|default:"No registrado" }}</strong>
+    </div>
+
+    <div>
+      <span>WhatsApp</span>
+      <strong>{{ customer.whatsapp|default:"No registrado" }}</strong>
+    </div>
+
+    <div>
+      <span>Correo</span>
+      <strong>{{ customer.email|default:"No registrado" }}</strong>
+    </div>
+
+    <div>
+      <span>Persona de contacto</span>
+      <strong>{{ customer.contact_name|default:"No registrada" }}</strong>
+    </div>
+  </section>
+
+  <section class="profile360-actions">
+    <a
+      href="{% url 'crm_home' %}"
+      class="profile360-button ghost"
+    >
+      <i class="bi bi-arrow-left"></i>
+      Volver al CRM
+    </a>
+
+    <a
+      href="{% url 'sales:crear_pedido' %}"
+      class="profile360-button primary"
+    >
+      <i class="bi bi-cart-plus"></i>
+      Crear pedido
+    </a>
+
+    <form
+      method="post"
+      action="{% url 'duplicate_last_customer_order' customer.id %}"
+      onsubmit="return confirm('¿Duplicar el último pedido de este cliente?');"
+    >
+      {% csrf_token %}
+
+      <button
+        type="submit"
+        class="profile360-button success"
+      >
+        <i class="bi bi-copy"></i>
+        Duplicar último pedido
+      </button>
+    </form>
+
+    <a
+      href="{% url 'customer_address_create' customer.id %}"
+      class="profile360-button warning"
+    >
+      <i class="bi bi-geo-alt"></i>
+      Nueva dirección
+    </a>
+  </section>
+
+  {% if has_address_omission %}
+    <section class="profile360-import-warning">
+      <div class="profile360-import-icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+
+      <div>
+        <span class="profile360-eyebrow warning-text">
+          Acción requerida
+        </span>
+
+        <h3>Dirección omitida durante la importación</h3>
+
+        <p>
+          El cliente fue creado correctamente, pero la dirección de la
+          fila #{{ import_omission_row.row_number }} estaba incompleta.
+          {% if import_job %}
+            Lote: <strong>{{ import_job.folio }}</strong>.
+          {% endif %}
+        </p>
+      </div>
+
+      <a
+        href="{% url 'customer_address_create' customer.id %}"
+        class="profile360-button warning"
+      >
+        <i class="bi bi-plus-circle"></i>
+        Completar dirección
+      </a>
+    </section>
+  {% endif %}
+
+  <section class="profile360-kpis">
+    <article class="profile360-kpi">
+      <div class="profile360-kpi-icon cyan">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+
+      <div>
+        <span>Compra mensual promedio</span>
+        <strong>${{ monthly_purchase|floatformat:2 }}</strong>
+        <small>{{ monthly_purchase_source }}</small>
+      </div>
+    </article>
+
+    <article class="profile360-kpi">
+      <div class="profile360-kpi-icon purple">
+        <i class="bi bi-bag-check"></i>
+      </div>
+
+      <div>
+        <span>Último pedido</span>
+
+        {% if last_order_date %}
+          <strong>{{ last_order_date|date:"d/m/Y" }}</strong>
+          <small>
+            Hace {{ days_since_last_order }} día{{ days_since_last_order|pluralize }}
+            · {{ last_order.folio }}
+          </small>
+        {% else %}
+          <strong>Sin pedidos</strong>
+          <small>Cliente pendiente de primera compra</small>
+        {% endif %}
+      </div>
+    </article>
+
+    <article class="profile360-kpi">
+      <div class="profile360-kpi-icon red">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+
+      <div>
+        <span>Saldo pendiente</span>
+        <strong>${{ pending_balance|floatformat:2 }}</strong>
+        <small>{{ payment_status }}</small>
+      </div>
+    </article>
+
+    <article class="profile360-kpi">
+      <div class="profile360-kpi-icon green">
+        <i class="bi bi-credit-card-2-front"></i>
+      </div>
+
+      <div>
+        <span>Condición de crédito</span>
+
+        {% if has_credit_limit %}
+          <strong>${{ credit_available|floatformat:2 }}</strong>
+          <small>
+            Disponible de ${{ credit_limit|floatformat:2 }}
+            {% if credit_days %}
+              · {{ credit_days }} días
+            {% endif %}
+          </small>
+        {% else %}
+          <strong>Sin configurar</strong>
+          <small>{{ customer.get_price_level_display }}</small>
+        {% endif %}
+      </div>
+    </article>
+  </section>
+
+  <nav class="profile360-tabs" aria-label="Secciones del perfil">
+    <button
+      type="button"
+      data-profile-tab="summary"
+      class="{% if active_tab == 'summary' %}active{% endif %}"
+    >
+      <i class="bi bi-speedometer2"></i>
+      Resumen ejecutivo
+    </button>
+
+    <button
+      type="button"
+      data-profile-tab="addresses"
+      class="{% if active_tab == 'addresses' %}active{% endif %}"
+    >
+      <i class="bi bi-geo-alt"></i>
+      Direcciones
+      <span>{{ address_count }}</span>
+    </button>
+
+    <button
+      type="button"
+      data-profile-tab="contact"
+      class="{% if active_tab == 'contact' %}active{% endif %}"
+    >
+      <i class="bi bi-chat-dots"></i>
+      Contacto e IA
+    </button>
+
+    <button
+      type="button"
+      data-profile-tab="orders"
+      class="{% if active_tab == 'orders' %}active{% endif %}"
+    >
+      <i class="bi bi-box-seam"></i>
+      Pedidos y logística
+      <span>{{ orders_count }}</span>
+    </button>
+  </nav>
+
+  <section
+    id="summary"
+    data-profile-panel="summary"
+    class="profile360-tab-panel {% if active_tab == 'summary' %}active{% endif %}"
+  >
+    <div class="profile360-summary-grid">
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Panorama financiero</span>
+            <h3>Valor comercial del cliente</h3>
+          </div>
+
+          <span class="profile360-state {{ payment_status_class }}">
+            {{ payment_status }}
+          </span>
+        </header>
+
+        <div class="profile360-metric-grid">
+          <div>
+            <span>Total comprado</span>
+            <strong>${{ total_purchased|floatformat:2 }}</strong>
+            <small>{{ orders_count }} pedidos activos</small>
+          </div>
+
+          <div>
+            <span>Total pagado</span>
+            <strong class="success-text">
+              ${{ total_paid|floatformat:2 }}
+            </strong>
+            <small>Aplicado en pedidos</small>
+          </div>
+
+          <div>
+            <span>Ticket promedio</span>
+            <strong>${{ ticket_average|floatformat:2 }}</strong>
+            <small>Promedio por pedido</small>
+          </div>
+
+          <div>
+            <span>Utilidad generada</span>
+            <strong class="success-text">
+              ${{ total_profit|floatformat:2 }}
+            </strong>
+            <small>Margen {{ avg_margin|floatformat:2 }}%</small>
+          </div>
+        </div>
+
+        <div class="profile360-payment-analysis">
+          <div>
+            <span>Comportamiento de pago</span>
+            <strong>{{ payment_status }}</strong>
+          </div>
+
+          <p>{{ payment_status_message }}</p>
+        </div>
+      </article>
+
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Inteligencia comercial</span>
+            <h3>Producto estrella y oportunidad</h3>
+          </div>
+
+          <i class="bi bi-stars profile360-panel-symbol"></i>
+        </header>
+
+        {% if top_product %}
+          <div class="profile360-product">
+            <div>
+              <span>Más comprado</span>
+              <strong>{{ top_product.product_name }}</strong>
+              <small>{{ top_product.sku }}</small>
+            </div>
+
+            <div class="profile360-product-stats">
+              <div>
+                <span>Volumen</span>
+                <strong>
+                  {{ top_product.commercial_quantity }}
+                  {{ top_product.commercial_unit }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Venta</span>
+                <strong>${{ top_product.revenue|floatformat:2 }}</strong>
+              </div>
+
+              <div>
+                <span>Utilidad</span>
+                <strong>${{ top_product.profit|floatformat:2 }}</strong>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="profile360-empty compact">
+            <i class="bi bi-box"></i>
+            <p>Todavía no existe suficiente historial de productos.</p>
+          </div>
+        {% endif %}
+
+        <div class="profile360-ai-card">
+          <span>
+            <i class="bi bi-robot"></i>
+            Copiloto PAKIVOX
+          </span>
+
+          <p>{{ cross_sell_message }}</p>
+
+          <div>
+            {% if whatsapp_number %}
+              <a
+                href="https://wa.me/{{ whatsapp_number }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="profile360-button success small"
+              >
+                Preparar contacto
+              </a>
+            {% endif %}
+
+            <button
+              type="button"
+              class="profile360-button ghost small"
+              data-open-tab="contact"
+            >
+              Ver historial
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="profile360-summary-grid">
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Identidad</span>
+            <h3>Datos fiscales y comerciales</h3>
+          </div>
+
+          <a
+            href="{% url 'customer_edit' customer.id %}"
+            class="profile360-text-link"
+          >
+            Editar
+          </a>
+        </header>
+
+        <dl class="profile360-data-list">
+          <div>
+            <dt>Razón social</dt>
+            <dd>{{ customer.full_name }}</dd>
+          </div>
+
+          <div>
+            <dt>Nombre comercial</dt>
+            <dd>{{ customer.business_name|default:"Sin registrar" }}</dd>
+          </div>
+
+          <div>
+            <dt>RFC</dt>
+            <dd>{{ customer.rfc|default:"Sin registrar" }}</dd>
+          </div>
+
+          <div>
+            <dt>Tipo de cliente</dt>
+            <dd>{{ customer.get_customer_type_display }}</dd>
+          </div>
+
+          <div>
+            <dt>Origen</dt>
+            <dd>{{ import_source_label }}</dd>
+          </div>
+
+          <div>
+            <dt>Lista de precios</dt>
+            <dd>{{ customer.get_price_level_display }}</dd>
+          </div>
+
+          <div>
+            <dt>Vendedor responsable</dt>
+            <dd>{{ assigned_salesperson }}</dd>
+          </div>
+
+          <div>
+            <dt>Estado</dt>
+            <dd>
+              {% if customer.is_active %}
+                <span class="profile360-inline-status success">Activo</span>
+              {% else %}
+                <span class="profile360-inline-status danger">Inactivo</span>
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Operación</span>
+            <h3>Notas y configuración</h3>
+          </div>
+
+          <i class="bi bi-clipboard-check profile360-panel-symbol"></i>
+        </header>
+
+        <div class="profile360-notes">
+          {% if customer.notes %}
+            {{ customer.notes|linebreaksbr }}
+          {% else %}
+            <span>
+              No hay notas operativas registradas para este cliente.
+            </span>
+          {% endif %}
+        </div>
+
+        <div class="profile360-secondary-metrics">
+          <div>
+            <span>Costo acumulado</span>
+            <strong>${{ total_cost|floatformat:2 }}</strong>
+          </div>
+
+          <div>
+            <span>Pagos aprobados</span>
+            <strong>${{ approved_payments_total|floatformat:2 }}</strong>
+          </div>
+
+          <div>
+            <span>Pagos en revisión</span>
+            <strong>${{ pending_payments_total|floatformat:2 }}</strong>
+          </div>
+
+          <div>
+            <span>Direcciones</span>
+            <strong>{{ address_count }}</strong>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section
+    id="addresses"
+    data-profile-panel="addresses"
+    class="profile360-tab-panel {% if active_tab == 'addresses' %}active{% endif %}"
+  >
+    <article class="profile360-panel">
+      <header class="profile360-panel-header">
+        <div>
+          <span class="profile360-eyebrow">Red logística del cliente</span>
+          <h3>Direcciones y sucursales</h3>
+          <p>
+            Destinos disponibles para facturación, entrega y operación.
+          </p>
+        </div>
+
+        <a
+          href="{% url 'customer_address_create' customer.id %}"
+          class="profile360-button primary"
+        >
+          <i class="bi bi-plus-circle"></i>
+          Agregar dirección
+        </a>
+      </header>
+
+      {% if address_rows %}
+        <div class="profile360-address-grid">
+          {% for row in address_rows %}
+            <article class="profile360-address-card">
+              <header>
+                <div>
+                  <span class="profile360-address-type">
+                    {{ row.address.get_address_type_display }}
+                  </span>
+
+                  <h4>
+                    {{ row.address.label|default:row.address.get_address_type_display }}
+                  </h4>
+                </div>
+
+                {% if row.address.is_default %}
+                  <span class="profile360-default-badge">
+                    <i class="bi bi-star-fill"></i>
+                    Principal
+                  </span>
+                {% endif %}
+              </header>
+
+              <div class="profile360-address-body">
+                <p class="profile360-address-line">
+                  <i class="bi bi-geo-alt-fill"></i>
+                  {{ row.address.complete_address }}
+                </p>
+
+                <div class="profile360-address-details">
+                  <div>
+                    <span>Recibe</span>
+                    <strong>
+                      {{ row.address.contact_name|default:customer.full_name }}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Teléfono</span>
+                    <strong>
+                      {{ row.address.phone|default:customer.phone|default:"-" }}
+                    </strong>
+                  </div>
+                </div>
+
+                {% if row.address.reference %}
+                  <div class="profile360-reference">
+                    <span>Indicaciones operativas</span>
+                    <p>{{ row.address.reference }}</p>
+                  </div>
+                {% endif %}
+              </div>
+
+              <footer>
+                <a
+                  href="{{ row.maps_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="profile360-button ghost small"
+                >
+                  <i class="bi bi-map"></i>
+                  Google Maps
+                </a>
+
+                <a
+                  href="{% url 'customer_address_edit' customer.id row.address.id %}"
+                  class="profile360-button secondary small"
+                >
+                  <i class="bi bi-pencil"></i>
+                  Editar
+                </a>
+
+                {% if not row.address.is_default %}
+                  <form
+                    method="post"
+                    action="{% url 'customer_address_set_default' customer.id row.address.id %}"
+                  >
+                    {% csrf_token %}
+
+                    <button
+                      type="submit"
+                      class="profile360-button success small"
+                    >
+                      <i class="bi bi-star"></i>
+                      Hacer principal
+                    </button>
+                  </form>
+                {% endif %}
+              </footer>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="profile360-empty">
+          <i class="bi bi-pin-map"></i>
+
+          <h4>Este cliente todavía no tiene direcciones guardadas</h4>
+
+          <p>
+            Agrega la matriz, las sucursales de entrega o la dirección fiscal
+            para que ventas, almacén y reparto trabajen con datos completos.
+          </p>
+
+          <a
+            href="{% url 'customer_address_create' customer.id %}"
+            class="profile360-button primary"
+          >
+            Registrar primera dirección
+          </a>
+        </div>
+      {% endif %}
+    </article>
+  </section>
+
+  <section
+    id="contact"
+    data-profile-panel="contact"
+    class="profile360-tab-panel {% if active_tab == 'contact' %}active{% endif %}"
+  >
+    <div class="profile360-contact-grid">
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Línea de tiempo</span>
+            <h3>Historial de contacto</h3>
+          </div>
+
+          <a
+            href="{% url 'crm_agenda' %}"
+            class="profile360-text-link"
+          >
+            Abrir agenda
+          </a>
+        </header>
+
+        {% if activities %}
+          <div class="profile360-timeline">
+            {% for activity in activities %}
+              <article>
+                <div class="profile360-timeline-icon">
+                  {% if activity.activity_type == "whatsapp" %}
+                    <i class="bi bi-whatsapp"></i>
+                  {% elif activity.activity_type == "call" %}
+                    <i class="bi bi-telephone"></i>
+                  {% elif activity.activity_type == "email" %}
+                    <i class="bi bi-envelope"></i>
+                  {% elif activity.activity_type == "meeting" %}
+                    <i class="bi bi-people"></i>
+                  {% elif activity.activity_type == "quote" %}
+                    <i class="bi bi-file-earmark-text"></i>
+                  {% else %}
+                    <i class="bi bi-chat-square-text"></i>
+                  {% endif %}
+                </div>
+
+                <div>
+                  <div class="profile360-timeline-heading">
+                    <strong>{{ activity.title }}</strong>
+                    <span>{{ activity.created_at|date:"d/m/Y H:i" }}</span>
+                  </div>
+
+                  <small>
+                    {{ activity.get_activity_type_display }}
+                    {% if activity.assigned_to %}
+                      ·
+                      {{ activity.assigned_to.get_full_name|default:activity.assigned_to.username }}
+                    {% endif %}
+                  </small>
+
+                  {% if activity.description %}
+                    <p>{{ activity.description }}</p>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="profile360-empty compact">
+            <i class="bi bi-chat-left-dots"></i>
+            <p>No hay actividades comerciales registradas.</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <article class="profile360-panel">
+        <header class="profile360-panel-header">
+          <div>
+            <span class="profile360-eyebrow">Copiloto IA</span>
+            <h3>Próxima acción recomendada</h3>
+          </div>
+
+          <i class="bi bi-stars profile360-panel-symbol"></i>
+        </header>
+
+        <div class="profile360-ai-recommendation">
+          <span class="profile360-ai-label">
+            <i class="bi bi-robot"></i>
+            Oportunidad detectada
+          </span>
+
+          <p>{{ cross_sell_message }}</p>
+
+          {% if days_since_last_order %}
+            <div class="profile360-ai-fact">
+              <span>Días desde la última compra</span>
+              <strong>{{ days_since_last_order }}</strong>
+            </div>
+          {% endif %}
+
+          {% if top_product %}
+            <div class="profile360-ai-fact">
+              <span>Producto con mayor movimiento</span>
+              <strong>{{ top_product.product_name }}</strong>
+            </div>
+          {% endif %}
+
+          <div class="profile360-ai-actions">
+            {% if whatsapp_number %}
+              <a
+                href="https://wa.me/{{ whatsapp_number }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="profile360-button success"
+              >
+                <i class="bi bi-whatsapp"></i>
+                Abrir WhatsApp
+              </a>
+            {% endif %}
+
+            <a
+              href="/messaging/"
+              class="profile360-button secondary"
+            >
+              <i class="bi bi-chat-square-dots"></i>
+              Ir a Messaging
+            </a>
+          </div>
+        </div>
+
+        <div class="profile360-payment-mini">
+          <div>
+            <span>Último pago aprobado</span>
+
+            {% if last_payment %}
+              <strong>${{ last_payment.amount|floatformat:2 }}</strong>
+              <small>{{ last_payment.paid_at|date:"d/m/Y" }}</small>
+            {% else %}
+              <strong>Sin pagos</strong>
+              <small>No existe historial aprobado</small>
+            {% endif %}
+          </div>
+
+          <div>
+            <span>Seguimientos pendientes</span>
+            <strong>{{ pending_payments_count }}</strong>
+            <small>Pagos pendientes o en revisión</small>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section
+    id="orders"
+    data-profile-panel="orders"
+    class="profile360-tab-panel {% if active_tab == 'orders' %}active{% endif %}"
+  >
+    <article class="profile360-panel">
+      <header class="profile360-panel-header">
+        <div>
+          <span class="profile360-eyebrow">Operación WMS</span>
+          <h3>Historial de pedidos y avance logístico</h3>
+          <p>
+            Seguimiento comercial, financiero y de surtido de cada operación.
+          </p>
+        </div>
+
+        <a
+          href="{% url 'sales:crear_pedido' %}"
+          class="profile360-button primary"
+        >
+          <i class="bi bi-cart-plus"></i>
+          Nuevo pedido
+        </a>
+      </header>
+
+      {% if order_history %}
+        <div class="profile360-orders">
+          {% for row in order_history %}
+            <article class="profile360-order-card">
+              <header>
+                <div>
+                  <a
+                    href="{% url 'sales:detalle_pedido' row.order.id %}"
+                    class="profile360-order-folio"
+                  >
+                    {{ row.order.folio }}
+                  </a>
+
+                  <span>
+                    {{ row.order.created_at|date:"d/m/Y H:i" }}
+                  </span>
+                </div>
+
+                <div class="profile360-order-financial">
+                  <strong>${{ row.order.total|floatformat:2 }}</strong>
+                  <small>
+                    Saldo ${{ row.order.balance_due|floatformat:2 }}
+                  </small>
+                </div>
+              </header>
+
+              <div class="profile360-logistics">
+                <div class="profile360-logistics-heading">
+                  <span>Estado operativo</span>
+
+                  <strong class="{{ row.status_class }}">
+                    {{ row.order.get_status_display }}
+                  </strong>
+                </div>
+
+                <div class="profile360-progress">
+                  <span style="width: {{ row.progress }}%;"></span>
+                </div>
+
+                <div class="profile360-progress-labels">
+                  <span>Pedido</span>
+                  <span>Pagado</span>
+                  <span>Picking</span>
+                  <span>Empacado</span>
+                  <span>Enviado</span>
+                  <span>Entregado</span>
+                </div>
+              </div>
+
+              <div class="profile360-order-items">
+                {% for item in row.items %}
+                  <div>
+                    <span>
+                      <strong>{{ item.sku }}</strong>
+                      <small>{{ item.product_name }}</small>
+                    </span>
+
+                    <span>
+                      <strong>
+                        {{ item.quantity }} {{ item.commercial_unit }}
+                      </strong>
+
+                      {% if item.factor > 1 %}
+                        <small>
+                          {{ item.internal_quantity }} {{ item.base_unit }}
+                        </small>
+                      {% endif %}
+                    </span>
+
+                    <span class="money">
+                      <strong>${{ item.total|floatformat:2 }}</strong>
+                      <small>
+                        Utilidad ${{ item.profit|floatformat:2 }}
+                      </small>
+                    </span>
+                  </div>
+                {% empty %}
+                  <p class="profile360-muted">
+                    El pedido no tiene productos registrados.
+                  </p>
+                {% endfor %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="profile360-empty">
+          <i class="bi bi-box-seam"></i>
+
+          <h4>Este cliente todavía no tiene pedidos</h4>
+
+          <p>
+            Al registrar su primera venta, aquí aparecerán el estado del pedido,
+            el avance de almacén, la entrega y la rentabilidad.
+          </p>
+
+          <a
+            href="{% url 'sales:crear_pedido' %}"
+            class="profile360-button primary"
+          >
+            Crear primer pedido
+          </a>
+        </div>
+      {% endif %}
+    </article>
+  </section>
+</section>
+
+<style>
+  .profile360 {
+    --p360-bg: #0f172a;
+    --p360-bg-strong: #020617;
+    --p360-panel: #111827;
+    --p360-border: rgba(148, 163, 184, .17);
+    --p360-muted: #94a3b8;
+    --p360-text: #f8fafc;
+    --p360-green: #22c55e;
+    --p360-cyan: #22d3ee;
+    --p360-blue: #3b82f6;
+    --p360-purple: #a855f7;
+    --p360-yellow: #f59e0b;
+    --p360-red: #ef4444;
+    display: grid;
+    gap: 16px;
+  }
+
+  .profile360 *,
+  .profile360 *::before,
+  .profile360 *::after {
+    box-sizing: border-box;
+  }
+
+  .profile360-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    border: 1px solid rgba(34, 211, 238, .25);
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 0 0, rgba(34, 211, 238, .16), transparent 34%),
+      radial-gradient(circle at 100% 100%, rgba(34, 197, 94, .12), transparent 32%),
+      var(--p360-panel);
+  }
+
+  .profile360-hero::after {
+    content: "";
+    position: absolute;
+    top: -80px;
+    right: 11%;
+    width: 190px;
+    height: 190px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .04);
+  }
+
+  .profile360-hero.segment-danger {
+    border-color: rgba(239, 68, 68, .38);
+  }
+
+  .profile360-hero.segment-warning {
+    border-color: rgba(245, 158, 11, .38);
+  }
+
+  .profile360-hero.segment-success {
+    border-color: rgba(34, 197, 94, .38);
+  }
+
+  .profile360-identity {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .profile360-avatar {
+    width: 76px;
+    min-width: 76px;
+    height: 76px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 22px;
+    color: #fff;
+    background:
+      linear-gradient(135deg, #10b981, #0891b2);
+    box-shadow: 0 16px 35px rgba(6, 78, 59, .28);
+    font-size: 25px;
+    font-weight: 950;
+    letter-spacing: -.04em;
+  }
+
+  .profile360-name {
+    min-width: 0;
+  }
+
+  .profile360-heading-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile360-heading-row h2 {
+    margin: 5px 0 0;
+    color: var(--p360-text);
+    font-size: clamp(25px, 3vw, 36px);
+    line-height: 1.05;
+    letter-spacing: -.035em;
+  }
+
+  .profile360-eyebrow {
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .085em;
+    text-transform: uppercase;
+  }
+
+  .warning-text {
+    color: #fbbf24;
+  }
+
+  .profile360-commercial-name {
+    margin: 7px 0 10px;
+    color: #cbd5e1;
+    font-size: 14px;
+  }
+
+  .profile360-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .profile360-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border: 1px solid rgba(148, 163, 184, .13);
+    border-radius: 999px;
+    color: #aebdd0;
+    background: rgba(2, 6, 23, .35);
+    font-size: 11px;
+  }
+
+  .profile360-segment-description {
+    margin: 9px 0 0;
+    color: #7f91a8;
+    font-size: 12px;
+  }
+
+  .profile360-segment,
+  .profile360-state,
+  .profile360-inline-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-weight: 900;
+  }
+
+  .profile360-segment {
+    padding: 7px 11px;
+    font-size: 11px;
+  }
+
+  .profile360-segment.success,
+  .profile360-state.success,
+  .profile360-inline-status.success {
+    color: #86efac;
+    border-color: rgba(34, 197, 94, .25);
+    background: rgba(34, 197, 94, .1);
+  }
+
+  .profile360-segment.warning,
+  .profile360-state.warning {
+    color: #fde68a;
+    border-color: rgba(245, 158, 11, .25);
+    background: rgba(245, 158, 11, .1);
+  }
+
+  .profile360-segment.danger,
+  .profile360-state.danger,
+  .profile360-inline-status.danger {
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, .25);
+    background: rgba(239, 68, 68, .1);
+  }
+
+  .profile360-segment.info,
+  .profile360-state.info,
+  .profile360-segment.primary,
+  .profile360-state.primary,
+  .profile360-state.muted {
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, .25);
+    background: rgba(59, 130, 246, .1);
+  }
+
+  .profile360-hero-actions,
+  .profile360-actions,
+  .profile360-ai-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .profile360-hero-actions {
+    position: relative;
+    z-index: 1;
+    justify-content: flex-end;
+  }
+
+  .profile360-button,
+  .profile360-icon-button {
+    min-height: 41px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 900;
+    transition:
+      transform .16s ease,
+      border-color .16s ease,
+      background .16s ease;
+    cursor: pointer;
+  }
+
+  .profile360-button {
+    padding: 0 14px;
+  }
+
+  .profile360-icon-button {
+    width: 41px;
+    padding: 0;
+    border-color: rgba(148, 163, 184, .2);
+    background: rgba(2, 6, 23, .42);
+  }
+
+  .profile360-button:hover,
+  .profile360-icon-button:hover {
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .profile360-button.primary {
+    color: #eff6ff;
+    background: #2563eb;
+  }
+
+  .profile360-button.success,
+  .profile360-button.whatsapp {
+    color: #ecfdf5;
+    background: #15803d;
+  }
+
+  .profile360-button.warning {
+    color: #1c1917;
+    background: #f59e0b;
+  }
+
+  .profile360-button.secondary {
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, .22);
+    background: #1e293b;
+  }
+
+  .profile360-button.ghost {
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, .2);
+    background: transparent;
+  }
+
+  .profile360-button.small {
+    min-height: 35px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .profile360-contact-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--p360-border);
+    border-radius: 15px;
+    background: var(--p360-panel);
+  }
+
+  .profile360-contact-strip > div {
+    min-width: 0;
+    padding: 13px 16px;
+    border-right: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .profile360-contact-strip > div:last-child {
+    border-right: 0;
+  }
+
+  .profile360-contact-strip span,
+  .profile360-kpi span,
+  .profile360-metric-grid span,
+  .profile360-secondary-metrics span,
+  .profile360-product span,
+  .profile360-address-details span,
+  .profile360-reference span,
+  .profile360-payment-mini span {
+    display: block;
+    color: var(--p360-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .03em;
+  }
+
+  .profile360-contact-strip strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 5px;
+    color: #dce6f3;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile360-actions form,
+  .profile360-address-card footer form {
+    margin: 0;
+  }
+
+  .profile360-import-warning {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 15px;
+    padding: 17px;
+    border: 1px solid rgba(245, 158, 11, .28);
+    border-radius: 16px;
+    background:
+      linear-gradient(90deg, rgba(120, 53, 15, .18), rgba(15, 23, 42, .6));
+  }
+
+  .profile360-import-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, .12);
+    font-size: 20px;
+  }
+
+  .profile360-import-warning h3 {
+    margin: 4px 0;
+    color: #f8fafc;
+    font-size: 16px;
+  }
+
+  .profile360-import-warning p {
+    margin: 0;
+    color: #d6c9a9;
+    font-size: 12px;
+  }
+
+  .profile360-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .profile360-kpi {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border: 1px solid var(--p360-border);
+    border-radius: 15px;
+    background: var(--p360-panel);
+  }
+
+  .profile360-kpi-icon {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    font-size: 17px;
+  }
+
+  .profile360-kpi-icon.cyan {
+    color: #67e8f9;
+    background: rgba(6, 182, 212, .1);
+  }
+
+  .profile360-kpi-icon.purple {
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, .1);
+  }
+
+  .profile360-kpi-icon.red {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, .1);
+  }
+
+  .profile360-kpi-icon.green {
+    color: #86efac;
+    background: rgba(34, 197, 94, .1);
+  }
+
+  .profile360-kpi strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 5px;
+    color: var(--p360-text);
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile360-kpi small {
+    display: block;
+    overflow: hidden;
+    margin-top: 3px;
+    color: #66768c;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile360-tabs {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    overflow-x: auto;
+    border: 1px solid var(--p360-border);
+    border-radius: 14px;
+    background: rgba(2, 6, 23, .92);
+    backdrop-filter: blur(14px);
+  }
+
+  .profile360-tabs button {
+    min-height: 42px;
+    padding: 0 13px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #8da0b9;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .profile360-tabs button:hover {
+    color: #dbeafe;
+    background: rgba(30, 41, 59, .5);
+  }
+
+  .profile360-tabs button.active {
+    color: #ecfdf5;
+    border-color: rgba(34, 197, 94, .22);
+    background: rgba(22, 101, 52, .22);
+  }
+
+  .profile360-tabs button > span {
+    min-width: 20px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    color: #cbd5e1;
+    background: rgba(148, 163, 184, .12);
+    font-size: 9px;
+  }
+
+  .profile360-tab-panel {
+    display: none;
+    scroll-margin-top: 82px;
+  }
+
+  .profile360-tab-panel.active {
+    display: grid;
+    gap: 16px;
+    animation: profile360Fade .18s ease;
+  }
+
+  @keyframes profile360Fade {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .profile360-summary-grid,
+  .profile360-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .profile360-panel {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--p360-border);
+    border-radius: 17px;
+    background: var(--p360-panel);
+  }
+
+  .profile360-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 13px;
+    margin-bottom: 15px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid rgba(148, 163, 184, .11);
+  }
+
+  .profile360-panel-header h3 {
+    margin: 4px 0 0;
+    color: var(--p360-text);
+    font-size: 17px;
+  }
+
+  .profile360-panel-header p {
+    margin: 5px 0 0;
+    color: #7f91a8;
+    font-size: 11px;
+  }
+
+  .profile360-state {
+    padding: 6px 9px;
+    font-size: 9px;
+  }
+
+  .profile360-panel-symbol {
+    color: #67e8f9;
+    font-size: 21px;
+  }
+
+  .profile360-text-link {
+    color: #5eead4;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .profile360-metric-grid,
+  .profile360-secondary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .profile360-metric-grid > div,
+  .profile360-secondary-metrics > div,
+  .profile360-payment-mini > div {
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, .1);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .38);
+  }
+
+  .profile360-metric-grid strong,
+  .profile360-secondary-metrics strong,
+  .profile360-payment-mini strong {
+    display: block;
+    margin-top: 7px;
+    color: #eaf2fb;
+    font-size: 17px;
+  }
+
+  .profile360-metric-grid small,
+  .profile360-secondary-metrics small,
+  .profile360-payment-mini small {
+    display: block;
+    margin-top: 4px;
+    color: #62748b;
+    font-size: 9px;
+  }
+
+  .success-text {
+    color: #4ade80 !important;
+  }
+
+  .profile360-payment-analysis {
+    margin-top: 10px;
+    padding: 13px;
+    border: 1px solid rgba(56, 189, 248, .14);
+    border-radius: 12px;
+    background: rgba(14, 116, 144, .06);
+  }
+
+  .profile360-payment-analysis > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .profile360-payment-analysis span {
+    color: #7dd3fc;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .profile360-payment-analysis strong {
+    color: #f8fafc;
+    font-size: 12px;
+  }
+
+  .profile360-payment-analysis p {
+    margin: 7px 0 0;
+    color: #96a8bd;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .profile360-product {
+    padding: 14px;
+    border: 1px solid rgba(56, 189, 248, .15);
+    border-radius: 13px;
+    background: rgba(2, 6, 23, .36);
+  }
+
+  .profile360-product > div:first-child strong {
+    display: block;
+    margin-top: 5px;
+    color: #f8fafc;
+    font-size: 16px;
+  }
+
+  .profile360-product > div:first-child small {
+    color: #64748b;
+  }
+
+  .profile360-product-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 12px;
+  }
+
+  .profile360-product-stats > div {
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .65);
+  }
+
+  .profile360-product-stats strong {
+    display: block;
+    margin-top: 5px;
+    color: #dce8f7;
+    font-size: 11px;
+  }
+
+  .profile360-ai-card,
+  .profile360-ai-recommendation {
+    margin-top: 11px;
+    padding: 14px;
+    border: 1px solid rgba(34, 197, 94, .18);
+    border-radius: 13px;
+    background:
+      linear-gradient(135deg, rgba(20, 83, 45, .18), rgba(15, 23, 42, .55));
+  }
+
+  .profile360-ai-card > span,
+  .profile360-ai-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #86efac;
+    font-size: 10px;
+    font-weight: 950;
+  }
+
+  .profile360-ai-card p,
+  .profile360-ai-recommendation > p {
+    margin: 9px 0;
+    color: #c5d5c9;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .profile360-ai-card > div {
+    display: flex;
+    gap: 7px;
+  }
+
+  .profile360-data-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 0;
+  }
+
+  .profile360-data-list > div {
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, .08);
+  }
+
+  .profile360-data-list > div:nth-child(odd) {
+    padding-right: 13px;
+  }
+
+  .profile360-data-list dt {
+    color: #6f8199;
+    font-size: 9px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .profile360-data-list dd {
+    margin: 5px 0 0;
+    color: #dce6f3;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .profile360-inline-status {
+    padding: 4px 7px;
+    font-size: 9px;
+  }
+
+  .profile360-notes {
+    min-height: 100px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, .1);
+    border-radius: 12px;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, .32);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .profile360-notes span {
+    color: #64748b;
+  }
+
+  .profile360-secondary-metrics {
+    margin-top: 10px;
+  }
+
+  .profile360-address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .profile360-address-card {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, .15);
+    border-radius: 15px;
+    background: rgba(2, 6, 23, .32);
+  }
+
+  .profile360-address-card > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .09);
+  }
+
+  .profile360-address-type {
+    color: #67e8f9;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .profile360-address-card h4 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+    font-size: 15px;
+  }
+
+  .profile360-default-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 7px;
+    border: 1px solid rgba(34, 197, 94, .18);
+    border-radius: 999px;
+    color: #86efac;
+    background: rgba(34, 197, 94, .08);
+    font-size: 8px;
+    font-weight: 900;
+  }
+
+  .profile360-address-body {
+    padding: 14px;
+  }
+
+  .profile360-address-line {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    color: #d6e0ec;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .profile360-address-line i {
+    margin-top: 2px;
+    color: #22d3ee;
+  }
+
+  .profile360-address-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .profile360-address-details > div {
+    padding: 9px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .7);
+  }
+
+  .profile360-address-details strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 4px;
+    color: #dbe5f1;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile360-reference {
+    margin-top: 10px;
+    padding: 10px;
+    border-left: 2px solid rgba(245, 158, 11, .55);
+    border-radius: 0 9px 9px 0;
+    background: rgba(120, 53, 15, .08);
+  }
+
+  .profile360-reference p {
+    margin: 5px 0 0;
+    color: #c9bca4;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .profile360-address-card > footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 12px 14px;
+    border-top: 1px solid rgba(148, 163, 184, .09);
+  }
+
+  .profile360-empty {
+    min-height: 260px;
+    padding: 28px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    text-align: center;
+  }
+
+  .profile360-empty.compact {
+    min-height: 140px;
+  }
+
+  .profile360-empty > i {
+    color: #475569;
+    font-size: 34px;
+  }
+
+  .profile360-empty h4 {
+    margin: 12px 0 5px;
+    color: #e2e8f0;
+  }
+
+  .profile360-empty p {
+    max-width: 540px;
+    margin: 0 0 15px;
+    color: #71839a;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .profile360-timeline {
+    position: relative;
+    display: grid;
+    gap: 0;
+  }
+
+  .profile360-timeline::before {
+    content: "";
+    position: absolute;
+    top: 17px;
+    bottom: 17px;
+    left: 16px;
+    width: 1px;
+    background: rgba(56, 189, 248, .18);
+  }
+
+  .profile360-timeline > article {
+    position: relative;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 11px;
+    padding: 10px 0;
+  }
+
+  .profile360-timeline-icon {
+    position: relative;
+    z-index: 1;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(56, 189, 248, .18);
+    border-radius: 999px;
+    color: #67e8f9;
+    background: #111827;
+    font-size: 12px;
+  }
+
+  .profile360-timeline-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .profile360-timeline-heading strong {
+    color: #e5edf7;
+    font-size: 12px;
+  }
+
+  .profile360-timeline-heading span,
+  .profile360-timeline small {
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .profile360-timeline p {
+    margin: 5px 0 0;
+    color: #97a8bc;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .profile360-ai-recommendation {
+    margin-top: 0;
+  }
+
+  .profile360-ai-fact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 7px;
+    padding: 9px;
+    border-radius: 10px;
+    background: rgba(2, 6, 23, .32);
+  }
+
+  .profile360-ai-fact span {
+    color: #8fa1b7;
+    font-size: 10px;
+  }
+
+  .profile360-ai-fact strong {
+    color: #dff8e8;
+    font-size: 11px;
+  }
+
+  .profile360-ai-actions {
+    margin-top: 12px;
+  }
+
+  .profile360-payment-mini {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .profile360-orders {
+    display: grid;
+    gap: 12px;
+  }
+
+  .profile360-order-card {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 15px;
+    background: rgba(2, 6, 23, .32);
+  }
+
+  .profile360-order-card > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .09);
+  }
+
+  .profile360-order-card > header > div:first-child {
+    display: grid;
+    gap: 4px;
+  }
+
+  .profile360-order-card > header span {
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .profile360-order-folio {
+    color: #67e8f9;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .profile360-order-financial {
+    text-align: right;
+  }
+
+  .profile360-order-financial strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 15px;
+  }
+
+  .profile360-order-financial small {
+    color: #94a3b8;
+    font-size: 9px;
+  }
+
+  .profile360-logistics {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .08);
+  }
+
+  .profile360-logistics-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .profile360-logistics-heading span {
+    color: #75879d;
+    font-size: 9px;
+    font-weight: 850;
+  }
+
+  .profile360-logistics-heading strong {
+    font-size: 10px;
+  }
+
+  .profile360-logistics-heading strong.success {
+    color: #4ade80;
+  }
+
+  .profile360-logistics-heading strong.danger {
+    color: #f87171;
+  }
+
+  .profile360-logistics-heading strong.info {
+    color: #67e8f9;
+  }
+
+  .profile360-logistics-heading strong.primary {
+    color: #93c5fd;
+  }
+
+  .profile360-logistics-heading strong.warning {
+    color: #fbbf24;
+  }
+
+  .profile360-progress {
+    height: 5px;
+    margin-top: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(51, 65, 85, .72);
+  }
+
+  .profile360-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background:
+      linear-gradient(90deg, #0ea5e9, #22c55e);
+  }
+
+  .profile360-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .profile360-progress-labels span {
+    color: #516176;
+    font-size: 7px;
+  }
+
+  .profile360-order-items {
+    display: grid;
+  }
+
+  .profile360-order-items > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(110px, .7fr) minmax(110px, .7fr);
+    gap: 12px;
+    align-items: center;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .07);
+  }
+
+  .profile360-order-items > div:last-child {
+    border-bottom: 0;
+  }
+
+  .profile360-order-items span {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .profile360-order-items strong {
+    overflow: hidden;
+    color: #dbe5f1;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile360-order-items small {
+    color: #62748b;
+    font-size: 8px;
+  }
+
+  .profile360-order-items .money {
+    text-align: right;
+  }
+
+  .profile360-muted {
+    padding: 13px;
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  @media (max-width: 1180px) {
+    .profile360-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .profile360-contact-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .profile360-contact-strip > div:nth-child(2) {
+      border-right: 0;
+    }
+
+    .profile360-contact-strip > div:nth-child(-n + 2) {
+      border-bottom: 1px solid rgba(148, 163, 184, .1);
+    }
+  }
+
+  @media (max-width: 940px) {
+    .profile360-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .profile360-hero-actions {
+      justify-content: flex-start;
+    }
+
+    .profile360-summary-grid,
+    .profile360-contact-grid,
+    .profile360-address-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .profile360-identity {
+      align-items: flex-start;
+    }
+
+    .profile360-avatar {
+      width: 58px;
+      min-width: 58px;
+      height: 58px;
+      border-radius: 17px;
+      font-size: 19px;
+    }
+
+    .profile360-heading-row {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .profile360-kpis,
+    .profile360-contact-strip,
+    .profile360-metric-grid,
+    .profile360-secondary-metrics,
+    .profile360-product-stats,
+    .profile360-data-list,
+    .profile360-payment-mini {
+      grid-template-columns: 1fr;
+    }
+
+    .profile360-contact-strip > div {
+      border-right: 0;
+      border-bottom: 1px solid rgba(148, 163, 184, .1);
+    }
+
+    .profile360-contact-strip > div:last-child {
+      border-bottom: 0;
+    }
+
+    .profile360-import-warning {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .profile360-import-warning > a {
+      grid-column: 1 / -1;
+    }
+
+    .profile360-order-items > div {
+      grid-template-columns: 1fr;
+    }
+
+    .profile360-order-items .money {
+      text-align: left;
+    }
+
+    .profile360-progress-labels {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabButtons = Array.from(
+      document.querySelectorAll("[data-profile-tab]")
+    );
+
+    const panels = Array.from(
+      document.querySelectorAll("[data-profile-panel]")
+    );
+
+    function activateTab(tabName, updateUrl = true) {
+      const selectedButton = tabButtons.find(
+        (button) => button.dataset.profileTab === tabName
+      );
+
+      const selectedPanel = panels.find(
+        (panel) => panel.dataset.profilePanel === tabName
+      );
+
+      if (!selectedButton || !selectedPanel) {
+        return;
+      }
+
+      tabButtons.forEach((button) => {
+        button.classList.toggle(
+          "active",
+          button === selectedButton
+        );
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle(
+          "active",
+          panel === selectedPanel
+        );
+      });
+
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tabName);
+        url.hash = tabName;
+        window.history.replaceState({}, "", url);
+      }
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        activateTab(button.dataset.profileTab);
+      });
+    });
+
+    document
+      .querySelectorAll("[data-open-tab]")
+      .forEach((button) => {
+        button.addEventListener("click", function () {
+          activateTab(button.dataset.openTab);
+
+          const panel = document.getElementById(
+            button.dataset.openTab
+          );
+
+          if (panel) {
+            panel.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+    const hashTab = window.location.hash.replace("#", "");
+
+    if (
+      hashTab
+      && tabButtons.some(
+        (button) => button.dataset.profileTab === hashTab
+      )
+    ) {
+      activateTab(hashTab, false);
+    }
+  });
+</script>
+{% endblock %}

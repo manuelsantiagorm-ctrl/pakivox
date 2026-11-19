@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+{% load wms_navigation %}
+{% block title %}Equipo | PAKIVOX{% endblock %}
+{% block page_title %}Equipo{% endblock %}
+{% block page_subtitle %}Organiza a tu equipo con tareas, bodegas y niveles fáciles de entender.{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --ps-bg:#06111f;--ps-card:#09182a;--ps-card2:#0d2035;--ps-line:#173550;
+    --ps-text:#f2f7fb;--ps-muted:#91a8bb;--ps-cyan:#25c2d7;--ps-green:#24d99b;
+    --ps-amber:#e9a82e;--ps-danger:#ff6f7d
+  }
+  .ps-page{display:grid;gap:18px;color:var(--ps-text)}
+  .ps-hero,.ps-shell,.ps-card,.ps-stats{
+    border:1px solid rgba(23,53,80,.9);
+    background:linear-gradient(145deg,rgba(13,32,53,.98),rgba(6,17,31,.98));
+    box-shadow:0 18px 50px rgba(0,0,0,.18)
+  }
+  .ps-hero{border-radius:22px;padding:22px;display:flex;justify-content:space-between;align-items:center;gap:18px}
+  .ps-hero h2{margin:0 0 6px;font-size:22px}.ps-hero p{margin:0;color:var(--ps-muted);max-width:720px}
+  .ps-cap{padding:10px 14px;border-radius:999px;background:rgba(37,194,215,.1);border:1px solid rgba(37,194,215,.35);color:#7eeaf5;font-weight:900;white-space:nowrap}
+  .ps-stats{display:grid;grid-template-columns:repeat(3,1fr);border-radius:18px;overflow:hidden}
+  .ps-stat{padding:15px 18px;border-right:1px solid rgba(23,53,80,.8)}.ps-stat:last-child{border-right:0}
+  .ps-stat small{display:block;color:var(--ps-muted);font-weight:800}.ps-stat strong{display:block;font-size:23px;margin-top:3px}
+  .ps-shell{border-radius:22px;overflow:hidden}.ps-steps{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid rgba(23,53,80,.8)}
+  .ps-step{padding:16px 18px;color:var(--ps-muted);font-weight:900;display:flex;align-items:center;gap:10px}
+  .ps-step span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#162a43}
+  .ps-step.active{color:#fff;background:rgba(37,194,215,.08)}.ps-step.active span{background:linear-gradient(135deg,var(--ps-cyan),var(--ps-green));color:#04131d}
+  .ps-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.75fr)}
+  .ps-main{padding:24px;border-right:1px solid rgba(23,53,80,.8)}.ps-summary{padding:24px;background:rgba(3,10,21,.28)}
+  .ps-title{margin:0;font-size:20px}.ps-help{color:var(--ps-muted);margin:7px 0 20px;font-size:13px;line-height:1.55}
+  .ps-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ps-field{margin-bottom:15px}
+  .ps-field label,.ps-label{display:block;color:#c8d7e5;font-size:12px;font-weight:900;margin-bottom:7px}
+  .ps-field input,.ps-field select{width:100%;box-sizing:border-box;padding:12px 13px;border-radius:11px;border:1px solid var(--ps-line);background:#06111f;color:#fff;outline:none}
+  .ps-field input:focus,.ps-field select:focus{border-color:var(--ps-cyan);box-shadow:0 0 0 3px rgba(37,194,215,.11)}
+  .ps-errors{color:#ffc1c8;background:rgba(255,111,125,.1);border:1px solid rgba(255,111,125,.3);padding:11px;border-radius:10px;font-size:12px;margin-bottom:14px}
+  .ps-activities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+  .ps-activity{position:relative;display:flex;gap:12px;min-height:94px;padding:14px;border:1px solid rgba(23,53,80,.95);border-radius:15px;background:#081625;cursor:pointer;transition:.18s}
+  .ps-activity:hover{transform:translateY(-1px);border-color:rgba(37,194,215,.55)}
+  .ps-activity:has(input:checked){border-color:var(--ps-cyan);background:rgba(37,194,215,.09);box-shadow:0 0 0 3px rgba(37,194,215,.08)}
+  .ps-activity input{margin-top:4px;accent-color:var(--ps-cyan)}.ps-activity i{font-size:18px;color:#73e4f0}
+  .ps-activity b{display:block;font-size:13px;margin-bottom:5px}.ps-activity small{display:block;color:var(--ps-muted);font-size:11px;line-height:1.45}
+  .ps-warehouses ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .ps-warehouses li{display:grid;gap:8px}
+  .ps-warehouses li label{display:flex;gap:9px;align-items:center;padding:12px;border:1px solid var(--ps-line);border-radius:12px;background:#081625}
+  .ps-warehouses input{accent-color:var(--ps-cyan)}
+  .ps-warehouse-level{width:100%;box-sizing:border-box;padding:10px 11px;border-radius:10px;border:1px solid var(--ps-line);background:#06111f;color:#fff}
+  .ps-authority{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:15px}
+  .ps-authority-note{padding:11px 12px;border-radius:12px;border:1px solid rgba(233,168,46,.25);background:rgba(233,168,46,.07);color:#eac985;font-size:11px;line-height:1.5}
+  .ps-summary-card{border:1px solid var(--ps-line);background:#081625;border-radius:15px;padding:15px;margin-bottom:12px}
+  .ps-summary-card h4{margin:0 0 10px;font-size:13px}.ps-pill{display:inline-block;padding:5px 8px;border-radius:999px;margin:3px 3px 0 0;background:rgba(37,194,215,.1);border:1px solid rgba(37,194,215,.25);color:#8eeef6;font-size:11px;font-weight:800}
+  .ps-summary ul{padding-left:18px;color:var(--ps-muted);font-size:12px;line-height:1.7}
+  .ps-actions{display:flex;justify-content:flex-end;gap:9px;padding-top:18px}.ps-btn{border:0;border-radius:11px;padding:12px 16px;font-weight:950;cursor:pointer}
+  .ps-btn.primary{color:#04131d;background:linear-gradient(135deg,var(--ps-cyan),var(--ps-green))}.ps-btn.ghost{color:#d0dce7;background:#13253a;border:1px solid var(--ps-line)}
+  .ps-directory{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ps-card{border-radius:20px;padding:20px}
+  .ps-employee{border:1px solid var(--ps-line);border-radius:16px;background:#081625;padding:15px}
+  .ps-person{display:flex;justify-content:space-between;gap:10px}.ps-person strong{display:block}.ps-person small{color:var(--ps-muted)}
+  .ps-status{color:var(--ps-green);font-size:11px;font-weight:900}.ps-tags{margin:10px 0}
+  .ps-human-summary{display:grid;gap:8px;margin:12px 0}.ps-human-row{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:start;padding:9px 0;border-top:1px solid rgba(23,53,80,.58)}
+  .ps-human-row:first-child{border-top:0}.ps-human-row small{color:var(--ps-muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.ps-human-value{font-size:12px;color:#dceaf5;line-height:1.5}
+  .ps-edit summary{cursor:pointer;color:#79deeb;font-size:12px;font-weight:900}
+  .ps-edit form{margin-top:12px;padding-top:12px;border-top:1px solid var(--ps-line)}
+  .ps-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ps-edit-grid label{font-size:11px;color:#c8d7e5}
+  .ps-edit-section{margin-top:12px;padding-top:12px;border-top:1px solid rgba(23,53,80,.72)}.ps-edit-section:first-child{margin-top:0;padding-top:0;border-top:0}
+  .ps-edit-title{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#dceaf5;font-size:12px;font-weight:900}
+  .ps-edit-warehouses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ps-edit-warehouses .ps-edit-warehouse-row{display:grid;gap:6px;padding:8px 9px;border:1px solid var(--ps-line);border-radius:9px;background:#06111f}.ps-edit-warehouses label{display:flex;align-items:center;gap:7px;font-size:11px;color:#c8d7e5}.ps-edit-warehouses input{accent-color:var(--ps-cyan)}
+  .ps-edit-select{width:100%;box-sizing:border-box;padding:10px 11px;border-radius:10px;border:1px solid var(--ps-line);background:#06111f;color:#fff}
+  .ps-legacy{margin:10px 0;padding:9px 10px;border-radius:10px;background:rgba(233,168,46,.07);border:1px solid rgba(233,168,46,.2);color:#e6c784;font-size:11px;line-height:1.45}
+  .ps-advanced{margin-top:10px}.ps-advanced summary{color:#7f93a7!important;font-weight:700!important}.ps-advanced .ps-jobs{max-height:230px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .ps-job{display:flex;gap:7px;padding:9px;border:1px solid var(--ps-line);border-radius:10px;background:#06111f;font-size:11px}
+  .ps-pending{margin-top:18px}.ps-pending-row{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--ps-line)}
+  .ps-revoke{border:1px solid rgba(255,111,125,.3);background:rgba(255,111,125,.08);color:#ffadb7;border-radius:9px;padding:7px 9px;font-weight:900}
+  .hidden{display:none!important}
+  @media(max-width:1080px){.ps-layout{grid-template-columns:1fr}.ps-main{border-right:0;border-bottom:1px solid var(--ps-line)}.ps-activities{grid-template-columns:repeat(2,minmax(0,1fr))}.ps-directory{grid-template-columns:1fr}}
+  @media(max-width:680px){.ps-stats,.ps-grid2,.ps-activities,.ps-edit-grid,.ps-edit-warehouses{grid-template-columns:1fr}.ps-steps{grid-template-columns:1fr}.ps-step:not(.active){display:none}.ps-hero{align-items:flex-start;flex-direction:column}}
+</style>
+
+<section class="ps-page">
+  <header class="ps-hero">
+    <div>
+      <h2><i class="bi bi-people-fill"></i> Tu equipo, claro y sencillo</h2>
+      <p>Ve quién trabaja contigo, qué hace, dónde puede trabajar y hasta dónde puede actuar.</p>
+    </div>
+    <span class="ps-cap">{% if capacity.limit != None %}{{ capacity.reserved_total }}/{{ capacity.limit }} espacios utilizados{% else %}Plan sin límite{% endif %}</span>
+  </header>
+
+  <div class="ps-stats">
+    <div class="ps-stat"><small>Usuarios activos</small><strong>{{ capacity.active_users }}</strong></div>
+    <div class="ps-stat"><small>Invitaciones pendientes</small><strong>{{ capacity.pending_invitations }}</strong></div>
+    <div class="ps-stat"><small>Espacios disponibles</small><strong>{% if capacity.remaining != None %}{{ capacity.remaining }}{% else %}∞{% endif %}</strong></div>
+  </div>
+
+  {% if not capacity.limit_reached %}
+  <form method="post" id="invite-form" class="ps-shell">
+    {% csrf_token %}
+    <div class="ps-steps">
+      <div class="ps-step active" data-step-label="1"><span>1</span>¿Quién es?</div>
+      <div class="ps-step" data-step-label="2"><span>2</span>¿Qué hace?</div>
+      <div class="ps-step" data-step-label="3"><span>3</span>¿Dónde trabaja?</div>
+    </div>
+
+    <div class="ps-layout">
+      <main class="ps-main">
+        {% if form.non_field_errors %}<div class="ps-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <section data-step="1">
+          <h3 class="ps-title">Datos de la persona</h3>
+          <p class="ps-help">Solo necesitamos su nombre y el correo con el que entrará a PAKIVOX.</p>
+          <div class="ps-grid2">
+            <div class="ps-field"><label>{{ form.full_name.label }}</label>{{ form.full_name }}{% if form.full_name.errors %}<div class="ps-errors">{{ form.full_name.errors }}</div>{% endif %}</div>
+            <div class="ps-field"><label>{{ form.email.label }}</label>{{ form.email }}{% if form.email.errors %}<div class="ps-errors">{{ form.email.errors }}</div>{% endif %}</div>
+          </div>
+          <div class="ps-actions"><button type="button" class="ps-btn primary" data-next="2">Continuar <i class="bi bi-arrow-right"></i></button></div>
+        </section>
+
+        <section data-step="2" class="hidden">
+          <h3 class="ps-title">¿Qué hace esta persona?</h3>
+          <p class="ps-help">Marca una o varias tareas habituales. PAKIVOX prepara el acceso automáticamente.</p>
+          {% if form.activities.errors %}<div class="ps-errors">{{ form.activities.errors }}</div>{% endif %}
+          <div class="ps-activities">
+            {% for activity in activity_catalog %}
+            <label class="ps-activity">
+              <input type="checkbox" name="activities" value="{{ activity.code }}" {% if activity.code in selected_invite_activities %}checked{% endif %}>
+              <i class="bi {{ activity.icon }}"></i>
+              <span><b>{{ activity.label }}</b><small>{{ activity.description }}</small></span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="ps-actions">
+            <button type="button" class="ps-btn ghost" data-next="1">Atrás</button>
+            <button type="button" class="ps-btn primary" data-next="3">Continuar</button>
+          </div>
+        </section>
+
+        <section data-step="3" class="hidden">
+          <h3 class="ps-title">¿Dónde trabaja?</h3>
+          <p class="ps-help">Selecciona las bodegas en las que esta persona podrá entrar y actuar, y el nivel para cada una.</p>
+          <div class="ps-warehouses">
+            <ul>
+              {% for warehouse in available_warehouses %}
+              {% with wid=warehouse.id|stringformat:"s" %}
+              {% with level_key="warehouse_level_"|add:wid submitted_level=form.data|dict_get:"warehouse_level_"|add:wid %}
+              <li>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="warehouses"
+                    value="{{ warehouse.id }}"
+                    class="ps-warehouse-check"
+                    data-target="invite-warehouse-level-{{ warehouse.id }}"
+                    {% if form.warehouses.value and wid in form.warehouses.value %}checked{% endif %}
+                  >
+                  <span>{{ warehouse.name }}</span>
+                </label>
+                <select
+                  name="warehouse_level_{{ warehouse.id }}"
+                  id="invite-warehouse-level-{{ warehouse.id }}"
+                  class="ps-warehouse-level hidden"
+                >
+                  {% for value, label in warehouse_level_choices %}
+                  <option value="{{ value }}" {% if submitted_level == value or not submitted_level and value == "operate" %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </li>
+              {% endwith %}
+              {% endwith %}
+              {% empty %}
+              <li class="ps-legacy">No hay bodegas activas disponibles.</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% if form.warehouses.errors %}<div class="ps-errors">{{ form.warehouses.errors }}</div>{% endif %}
+
+          <div class="ps-authority-note">
+            El nivel define qué tan lejos puede actuar dentro de cada bodega elegida. Las acciones sensibles permanecen protegidas y no se habilitan automáticamente.
+          </div>
+
+          <div class="ps-actions">
+            <button type="button" class="ps-btn ghost" data-next="2">Atrás</button>
+            <button class="ps-btn primary" type="submit"><i class="bi bi-send-fill"></i> Enviar invitación</button>
+          </div>
+        </section>
+      </main>
+
+      <aside class="ps-summary">
+        <h3 class="ps-title">Así quedará</h3>
+        <p class="ps-help">Resumen humano antes de enviar la invitación.</p>
+        <div class="ps-summary-card"><h4>Actividades</h4><div id="summary-activities"><span class="ps-pill">Selecciona actividades</span></div></div>
+        <div class="ps-summary-card"><h4>Bodegas</h4><div id="summary-warehouses"><span class="ps-pill">Selecciona bodegas</span></div></div>
+        <div class="ps-summary-card">
+          <h4>PAKIVOX protege automáticamente</h4>
+          <ul>
+            <li>La persona queda limitada a {{ company.name }}.</li>
+            <li>Solo entra a las bodegas seleccionadas.</li>
+            <li>PAKIVOX prepara el acceso según las actividades elegidas.</li>
+            <li>Las configuraciones especiales existentes se conservan.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </form>
+  {% else %}
+  <div class="ps-card" style="color:#ffd184">Alcanzaste el límite de usuarios de tu plan. Revoca una invitación o libera un espacio.</div>
+  {% endif %}
+
+  <section id="team-directory" class="ps-card">
+    <h3 class="ps-title">Tu equipo</h3>
+    <p class="ps-help">Ve de un vistazo qué hace cada persona, dónde trabaja y hasta dónde puede actuar.</p>
+
+    <div class="ps-directory">
+      {% for employee in employees %}
+      <article class="ps-employee">
+        <div class="ps-person">
+          <div>
+            <strong>{{ employee.user.get_full_name|default:employee.user.email }}</strong>
+            <small>{{ employee.user.email }}</small>
+          </div>
+          <span class="ps-status">{% if employee.is_active and employee.user.is_active %}● ACTIVO{% else %}● INACTIVO{% endif %}</span>
+        </div>
+
+        <div class="ps-human-summary">
+          <div class="ps-human-row">
+            <small>Qué hace</small>
+            <div class="ps-human-value">
+              {% for label in employee.simple_activity_labels %}
+                <span class="ps-pill">{{ label }}</span>
+              {% empty %}
+                <span class="ps-pill">Actividad por definir</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="ps-human-row">
+            <small>Dónde trabaja</small>
+            <div class="ps-human-value">
+              {% for label in employee.simple_warehouse_labels %}
+                <span class="ps-pill">{{ label }}</span>
+              {% empty %}
+                <span class="ps-pill">Sin bodega asignada</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="ps-human-row">
+            <small>Puede actuar</small>
+            <div class="ps-human-value"><strong>{{ employee.simple_authority_label }}</strong></div>
+          </div>
+        </div>
+
+        {% if employee.role != "owner" %}
+        <details class="ps-edit">
+          <summary>Editar acceso</summary>
+          <form method="post" action="{% url 'accounts:employee_activities_update' employee.user.id %}">
+            {% csrf_token %}
+
+            <div class="ps-edit-section">
+              <div class="ps-edit-title"><span>1</span> ¿Qué hace esta persona?</div>
+              <div class="ps-edit-grid">
+                {% for activity in activity_catalog %}
+                <label><input type="checkbox" name="activities" value="{{ activity.code }}" {% if activity.code in employee.simple_activity_codes %}checked{% endif %}> {{ activity.label }}</label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="ps-edit-section">
+              <div class="ps-edit-title"><span>2</span> ¿Dónde trabaja y hasta dónde puede actuar?</div>
+              <div class="ps-edit-warehouses">
+                {% for warehouse in available_warehouses %}
+                <div class="ps-edit-warehouse-row">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="warehouses"
+                      value="{{ warehouse.id }}"
+                      class="ps-warehouse-check"
+                      data-target="edit-warehouse-level-{{ employee.user.id }}-{{ warehouse.id }}"
+                      {% if warehouse.id in employee.simple_warehouse_ids %}checked{% endif %}
+                    >
+                    <span>{{ warehouse.name }}</span>
+                  </label>
+                  <select
+                    name="warehouse_level_{{ warehouse.id }}"
+                    id="edit-warehouse-level-{{ employee.user.id }}-{{ warehouse.id }}"
+                    class="ps-edit-select ps-warehouse-level {% if warehouse.id not in employee.simple_warehouse_ids %}hidden{% endif %}"
+                  >
+                    {% with current_level=employee.simple_warehouse_levels_by_id|dict_get:warehouse.id %}
+                    <option value="view" {% if current_level == "view" %}selected{% endif %}>Consultar</option>
+                    <option value="operate" {% if current_level == "operate" or not current_level %}selected{% endif %}>Trabajar</option>
+                    <option value="approve" {% if current_level == "approve" %}selected{% endif %}>Supervisar</option>
+                    <option value="manage" {% if current_level == "manage" %}selected{% endif %}>Administrar</option>
+                    {% endwith %}
+                  </select>
+                </div>
+                {% empty %}
+                <div class="ps-legacy">No hay bodegas activas disponibles.</div>
+                {% endfor %}
+              </div>
+              {% if employee.has_mixed_warehouse_levels %}
+              <div class="ps-legacy">
+                Cada bodega ya muestra su nivel actual. Si no cambias un selector, esa bodega conserva su nivel.
+              </div>
+              {% endif %}
+            </div>
+
+            {% if employee.has_legacy_jobs %}
+            <div class="ps-legacy">
+              Esta persona tiene configuraciones especiales conservadas.
+              PAKIVOX no las cambiará desde esta pantalla.
+            </div>
+            {% endif %}
+
+            <button class="ps-btn primary" type="submit" style="margin-top:10px">Guardar acceso</button>
+          </form>
+        </details>
+        {% endif %}
+      </article>
+      {% empty %}
+      <p class="ps-help">Todavía no hay personas registradas en tu equipo.</p>
+      {% endfor %}
+    </div>
+
+    <div id="pending-invitations" class="ps-pending">
+      <h3 class="ps-title">Invitaciones pendientes</h3>
+      {% for invitation in pending_invitations %}
+      <div class="ps-pending-row">
+        <div>
+          <strong>{{ invitation.full_name }}</strong>
+          <div class="ps-help" style="margin:3px 0">{{ invitation.email }}</div>
+          <div class="ps-human-value">
+            <strong>Qué hará:</strong>
+            {% for label in invitation.simple_activity_labels %}
+              <span class="ps-pill">{{ label }}</span>
+            {% empty %}
+              <span class="ps-pill">Actividad por definir</span>
+            {% endfor %}
+          </div>
+          <div class="ps-human-value" style="margin-top:5px">
+            <strong>Dónde trabajará:</strong>
+            {% for label in invitation.simple_warehouse_labels %}
+              <span class="ps-pill">{{ label }}</span>
+            {% empty %}
+              <span class="ps-pill">Sin bodega asignada</span>
+            {% endfor %}
+          </div>
+          <div class="ps-human-value" style="margin-top:5px">
+            <strong>Puede actuar:</strong> {{ invitation.simple_authority_label }}
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:employee_invitation_revoke' invitation.id %}">
+          {% csrf_token %}
+          <button class="ps-revoke">Revocar</button>
+        </form>
+      </div>
+      {% empty %}
+      <p class="ps-help">No hay invitaciones pendientes.</p>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+
+<script>
+(()=>{
+  const sections=[...document.querySelectorAll("[data-step]")];
+  const labels=[...document.querySelectorAll("[data-step-label]")];
+  const show=n=>{
+    sections.forEach(x=>x.classList.toggle("hidden",x.dataset.step!==String(n)));
+    labels.forEach(x=>x.classList.toggle("active",x.dataset.stepLabel===String(n)));
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  document.querySelectorAll("[data-next]").forEach(button=>{
+    button.addEventListener("click",()=>show(button.dataset.next));
+  });
+
+  const activityChecks=[...document.querySelectorAll('#invite-form input[name="activities"]')];
+  const warehouseChecks=[...document.querySelectorAll('#invite-form input[name="warehouses"]')];
+  const activitySummary=document.querySelector("#summary-activities");
+  const warehouseSummary=document.querySelector("#summary-warehouses");
+
+  function renderSummary(){
+    const activities=activityChecks.filter(x=>x.checked).map(x=>x.closest("label")?.querySelector("b")?.textContent?.trim()).filter(Boolean);
+    activitySummary.innerHTML=activities.length?activities.map(x=>`<span class="ps-pill">${x}</span>`).join(""):'<span class="ps-pill">Selecciona actividades</span>';
+
+    const warehouses=warehouseChecks.filter(x=>x.checked).map(x=>x.closest("label")?.textContent?.trim()).filter(Boolean);
+    warehouseSummary.innerHTML=warehouses.length?warehouses.map(x=>`<span class="ps-pill">${x}</span>`).join(""):'<span class="ps-pill">Selecciona bodegas</span>';
+  }
+
+  activityChecks.forEach(x=>x.addEventListener("change",renderSummary));
+  warehouseChecks.forEach(x=>x.addEventListener("change",renderSummary));
+  renderSummary();
+
+  document.querySelectorAll(".ps-warehouse-check").forEach(check=>{
+    const target=document.getElementById(check.dataset.target);
+    if(!target) return;
+    const sync=()=>target.classList.toggle("hidden",!check.checked);
+    check.addEventListener("change",sync);
+    sync();
+  });
+
+  {% if form.errors %}
+  {% if form.activities.errors %}show(2);{% elif form.warehouses.errors or form.non_field_errors %}show(3);{% else %}show(1);{% endif %}
+  {% endif %}
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,136 @@
+/*
+  Panel "Avisar al cliente" del detalle del pedido
+  (templates/customer_updates/_panel_pedido.html).
+  Va dentro de la barra lateral oscura del detalle (.ps6b-side-card).
+*/
+
+.cu-panel { color: #e2e8f0; }
+.cu-panel .cu-help { margin: 0 0 12px; font-size: 12px; line-height: 1.45; color: #94a3b8; }
+.cu-block { margin: 0 0 14px; padding: 0 0 14px; border-bottom: 1px solid rgba(148, 163, 184, .14); }
+.cu-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 800; color: #C1E8FF; }
+.cu-muted { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: #94a3b8; }
+.cu-muted strong { color: #e2e8f0; overflow-wrap: anywhere; }
+.cu-warn { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: #fcd34d; }
+
+.cu-copy-row { display: flex; gap: 6px; align-items: stretch; }
+.cu-input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 10px;
+  font-size: 12px;
+  background: #020617;
+  color: #f8fafc;
+}
+.cu-input::placeholder { color: #64748b; }
+.cu-copy-row .cu-input { flex: 1; text-overflow: ellipsis; }
+.cu-icon-btn {
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .72);
+  color: #C1E8FF;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cu-icon-btn:hover { background: rgba(84, 131, 179, .25); }
+
+.cu-fieldset { border: 0; margin: 0 0 10px; padding: 0; min-width: 0; }
+.cu-legend { padding: 0; margin-bottom: 6px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; }
+.cu-choice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 9px;
+  margin-bottom: 5px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, .45);
+  cursor: pointer;
+}
+.cu-choice:has(input:checked) { border-color: #5483B3; background: rgba(84, 131, 179, .16); }
+.cu-choice input { margin-top: 3px; accent-color: #5483B3; }
+.cu-choice strong { display: block; font-size: 13px; color: #f8fafc; }
+.cu-choice small { display: block; font-size: 11px; color: #94a3b8; }
+.cu-choice + .cu-input { margin-top: 4px; }
+
+.cu-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cu-chip {
+  padding: 6px 10px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .72);
+  font-size: 11px;
+  font-weight: 800;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.cu-chip:hover { border-color: #7DA0CA; }
+.cu-chip.is-active { border-color: #7DA0CA; background: #5483B3; color: #021024; }
+.cu-badge {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  background: #C1E8FF;
+  color: #021024;
+}
+.cu-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #020617;
+  color: #f8fafc;
+  resize: vertical;
+}
+
+.cu-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.cu-btn-wa { flex: 1 1 auto; background: #22c55e; color: #052e16; }
+.cu-btn-wa:hover { background: #86efac; }
+.cu-btn-ghost { background: rgba(15, 23, 42, .72); border-color: rgba(148, 163, 184, .24); color: #e2e8f0; }
+.cu-btn-ghost:hover { background: rgba(84, 131, 179, .22); }
+.cu-inline-form { margin: 8px 0 0; }
+.cu-link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: #7DA0CA;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cu-history { margin-top: 12px; font-size: 11px; color: #94a3b8; }
+.cu-history summary { cursor: pointer; font-weight: 800; color: #C1E8FF; }
+.cu-history ul { margin: 8px 0 0; padding-left: 0; list-style: none; }
+.cu-history li { padding: 5px 0; border-bottom: 1px dashed rgba(148, 163, 184, .16); }
+
+.cu-btn:focus-visible,
+.cu-chip:focus-visible,
+.cu-icon-btn:focus-visible,
+.cu-link-btn:focus-visible,
+.cu-input:focus-visible,
+.cu-textarea:focus-visible {
+  outline: 2px solid #7DA0CA;
+  outline-offset: 2px;
+}

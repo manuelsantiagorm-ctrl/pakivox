@@ -1,0 +1,1243 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+  Shipping Hub | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+  Shipping Hub
+{% endblock %}
+
+{% block page_subtitle %}
+  Integraciones de paquetería, guías y automatización logística
+{% endblock %}
+
+{% block content %}
+
+<section class="hub-page">
+
+  <!-- =======================================================
+       ENCABEZADO
+  ======================================================== -->
+
+  <div class="hub-hero">
+
+    <div>
+
+      <span class="hub-eyebrow">
+        <i class="bi bi-box-seam"></i>
+        PAKIVOX Shipping Hub
+      </span>
+
+      <h2>
+        Conexiones logísticas
+      </h2>
+
+      <p>
+        Configura proveedores por empresa, valida las credenciales
+        y controla qué conexión puede utilizar el almacén.
+      </p>
+
+    </div>
+
+    <a
+      href="{% url 'shipping_hub:integration_create' %}"
+      class="hub-primary-btn"
+    >
+      <i class="bi bi-plus-lg"></i>
+      Nueva integración
+    </a>
+
+  </div>
+
+
+  <!-- =======================================================
+       INDICADORES
+  ======================================================== -->
+
+  <div class="hub-kpis">
+
+    <article class="hub-kpi">
+
+      <span>
+        Empresa
+      </span>
+
+      <strong>
+        {{ company.name }}
+      </strong>
+
+      <small>
+        Aislamiento multiempresa activo
+      </small>
+
+    </article>
+
+
+    <article class="hub-kpi">
+
+      <span>
+        Integraciones
+      </span>
+
+      <strong>
+        {{ integration_count }}
+      </strong>
+
+      <small>
+        Configuraciones registradas
+      </small>
+
+    </article>
+
+
+    <article class="hub-kpi success">
+
+      <span>
+        Con conexión válida
+      </span>
+
+      <strong>
+        {{ connected_count }}
+      </strong>
+
+      <small>
+        Última prueba exitosa
+      </small>
+
+    </article>
+
+
+    <article class="hub-kpi warning">
+
+      <span>
+        Activas
+      </span>
+
+      <strong>
+        {{ active_count }}
+      </strong>
+
+      <small>
+        Disponibles para operaciones
+      </small>
+
+    </article>
+
+  </div>
+
+
+  <!-- =======================================================
+       AVISO DE SEGURIDAD
+  ======================================================== -->
+
+  <div class="hub-info">
+
+    <i class="bi bi-shield-lock-fill"></i>
+
+    <div>
+
+      <strong>
+        Credenciales protegidas
+      </strong>
+
+      <p>
+        Las cuentas propias se almacenan cifradas. Las cuentas
+        maestras utilizan exclusivamente las credenciales seguras
+        configuradas en el servidor de PAKIVOX.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- =======================================================
+       INTEGRACIONES
+  ======================================================== -->
+
+  {% if integrations %}
+
+    <div class="integration-grid">
+
+      {% for integration in integrations %}
+
+        <article class="integration-card">
+
+          <!-- =================================================
+               ENCABEZADO DE TARJETA
+          ================================================== -->
+
+          <div class="integration-card-top">
+
+            <div class="provider-logo provider-{{ integration.provider }}">
+
+              {% if integration.provider == "envia" %}
+
+                <i class="bi bi-truck"></i>
+
+              {% elif integration.provider == "estafeta_direct" %}
+
+                <i class="bi bi-box-seam-fill"></i>
+
+              {% elif integration.provider == "fedex_direct" %}
+
+                <i class="bi bi-airplane-fill"></i>
+
+              {% elif integration.provider == "dhl_direct" %}
+
+                <i class="bi bi-lightning-charge-fill"></i>
+
+              {% elif integration.provider == "skydropx" %}
+
+                <i class="bi bi-cloud-arrow-up-fill"></i>
+
+              {% else %}
+
+                <i class="bi bi-box-arrow-up-right"></i>
+
+              {% endif %}
+
+            </div>
+
+
+            <div class="integration-heading">
+
+              <div class="heading-row">
+
+                <div>
+
+                  <h3>
+                    {{ integration.get_provider_display }}
+                  </h3>
+
+                  <p>
+                    {{ integration.account_name|default:"Cuenta sin nombre" }}
+                  </p>
+
+                </div>
+
+
+                <div class="heading-badges">
+
+                  {% if integration.is_primary %}
+
+                    <span class="state-badge primary">
+                      <i class="bi bi-star-fill"></i>
+                      Principal
+                    </span>
+
+                  {% endif %}
+
+
+                  {% if integration.is_active %}
+
+                    <span class="state-badge active">
+                      Activa
+                    </span>
+
+                  {% else %}
+
+                    <span class="state-badge inactive">
+                      Inactiva
+                    </span>
+
+                  {% endif %}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               MODALIDAD DE CUENTA
+          ================================================== -->
+
+          <div
+            class="
+              account-mode-banner
+              {% if integration.account_mode == 'master' %}
+                master
+              {% else %}
+                company
+              {% endif %}
+            "
+          >
+
+            <div class="account-mode-icon">
+
+              {% if integration.account_mode == "master" %}
+
+                <i class="bi bi-building-lock"></i>
+
+              {% else %}
+
+                <i class="bi bi-key-fill"></i>
+
+              {% endif %}
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Modo de cuenta
+              </span>
+
+              <strong>
+
+                {% if integration.account_mode == "master" %}
+
+                  Cuenta maestra de PAKIVOX
+
+                {% elif integration.account_mode == "company" %}
+
+                  Cuenta propia de la empresa
+
+                {% else %}
+
+                  {{ integration.get_account_mode_display }}
+
+                {% endif %}
+
+              </strong>
+
+
+              <small>
+
+                {% if integration.account_mode == "master" %}
+
+                  Los cargos y credenciales pertenecen a la
+                  infraestructura logística de PAKIVOX.
+
+                {% else %}
+
+                  Los cargos y credenciales pertenecen al contrato
+                  privado de {{ company.name }}.
+
+                {% endif %}
+
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               DATOS
+          ================================================== -->
+
+          <div class="integration-data">
+
+            <div>
+
+              <span>
+                Entorno
+              </span>
+
+              {% if integration.environment == "sandbox" %}
+
+                <strong class="environment sandbox">
+                  Sandbox
+                </strong>
+
+              {% else %}
+
+                <strong class="environment production">
+                  Producción
+                </strong>
+
+              {% endif %}
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Integración principal
+              </span>
+
+              {% if integration.is_primary %}
+
+                <strong class="primary-status">
+                  <i class="bi bi-check-circle-fill"></i>
+                  Sí, principal
+                </strong>
+
+              {% else %}
+
+                <strong class="secondary-status">
+                  No
+                </strong>
+
+              {% endif %}
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Credenciales
+              </span>
+
+              {% if integration.account_mode == "master" %}
+
+                {% if integration.credentials_encrypted %}
+
+                  <strong class="credentials-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Configuración inconsistente
+                  </strong>
+
+                {% else %}
+
+                  <strong class="credentials-master">
+                    <i class="bi bi-shield-check"></i>
+                    Administradas por PAKIVOX
+                  </strong>
+
+                {% endif %}
+
+              {% elif integration.credentials_encrypted %}
+
+                <strong class="credentials-ok">
+                  <i class="bi bi-lock-fill"></i>
+                  Configuradas y cifradas
+                </strong>
+
+              {% else %}
+
+                <strong class="credentials-warning">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  Credenciales faltantes
+                </strong>
+
+              {% endif %}
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Etiqueta
+              </span>
+
+              <strong>
+                {{ integration.preferred_label_format|upper }}
+                →
+                {{ integration.fallback_label_format|upper }}
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Última prueba
+              </span>
+
+              <strong>
+
+                {% if integration.last_connection_test_at %}
+
+                  {{ integration.last_connection_test_at|date:"d/m/Y H:i" }}
+
+                {% else %}
+
+                  Sin probar
+
+                {% endif %}
+
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Conexión
+              </span>
+
+              {% if integration.last_connection_test_success %}
+
+                <strong class="connection-ok">
+                  <i class="bi bi-check-circle-fill"></i>
+                  Correcta
+                </strong>
+
+              {% else %}
+
+                <strong class="connection-bad">
+                  <i class="bi bi-exclamation-circle-fill"></i>
+                  Pendiente o fallida
+                </strong>
+
+              {% endif %}
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               ERROR DE CONEXIÓN
+          ================================================== -->
+
+          {% if integration.last_connection_error %}
+
+            <div class="connection-error">
+
+              <strong>
+                Último error
+              </strong>
+
+              <p>
+                {{ integration.last_connection_error }}
+              </p>
+
+            </div>
+
+          {% endif %}
+
+
+          <!-- =================================================
+               ACCIONES
+          ================================================== -->
+
+          <div class="integration-actions">
+
+            <a
+              href="{% url 'shipping_hub:integration_edit' integration.id %}"
+              class="hub-secondary-btn"
+            >
+              <i class="bi bi-pencil-square"></i>
+              Configurar
+            </a>
+
+
+            <form
+              method="post"
+              action="{% url 'shipping_hub:integration_test' integration.id %}"
+              class="hub-inline-form"
+              data-lock-form
+            >
+
+              {% csrf_token %}
+
+              <button
+                type="submit"
+                class="hub-test-btn"
+              >
+                <i class="bi bi-plug-fill"></i>
+                Probar conexión
+              </button>
+
+            </form>
+
+
+            <form
+              method="post"
+              action="{% url 'shipping_hub:integration_toggle' integration.id %}"
+              class="hub-inline-form"
+              data-lock-form
+            >
+
+              {% csrf_token %}
+
+              {% if integration.is_active %}
+
+                <input
+                  type="hidden"
+                  name="state"
+                  value="inactive"
+                >
+
+                <button
+                  type="submit"
+                  class="hub-danger-btn"
+                  onclick="return confirm('¿Desactivar esta integración logística?');"
+                >
+                  <i class="bi bi-pause-circle"></i>
+                  Desactivar
+                </button>
+
+              {% else %}
+
+                <input
+                  type="hidden"
+                  name="state"
+                  value="active"
+                >
+
+                <button
+                  type="submit"
+                  class="hub-success-btn"
+                  {% if not integration.last_connection_test_success %}
+                    disabled
+                    title="Primero prueba la conexión"
+                  {% endif %}
+                >
+                  <i class="bi bi-play-circle"></i>
+                  Activar
+                </button>
+
+              {% endif %}
+
+            </form>
+
+          </div>
+
+        </article>
+
+      {% endfor %}
+
+    </div>
+
+  {% else %}
+
+    <!-- =====================================================
+         ESTADO VACÍO
+    ====================================================== -->
+
+    <div class="hub-empty">
+
+      <div class="empty-icon">
+        <i class="bi bi-truck-flatbed"></i>
+      </div>
+
+      <h3>
+        Aún no hay conexiones logísticas
+      </h3>
+
+      <p>
+        Crea una integración y selecciona explícitamente si
+        utilizará la cuenta maestra de PAKIVOX o un contrato
+        propio de la empresa.
+      </p>
+
+      <a
+        href="{% url 'shipping_hub:integration_create' %}"
+        class="hub-primary-btn"
+      >
+        Crear primera integración
+      </a>
+
+    </div>
+
+  {% endif %}
+
+</section>
+
+
+<style>
+  /* =========================================================
+     GENERAL
+  ========================================================= */
+
+  .hub-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .hub-page *,
+  .hub-page *::before,
+  .hub-page *::after {
+    box-sizing: border-box;
+  }
+
+  /* =========================================================
+     HERO
+  ========================================================= */
+
+  .hub-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px;
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(56, 189, 248, 0.18),
+        transparent 34%
+      ),
+      #0f172a;
+  }
+
+  .hub-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+
+  .hub-hero h2 {
+    margin: 10px 0 6px;
+    color: #f8fafc;
+    font-size: 30px;
+    font-weight: 950;
+  }
+
+  .hub-hero p {
+    max-width: 700px;
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  /* =========================================================
+     KPIS
+  ========================================================= */
+
+  .hub-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .hub-kpi {
+    padding: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 17px;
+    background: #111827;
+  }
+
+  .hub-kpi span,
+  .integration-data span,
+  .account-mode-banner span {
+    display: block;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .hub-kpi strong {
+    display: block;
+    margin: 8px 0 4px;
+    color: #f8fafc;
+    font-size: 24px;
+  }
+
+  .hub-kpi small {
+    color: #64748b;
+  }
+
+  .hub-kpi.success {
+    border-color: rgba(34, 197, 94, 0.24);
+  }
+
+  .hub-kpi.warning {
+    border-color: rgba(245, 158, 11, 0.24);
+  }
+
+  /* =========================================================
+     AVISO
+  ========================================================= */
+
+  .hub-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px 17px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 15px;
+    color: #bae6fd;
+    background: rgba(14, 165, 233, 0.09);
+  }
+
+  .hub-info > i {
+    margin-top: 2px;
+    font-size: 20px;
+  }
+
+  .hub-info strong {
+    color: #e0f2fe;
+  }
+
+  .hub-info p {
+    margin: 3px 0 0;
+    color: #7dd3fc;
+    font-size: 13px;
+  }
+
+  /* =========================================================
+     TARJETAS
+  ========================================================= */
+
+  .integration-grid {
+    display: grid;
+    grid-template-columns:
+      repeat(auto-fit, minmax(420px, 1fr));
+    gap: 18px;
+  }
+
+  .integration-card {
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+    background: #0f172a;
+  }
+
+  .integration-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .provider-logo {
+    display: grid;
+    place-items: center;
+    flex: 0 0 50px;
+    width: 50px;
+    height: 50px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 16px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #e0f2fe;
+    font-size: 22px;
+  }
+
+  .provider-skydropx {
+    border-color: rgba(139, 92, 246, 0.25);
+    background: rgba(139, 92, 246, 0.14);
+    color: #ede9fe;
+  }
+
+  .provider-estafeta_direct {
+    border-color: rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fecaca;
+  }
+
+  .provider-fedex_direct {
+    border-color: rgba(168, 85, 247, 0.28);
+    background: rgba(168, 85, 247, 0.12);
+    color: #e9d5ff;
+  }
+
+  .provider-dhl_direct {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fde68a;
+  }
+
+  .integration-heading {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .heading-row > div:first-child {
+    min-width: 0;
+  }
+
+  .heading-badges {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .integration-heading h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 19px;
+  }
+
+  .integration-heading p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+  }
+
+  /* =========================================================
+     BADGES
+  ========================================================= */
+
+  .state-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .state-badge.active {
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(34, 197, 94, 0.13);
+    color: #bbf7d0;
+  }
+
+  .state-badge.inactive {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(148, 163, 184, 0.1);
+    color: #cbd5e1;
+  }
+
+  .state-badge.primary {
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fde68a;
+  }
+
+  /* =========================================================
+     MODO DE CUENTA
+  ========================================================= */
+
+  .account-mode-banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .account-mode-banner.company {
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(88, 28, 135, 0.12);
+  }
+
+  .account-mode-banner.master {
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: rgba(14, 116, 144, 0.12);
+  }
+
+  .account-mode-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+  }
+
+  .account-mode-banner strong {
+    display: block;
+    margin-top: 5px;
+    color: #f8fafc;
+    font-size: 14px;
+  }
+
+  .account-mode-banner small {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+
+  /* =========================================================
+     DATOS
+  ========================================================= */
+
+  .integration-data {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .integration-data > div {
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.11);
+    border-radius: 13px;
+    background: #020617;
+  }
+
+  .integration-data strong {
+    display: block;
+    margin-top: 7px;
+    color: #e2e8f0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .environment.sandbox {
+    color: #fde68a;
+  }
+
+  .environment.production {
+    color: #fca5a5;
+  }
+
+  .connection-ok,
+  .primary-status,
+  .credentials-ok {
+    color: #86efac !important;
+  }
+
+  .credentials-master {
+    color: #7dd3fc !important;
+  }
+
+  .connection-bad,
+  .credentials-warning {
+    color: #fda4af !important;
+  }
+
+  .secondary-status {
+    color: #94a3b8 !important;
+  }
+
+  /* =========================================================
+     ERRORES
+  ========================================================= */
+
+  .connection-error {
+    padding: 13px 14px;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: 13px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #fecaca;
+  }
+
+  .connection-error strong {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .connection-error p {
+    margin: 5px 0 0;
+    font-size: 13px;
+  }
+
+  /* =========================================================
+     BOTONES
+  ========================================================= */
+
+  .integration-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .hub-inline-form {
+    margin: 0;
+  }
+
+  .hub-primary-btn,
+  .hub-secondary-btn,
+  .hub-test-btn,
+  .hub-success-btn,
+  .hub-danger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 14px;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 0.15s ease,
+      filter 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .hub-primary-btn {
+    border: 0;
+    background: linear-gradient(
+      135deg,
+      #38bdf8,
+      #22d3ee
+    );
+    color: #082f49;
+  }
+
+  .hub-secondary-btn,
+  .hub-test-btn {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(148, 163, 184, 0.08);
+    color: #e2e8f0;
+  }
+
+  .hub-success-btn {
+    border: 0;
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .hub-danger-btn {
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.1);
+    color: #fecaca;
+  }
+
+  .hub-primary-btn:hover,
+  .hub-secondary-btn:hover,
+  .hub-test-btn:hover,
+  .hub-success-btn:hover,
+  .hub-danger-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.46;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* =========================================================
+     VACÍO
+  ========================================================= */
+
+  .hub-empty {
+    padding: 48px 24px;
+    border: 1px dashed rgba(148, 163, 184, 0.24);
+    border-radius: 20px;
+    background: #0f172a;
+    text-align: center;
+  }
+
+  .empty-icon {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #7dd3fc;
+    font-size: 30px;
+  }
+
+  .hub-empty h3 {
+    margin: 0 0 8px;
+    color: #f8fafc;
+  }
+
+  .hub-empty p {
+    max-width: 620px;
+    margin: 0 auto 18px;
+    color: #94a3b8;
+  }
+
+  /* =========================================================
+     RESPONSIVE
+  ========================================================= */
+
+  @media (max-width: 1100px) {
+    .hub-kpis {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .integration-data {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .hub-hero {
+      display: grid;
+    }
+
+    .hub-kpis,
+    .integration-data {
+      grid-template-columns: 1fr;
+    }
+
+    .integration-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .heading-row {
+      flex-direction: column;
+    }
+
+    .heading-badges {
+      justify-content: flex-start;
+    }
+
+    .integration-actions,
+    .hub-inline-form,
+    .hub-primary-btn,
+    .hub-secondary-btn,
+    .hub-test-btn,
+    .hub-success-btn,
+    .hub-danger-btn {
+      width: 100%;
+    }
+  }
+</style>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+      document
+        .querySelectorAll("[data-lock-form]")
+        .forEach(function (form) {
+          form.addEventListener(
+            "submit",
+            function () {
+              const button = form.querySelector(
+                "button[type='submit']"
+              );
+
+              if (
+                !button ||
+                button.disabled
+              ) {
+                return;
+              }
+
+              button.disabled = true;
+
+              button.dataset.originalText = (
+                button.innerHTML
+              );
+
+              button.innerHTML = (
+                '<span class="spinner-border ' +
+                'spinner-border-sm"></span> ' +
+                "Procesando..."
+              );
+            }
+          );
+        });
+    }
+  );
+</script>
+
+{% endblock %}

@@ -1,0 +1,152 @@
+﻿{% extends "base.html" %}
+{% load static wms_units %}
+
+{% block title %}Bitácora del almacén | PAKIVOX{% endblock %}
+
+{% block page_title %}Bitácora del almacén{% endblock %}
+{% block page_subtitle %}Todo lo que pasó en surtido, empaque, envíos e inventario{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/bitacora_almacen.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bit">
+
+  <header class="bit-head">
+    <div>
+      <span class="bit-eyebrow">Almacén</span>
+      <h2>Historial de movimientos</h2>
+      <span class="bit-alcance">
+        <i class="bi {% if active_warehouse %}bi-building{% else %}bi-buildings{% endif %}" aria-hidden="true"></i>
+        {% if active_warehouse %}{{ active_warehouse.name }}{% else %}Todas las bodegas{% endif %}
+        · {{ total_eventos }} evento{{ total_eventos|pluralize }}
+      </span>
+    </div>
+
+    <form class="bit-buscar" method="get" role="search">
+      {% if categoria %}<input type="hidden" name="categoria" value="{{ categoria }}">{% endif %}
+      {% if action %}<input type="hidden" name="action" value="{{ action }}">{% endif %}
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="bit-oculto" for="bitFolio">Buscar por folio de pedido</label>
+      <input id="bitFolio" type="search" name="order" value="{{ order_folio }}" placeholder="Buscar folio de pedido" autocomplete="off">
+      {% if order_folio %}<a class="bit-limpiar" href="?{% if categoria %}categoria={{ categoria }}{% endif %}" aria-label="Quitar búsqueda"><i class="bi bi-x-lg" aria-hidden="true"></i></a>{% endif %}
+    </form>
+  </header>
+
+  <nav class="bit-filtros" aria-label="Filtrar por tipo de evento">
+    <a class="bit-filtro{% if not categoria and not action %} is-on{% endif %}" href="?{% if order_folio %}order={{ order_folio|urlencode }}{% endif %}">
+      <i class="bi bi-list-ul" aria-hidden="true"></i>Todo <b>{{ total_eventos }}</b>
+    </a>
+    {% for cat in categorias %}
+    <a class="bit-filtro is-{{ cat.clave }}{% if categoria == cat.clave %} is-on{% endif %}" href="?categoria={{ cat.clave }}{% if order_folio %}&amp;order={{ order_folio|urlencode }}{% endif %}">
+      <i class="bi {{ cat.icono }}" aria-hidden="true"></i>{{ cat.nombre }} <b>{{ cat.n }}</b>
+    </a>
+    {% endfor %}
+  </nav>
+
+  {% if action %}
+  <p class="bit-activo">
+    Mostrando solo: <strong>{% for valor, etiqueta in action_choices %}{% if valor == action %}{{ etiqueta }}{% endif %}{% endfor %}</strong>
+    <a href="?{% if order_folio %}order={{ order_folio|urlencode }}{% endif %}">Quitar filtro</a>
+  </p>
+  {% endif %}
+
+  <div class="bit-linea">
+    {% for log in logs %}
+      {% ifchanged log.created_at|date:"Ymd" %}
+      <h3 class="bit-dia">{{ log.created_at|date:"l j \d\e F Y"|capfirst }}</h3>
+      {% endifchanged %}
+
+      <article class="bit-evento is-{{ log.tono }}">
+        <span class="bit-icono" aria-hidden="true"><i class="bi {{ log.icono }}"></i></span>
+
+        <div class="bit-cuerpo">
+          <div class="bit-titulo">
+            <strong>{{ log.get_action_display }}</strong>
+            {% if log.order %}
+            <a class="bit-folio" href="{% url 'sales:detalle_pedido' log.order.id %}">{{ log.order.folio }}</a>
+            {% endif %}
+          </div>
+          <p>{{ log.description }}</p>
+
+          <div class="bit-meta">
+            <span><i class="bi bi-person" aria-hidden="true"></i>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}Sistema{% endif %}</span>
+            {% if log.picking_order %}
+            <a href="{% url 'warehouse:detalle_picking' log.picking_order.id %}"><i class="bi bi-upc-scan" aria-hidden="true"></i>Surtido #{{ log.picking_order.id }}</a>
+            {% endif %}
+            {% if log.metadata.warehouse_name %}
+            <span><i class="bi bi-building" aria-hidden="true"></i>{{ log.metadata.warehouse_name }}</span>
+            {% endif %}
+          </div>
+
+          {% if log.picking_item or log.metadata.reason or log.metadata.packing_order_id or log.metadata.shipping_order_id %}
+          <details class="bit-detalle">
+            <summary>Ver detalle</summary>
+
+            {% if log.picking_item %}
+            <div class="bit-producto">
+              <div class="bit-producto-nombre">
+                <strong>{{ log.picking_item.variant.sku }}</strong>
+                {% if log.picking_item.variant.product %}<span>{{ log.picking_item.variant.product.name }}</span>{% endif %}
+                {% if log.picking_item.variant|is_bulk_variant %}
+                <small>1 {{ log.picking_item.variant|commercial_unit }} = {{ log.picking_item.variant|conversion_factor_label }} {{ log.picking_item.variant|base_unit }}</small>
+                {% else %}
+                <small>Producto unitario</small>
+                {% endif %}
+              </div>
+              <dl class="bit-cantidades">
+                <div>
+                  <dt>Pedido</dt>
+                  {% if log.picking_item.variant|is_bulk_variant %}
+                  <dd>{{ log.picking_item.required_quantity|commercial_quantity:log.picking_item.variant }} {{ log.picking_item.variant|commercial_unit }}<small>{{ log.picking_item.required_quantity|clean_qty }} {{ log.picking_item.variant|base_unit }}</small></dd>
+                  {% else %}
+                  <dd>{{ log.picking_item.required_quantity|clean_qty }} {{ log.picking_item.variant|base_unit }}</dd>
+                  {% endif %}
+                </div>
+                <div>
+                  <dt>Recolectado</dt>
+                  {% if log.picking_item.variant|is_bulk_variant %}
+                  <dd>{{ log.picking_item.picked_quantity|commercial_quantity:log.picking_item.variant }} {{ log.picking_item.variant|commercial_unit }}<small>{{ log.picking_item.picked_quantity|clean_qty }} {{ log.picking_item.variant|base_unit }}</small></dd>
+                  {% else %}
+                  <dd>{{ log.picking_item.picked_quantity|clean_qty }} {{ log.picking_item.variant|base_unit }}</dd>
+                  {% endif %}
+                </div>
+                <div>
+                  <dt>Ubicación</dt>
+                  <dd>{% if log.picking_item.location %}{{ log.picking_item.location.bin_code }}{% else %}Sin ubicación{% endif %}</dd>
+                </div>
+              </dl>
+            </div>
+            {% endif %}
+
+            {% if log.metadata.reason or log.metadata.packing_order_id or log.metadata.shipping_order_id %}
+            <ul class="bit-datos">
+              {% if log.metadata.reason %}<li><span>Motivo</span><strong>{{ log.metadata.reason }}</strong></li>{% endif %}
+              {% if log.metadata.packing_order_id %}<li><span>Empaque</span><strong>#{{ log.metadata.packing_order_id }}</strong></li>{% endif %}
+              {% if log.metadata.shipping_order_id %}<li><span>Envío</span><strong>#{{ log.metadata.shipping_order_id }}</strong></li>{% endif %}
+            </ul>
+            {% endif %}
+          </details>
+          {% endif %}
+        </div>
+
+        <time class="bit-hora" datetime="{{ log.created_at|date:'c' }}">{{ log.created_at|date:"H:i" }}</time>
+      </article>
+    {% empty %}
+      <div class="bit-vacio">
+        <i class="bi bi-clock-history" aria-hidden="true"></i>
+        {% if order_folio or categoria or action %}
+        <strong>No hay eventos con ese filtro</strong>
+        <p><a href="?">Ver todo el historial</a></p>
+        {% else %}
+        <strong>Todavía no hay movimientos</strong>
+        <p>Aquí aparecerá cada surtido, empaque, envío y movimiento de inventario, con quién lo hizo y a qué hora.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% include "components/paginacion.html" with page_obj=page_obj %}
+</section>
+{% endblock %}

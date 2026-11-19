@@ -1,0 +1,1058 @@
+{% extends "base.html" %}
+{% load wms_units %}
+
+{% block title %}Detalle Shipping | PAKIVOX{% endblock %}
+
+{% block page_title %}Envíos{% endblock %}
+{% block page_subtitle %}Registro de paquetería, guía y entrega final{% endblock %}
+
+{% block content %}
+<section class="shipping-detail-page">
+  <div class="shipping-header">
+    <div>
+      <span class="eyebrow">Envíos</span>
+      <h2>{{ shipping_order.order.folio }}</h2>
+
+      <p>
+        Cliente:
+        {% if shipping_order.order.customer %}
+          {{ shipping_order.order.customer.full_name }}
+        {% else %}
+          Sin cliente
+        {% endif %}
+      </p>
+
+      <div class="shipping-scope-tags">
+        <span>
+          <strong>Bodega:</strong>
+          {{ shipping_order.packing_order.picking_order.warehouse.name }}
+        </span>
+
+        <span class="fulfillment">
+          <strong>Cumplimiento:</strong>
+
+          {% if shipping_order.fulfillment %}
+            {{ shipping_order.fulfillment.code }}
+          {% else %}
+            Flujo histórico
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <a class="ghost-btn" href="{% url 'sales:detalle_pedido' shipping_order.order.id %}">
+          Ver pedido
+        </a>
+
+        <a class="ghost-btn" href="{% url 'warehouse:timeline_pedido' shipping_order.order.id %}">
+          Ver timeline
+        </a>
+
+        {% if shipping_order.packing_order %}
+          <a class="ghost-btn" href="{% url 'warehouse:detalle_packing' shipping_order.packing_order.id %}">
+            Ver packing
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="shipping-header-actions">
+      <span class="status-pill {{ shipping_order.status }}">
+        {{ shipping_order.get_status_display }}
+      </span>
+    </div>
+  </div>
+
+  {% if warehouse_read_only %}
+    <div class="locked-alert readonly shipping-readonly-alert">
+      <strong>Modo de consulta global</strong>
+      <p>
+        Estás visualizando este envío desde “Todas las bodegas”.
+        Selecciona
+        {{ shipping_order.packing_order.picking_order.warehouse.name }}
+        para registrar guía, marcar salida o confirmar entrega.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if shipping_order.status == "ready" or shipping_order.status == "pending" %}
+    <div class="locked-alert warning">
+      <strong>Listo para envío</strong>
+      <p>
+        Al marcar como enviado, PAKIVOX consumirá el stock reservado del picking:
+        bajará <strong>reserved_stock</strong> y <strong>physical_stock</strong>.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if shipping_order.status == "shipped" %}
+    <div class="locked-alert info">
+      {% if shipping_order.order.status == "shipped" %}
+        <strong>Pedido completamente enviado</strong>
+        <p>
+          Todas las bodegas despacharon sus envíos.
+          El stock reservado ya fue consumido.
+        </p>
+      {% else %}
+        <strong>Envío despachado</strong>
+        <p>
+          El envío de
+          {{ shipping_order.packing_order.picking_order.warehouse.name }}
+          ya salió de bodega.
+          El pedido continúa esperando otros cumplimientos.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if shipping_order.status == "delivered" %}
+    <div class="locked-alert success">
+      {% if shipping_order.order.status == "delivered" %}
+        <strong>Pedido completamente entregado</strong>
+        <p>
+          Todas las bodegas terminaron sus entregas.
+          El pedido cerró correctamente el flujo operativo.
+        </p>
+      {% else %}
+        <strong>Envío entregado</strong>
+        <p>
+          El cumplimiento de
+          {{ shipping_order.packing_order.picking_order.warehouse.name }}
+          fue entregado correctamente.
+          El pedido continúa esperando otras bodegas.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if shipping_order.status == "cancelled" %}
+    <div class="locked-alert danger">
+      <strong>Envío cancelado</strong>
+      <p>
+        Esta orden de envío fue cancelada.
+      </p>
+
+      {% if shipping_order.cancel_reason %}
+        <p>
+          <strong>Motivo:</strong> {{ shipping_order.cancel_reason }}
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="shipping-grid">
+    <article class="info-card">
+      <span>Pedido</span>
+      <strong>{{ shipping_order.order.folio }}</strong>
+      <small>Estado venta: {{ shipping_order.order.get_status_display }}</small>
+    </article>
+
+    <article class="info-card">
+      <span>Packing</span>
+      {% if shipping_order.packing_order %}
+        <strong>{{ shipping_order.packing_order.get_status_display }}</strong>
+        <small>
+          <a href="{% url 'warehouse:detalle_packing' shipping_order.packing_order.id %}">
+            Ver packing
+          </a>
+        </small>
+      {% else %}
+        <strong>Sin packing</strong>
+        <small>No ligado</small>
+      {% endif %}
+    </article>
+
+    <article class="info-card">
+      <span>Enviado por</span>
+      <strong>
+        {% if shipping_order.shipped_by %}
+          {{ shipping_order.shipped_by.username }}
+        {% else %}
+          Pendiente
+        {% endif %}
+      </strong>
+      <small>
+        {% if shipping_order.shipped_at %}
+          {{ shipping_order.shipped_at|date:"d/m/Y H:i" }}
+        {% else %}
+          Sin fecha
+        {% endif %}
+      </small>
+    </article>
+  </div>
+
+  {% if shipping_order.packing_order and shipping_order.packing_order.picking_order %}
+    <section class="shipping-items-card">
+      <div class="section-title">
+        <div>
+          <span>Contenido del envío</span>
+          <h3>Productos a enviar</h3>
+        </div>
+
+        <small>
+          Picking #{{ shipping_order.packing_order.picking_order.id }}
+        </small>
+      </div>
+
+      <div class="shipping-items-list">
+        {% for item in traceability_items %}
+          <article class="shipping-item">
+            <div class="shipping-item-main">
+              <div class="shipping-item-title">
+                <strong>{{ item.variant.sku }}</strong>
+
+                {% if item.variant|is_bulk_variant %}
+                  <span class="unit-badge bulk">
+                    Producto por volumen ·
+                    1 {{ item.variant|commercial_unit }} =
+                    {{ item.variant|conversion_factor_label }}
+                    {{ item.variant|base_unit }}
+                  </span>
+                {% else %}
+                  <span class="unit-badge unit">
+                    Producto unitario
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if item.variant.product %}
+                <p>{{ item.variant.product.name }}</p>
+              {% endif %}
+
+              {% if item.location %}
+                <small>
+                  Ubicación origen:
+                  <strong>{{ item.location.bin_code }}</strong>
+                </small>
+              {% endif %}
+              {% if item.trace_allocation %}
+                <small class="lt1d-lot-line">
+                  Lote:
+                  <strong>{{ item.trace_allocation.lot.lot_number }}</strong>
+                  {% if item.trace_allocation.lot.expiration_date %}
+                    · Caduca {{ item.trace_allocation.lot.expiration_date|date:"d/m/Y" }}
+                  {% endif %}
+                  · {{ item.trace_allocation.get_status_display }}
+                </small>
+              {% endif %}
+            </div>
+
+            <div class="shipping-qty-grid">
+              <div>
+                <span>Enviar</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.required_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.required_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Recolectado</span>
+
+                {% if item.variant|is_bulk_variant %}
+                  <strong>
+                    {{ item.picked_quantity|commercial_quantity:item.variant }}
+                    {{ item.variant|commercial_unit }}
+                  </strong>
+                  <small>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }} internas
+                  </small>
+                {% else %}
+                  <strong>
+                    {{ item.picked_quantity|clean_qty }}
+                    {{ item.variant|base_unit }}
+                  </strong>
+                {% endif %}
+              </div>
+
+              <div>
+                <span>Impacto stock</span>
+
+                {% if shipping_order.status == "pending" or shipping_order.status == "ready" %}
+                  <strong>Consumirá reservado</strong>
+                  <small>
+                    Al enviar bajará físico y reservado.
+                  </small>
+                {% elif shipping_order.status == "shipped" or shipping_order.status == "delivered" %}
+                  <strong>Stock consumido</strong>
+                  <small>
+                    Ya bajó físico y reservado.
+                  </small>
+                {% else %}
+                  <strong>{{ shipping_order.get_status_display }}</strong>
+                  <small>Sin consumo activo.</small>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-items">
+            No hay productos ligados al picking.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="shipping-form-card">
+    {% if warehouse_read_only %}
+      <div class="readonly-panel">
+        <div class="readonly-panel-icon">
+          <i class="bi bi-eye"></i>
+        </div>
+
+        <div>
+          <h3>Solo consulta</h3>
+          <p>
+            Selecciona la bodega
+            <strong>
+              {{ shipping_order.packing_order.picking_order.warehouse.name }}
+            </strong>
+            para operar este envío.
+          </p>
+        </div>
+      </div>
+
+    {% elif shipping_order.status == "pending" or shipping_order.status == "ready" %}
+      <form method="post" action="{% url 'warehouse:marcar_enviado' shipping_order.id %}">
+        {% csrf_token %}
+
+        {% if registered_carrier and registered_tracking_number %}
+          <div class="shipping-data-grid registered-guide">
+            <div>
+              <span>Paquetería registrada</span>
+              <strong>{{ registered_carrier }}</strong>
+            </div>
+
+            <div>
+              <span>Número de guía registrado</span>
+              <strong>{{ registered_tracking_number }}</strong>
+            </div>
+          </div>
+
+          <input
+            type="hidden"
+            name="carrier"
+            value="{{ registered_carrier }}"
+          >
+          <input
+            type="hidden"
+            name="tracking_number"
+            value="{{ registered_tracking_number }}"
+          >
+        {% else %}
+          <div class="form-grid">
+            <label>
+              Paquetería
+              <input
+                type="text"
+                name="carrier"
+                placeholder="Ej. DHL, FedEx, Estafeta..."
+                value="{% if shipping_order.carrier %}{{ shipping_order.carrier }}{% endif %}"
+                required
+              >
+            </label>
+
+            <label>
+              Número de guía
+              <input
+                type="text"
+                name="tracking_number"
+                placeholder="Ej. 123456789MX"
+                value="{% if shipping_order.tracking_number %}{{ shipping_order.tracking_number }}{% endif %}"
+                required
+              >
+            </label>
+          </div>
+        {% endif %}
+
+        <label>
+          Notas de envío
+          <textarea
+            name="notes"
+            rows="4"
+            placeholder="Ej. Entrega de 2 a 5 días hábiles..."
+          >{% if shipping_order.notes %}{{ shipping_order.notes }}{% endif %}</textarea>
+        </label>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="ship-btn"
+            onclick="return confirm('¿Confirmas marcar este pedido como enviado? Se consumirá el stock reservado.');"
+          >
+            Marcar como enviado
+          </button>
+
+          <a class="ghost-btn" href="{% url 'warehouse:timeline_pedido' shipping_order.order.id %}">
+            Regresar al Timeline
+          </a>
+
+          {% if shipping_order.packing_order %}
+            <a class="ghost-btn" href="{% url 'warehouse:detalle_packing' shipping_order.packing_order.id %}">
+              Regresar a Packing
+            </a>
+          {% endif %}
+        </div>
+      </form>
+    {% else %}
+      <div class="shipping-summary">
+        <div class="shipping-summary-header">
+          <div>
+            <h3>Información de envío</h3>
+            <p>Detalle logístico del pedido.</p>
+          </div>
+
+          {% if shipping_order.status == "shipped" %}
+            <form
+              method="post"
+              action="{% url 'warehouse:marcar_entregado' shipping_order.id %}"
+              onsubmit="return confirm('¿Confirmas que este pedido fue entregado?');"
+            >
+              {% csrf_token %}
+              <button type="submit" class="deliver-btn">
+                Marcar como entregado
+              </button>
+            </form>
+          {% endif %}
+        </div>
+
+        <div class="shipping-data-grid">
+          <div>
+            <span>Paquetería</span>
+            <strong>
+              {% if shipping_order.carrier %}
+                {{ shipping_order.carrier }}
+              {% else %}
+                Sin paquetería
+              {% endif %}
+            </strong>
+          </div>
+
+          <div>
+            <span>Guía</span>
+            <strong>
+              {% if shipping_order.tracking_number %}
+                {{ shipping_order.tracking_number }}
+              {% else %}
+                Sin guía
+              {% endif %}
+            </strong>
+          </div>
+
+          <div>
+            <span>Fecha de envío</span>
+            <strong>
+              {% if shipping_order.shipped_at %}
+                {{ shipping_order.shipped_at|date:"d/m/Y H:i" }}
+              {% else %}
+                Sin fecha
+              {% endif %}
+            </strong>
+          </div>
+
+          <div>
+            <span>Fecha de entrega</span>
+            <strong>
+              {% if shipping_order.delivered_at %}
+                {{ shipping_order.delivered_at|date:"d/m/Y H:i" }}
+              {% else %}
+                Pendiente
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        {% if shipping_order.notes %}
+          <div class="notes-box">
+            <span>Notas</span>
+            <p>{{ shipping_order.notes }}</p>
+          </div>
+        {% endif %}
+
+        <div class="summary-actions">
+          <a class="ghost-btn" href="{% url 'warehouse:timeline_pedido' shipping_order.order.id %}">
+            Ver Timeline
+          </a>
+
+          {% if shipping_order.packing_order %}
+            <a class="ghost-btn" href="{% url 'warehouse:detalle_packing' shipping_order.packing_order.id %}">
+              Ver Packing
+            </a>
+          {% endif %}
+
+          <a class="ghost-btn" href="{% url 'warehouse:auditoria_warehouse' %}?order={{ shipping_order.order.folio }}">
+            Ver Auditoría
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  .shipping-detail-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .shipping-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .shipping-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 800;
+  }
+
+  .shipping-header h2 {
+    color: #f8fafc;
+    font-size: 34px;
+    margin: 6px 0;
+  }
+
+  .shipping-header p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .status-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .status-pill.pending {
+    background: rgba(148, 163, 184, .18);
+    color: #cbd5e1;
+  }
+
+  .status-pill.ready {
+    background: rgba(250, 204, 21, .18);
+    color: #fde68a;
+  }
+
+  .status-pill.shipped {
+    background: rgba(56, 189, 248, .18);
+    color: #7dd3fc;
+  }
+
+  .status-pill.delivered {
+    background: rgba(34, 197, 94, .18);
+    color: #86efac;
+  }
+
+  .status-pill.cancelled {
+    background: rgba(239, 68, 68, .16);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, .35);
+  }
+
+  .shipping-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .info-card,
+  .shipping-form-card,
+  .shipping-items-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .info-card span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .06em;
+  }
+
+  .info-card strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 22px;
+    margin: 8px 0;
+  }
+
+  .info-card small,
+  .info-card a {
+    color: #94a3b8;
+  }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .section-title span {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 900;
+  }
+
+  .section-title h3 {
+    color: #f8fafc;
+    margin: 6px 0 0;
+  }
+
+  .section-title small {
+    color: #94a3b8;
+    font-weight: 800;
+  }
+
+  .shipping-items-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .shipping-item {
+    display: grid;
+    grid-template-columns: 1fr minmax(380px, .85fr);
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .shipping-item-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .shipping-item-title strong {
+    color: #f8fafc;
+    font-size: 16px;
+  }
+
+  .shipping-item-main p {
+    margin: 8px 0;
+    color: #94a3b8;
+  }
+
+  .shipping-item-main small {
+    color: #94a3b8;
+  }
+
+  .shipping-item-main small strong {
+    color: #7dd3fc;
+  }
+
+  .unit-badge {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .unit-badge.bulk {
+    background: rgba(245, 158, 11, .12);
+    border: 1px solid rgba(245, 158, 11, .28);
+    color: #fef3c7;
+  }
+
+  .unit-badge.unit {
+    background: rgba(56, 189, 248, .10);
+    border: 1px solid rgba(56, 189, 248, .24);
+    color: #bae6fd;
+  }
+
+  .shipping-qty-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .shipping-qty-grid div {
+    background: rgba(15, 23, 42, .95);
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .shipping-qty-grid span {
+    display: block;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .06em;
+  }
+
+  .shipping-qty-grid strong {
+    display: block;
+    color: #f8fafc;
+    margin-top: 6px;
+  }
+
+  .shipping-qty-grid small {
+    display: block;
+    margin-top: 4px;
+    color: #fbbf24;
+    font-weight: 800;
+  }
+
+  .empty-items {
+    padding: 18px;
+    border-radius: 12px;
+    background: #020617;
+    border: 1px dashed rgba(148, 163, 184, .3);
+    color: #94a3b8;
+  }
+
+  .shipping-form-card form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-weight: 700;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .ship-btn,
+  .deliver-btn {
+    justify-self: start;
+    display: inline-block;
+    border: 0;
+    text-decoration: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .ship-btn:hover,
+  .deliver-btn:hover {
+    color: #052e16;
+    filter: brightness(1.08);
+  }
+
+  .deliver-btn {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .deliver-btn:hover {
+    color: #020617;
+  }
+
+  .ghost-btn {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid rgba(148, 163, 184, .28);
+    color: #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ghost-btn:hover {
+    color: #f8fafc;
+    background: rgba(148, 163, 184, .12);
+  }
+
+  .form-actions,
+  .summary-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .shipping-summary {
+    color: #cbd5e1;
+    display: grid;
+    gap: 16px;
+  }
+
+  .shipping-summary-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .shipping-summary h3 {
+    color: #38bdf8;
+    margin: 0 0 8px;
+  }
+
+  .shipping-summary p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .shipping-data-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .shipping-data-grid div {
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .shipping-data-grid span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .shipping-data-grid strong {
+    display: block;
+    color: #f8fafc;
+    margin-top: 8px;
+    font-size: 14px;
+    word-break: break-word;
+  }
+
+  .notes-box {
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, .08);
+    border: 1px solid rgba(56, 189, 248, .2);
+  }
+
+  .notes-box span {
+    display: block;
+    color: #7dd3fc;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 8px;
+  }
+
+  .notes-box p {
+    color: #e0f2fe;
+  }
+
+  .locked-alert {
+    padding: 16px 18px;
+    border-radius: 16px;
+  }
+
+  .locked-alert.warning {
+    background: rgba(245, 158, 11, .10);
+    border: 1px solid rgba(245, 158, 11, .30);
+    color: #fde68a;
+  }
+
+  .locked-alert.info {
+    background: rgba(56, 189, 248, .10);
+    border: 1px solid rgba(56, 189, 248, .30);
+    color: #bae6fd;
+  }
+
+  .locked-alert.success {
+    background: rgba(34, 197, 94, .10);
+    border: 1px solid rgba(34, 197, 94, .30);
+    color: #bbf7d0;
+  }
+
+  .locked-alert.danger {
+    background: rgba(239, 68, 68, .10);
+    border: 1px solid rgba(239, 68, 68, .30);
+    color: #fecaca;
+  }
+
+  .locked-alert strong {
+    color: #f8fafc;
+  }
+
+  .locked-alert p {
+    margin: 0;
+  }
+
+  @media (max-width: 1000px) {
+    .shipping-grid,
+    .shipping-data-grid,
+    .shipping-item {
+      grid-template-columns: 1fr;
+    }
+
+    .shipping-qty-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .shipping-header {
+      display: grid;
+    }
+
+    .shipping-header-actions {
+      display: grid;
+    }
+
+    .shipping-grid,
+    .form-grid,
+    .shipping-data-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions,
+    .summary-actions,
+    .shipping-summary-header,
+    .section-title {
+      display: grid;
+    }
+
+    .ghost-btn,
+    .deliver-btn,
+    .ship-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+
+  /* =====================================================
+     MULTIBODEGA / SOLO CONSULTA
+  ====================================================== */
+
+  .shipping-scope-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 13px;
+  }
+
+  .shipping-scope-tags span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border: 1px solid rgba(56, 189, 248, .25);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, .08);
+    color: #bae6fd;
+    font-size: 12px;
+  }
+
+  .shipping-scope-tags span.fulfillment {
+    border-color: rgba(167, 139, 250, .28);
+    background: rgba(139, 92, 246, .09);
+    color: #ddd6fe;
+  }
+
+  .locked-alert.readonly {
+    background: rgba(250, 204, 21, .08);
+    border: 1px solid rgba(250, 204, 21, .32);
+    color: #fef3c7;
+  }
+
+  .readonly-panel {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid rgba(250, 204, 21, .3);
+    border-radius: 12px;
+    background: rgba(250, 204, 21, .07);
+  }
+
+  .readonly-panel-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    flex: 0 0 42px;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(250, 204, 21, .16);
+    color: #facc15;
+    font-size: 19px;
+  }
+
+  .readonly-panel h3 {
+    margin: 0 0 6px;
+    color: #fef9c3;
+  }
+
+  .readonly-panel p {
+    margin: 0;
+    color: #d6d3d1;
+  }
+
+.lt1d-lot-line{display:block;margin-top:6px;color:#7dd3fc}.lt1d-lot-line strong{color:#e0f2fe}
+</style>
+{% endblock %}

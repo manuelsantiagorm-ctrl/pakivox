@@ -1,0 +1,995 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Stock global | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Stock global
+{% endblock %}
+
+{% block page_subtitle %}
+Inventario físico, reservado, comprometido, disponible y alertas de bajo inventario
+{% endblock %}
+
+{% block content %}
+<style>
+  .stock-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .stock-hero,
+  .stock-search,
+  .stock-table-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  .stock-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 24px;
+    border-color: rgba(56, 189, 248, 0.22);
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.14),
+        transparent 36%
+      ),
+      #0f172a;
+  }
+
+  .stock-hero h1 {
+    margin: 5px 0;
+    color: #f8fafc;
+    font-size: 29px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .stock-hero p,
+  .stock-table-header p {
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.55;
+  }
+
+  .stock-eyebrow {
+    display: block;
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .stock-hero-status,
+  .stock-table-scope {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    padding: 11px 14px;
+    border: 1px solid rgba(56, 189, 248, 0.24);
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.08);
+  }
+
+  .stock-hero-status i,
+  .stock-table-scope i {
+    color: #38bdf8;
+    font-size: 21px;
+  }
+
+  .stock-hero-status div,
+  .stock-table-scope div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .stock-hero-status small,
+  .stock-table-scope small {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .stock-hero-status strong,
+  .stock-table-scope strong {
+    color: #e2e8f0;
+    font-size: 12px;
+  }
+
+  .stock-scope-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 15px;
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: 12px;
+    color: #bae6fd;
+    background: rgba(6, 182, 212, 0.08);
+  }
+
+  .stock-scope-banner > i {
+    color: #22d3ee;
+    font-size: 18px;
+  }
+
+  .scope-badge {
+    display: inline-flex;
+    margin-left: 7px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+  .scope-badge.global {
+    color: #cbd5e1;
+    background: rgba(148, 163, 184, 0.15);
+  }
+
+  .scope-badge.specific {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.16);
+  }
+
+  .stock-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .stock-btn,
+  .stock-btn-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 13px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.88);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .stock-btn:hover {
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #f8fafc;
+    background: rgba(56, 189, 248, 0.12);
+  }
+
+  .stock-btn.entry {
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #6ee7b7;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .stock-btn.danger {
+    border-color: rgba(249, 115, 22, 0.32);
+    color: #fed7aa;
+    background: rgba(249, 115, 22, 0.12);
+  }
+
+  .stock-btn-disabled {
+    color: #64748b;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .stock-search {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border-color: rgba(56, 189, 248, 0.2);
+    border-radius: 16px;
+  }
+
+  .stock-search-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: #38bdf8;
+    background: rgba(14, 165, 233, 0.12);
+    font-size: 19px;
+  }
+
+  .stock-search-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .stock-search-field label {
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .stock-search-field input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 43px;
+    padding: 0 13px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 10px;
+    outline: none;
+    color: #f8fafc;
+    background: #020617;
+    font: inherit;
+  }
+
+  .stock-search-field input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  }
+
+  .stock-search-field small {
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .stock-search-result {
+    display: grid;
+    min-width: 75px;
+    gap: 3px;
+    text-align: center;
+  }
+
+  .stock-search-result small {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .stock-search-result strong {
+    color: #38bdf8;
+    font-size: 20px;
+  }
+
+  .stock-search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    border-radius: 9px;
+    color: #fda4af;
+    background: rgba(244, 63, 94, 0.08);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .stock-table-card {
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .stock-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .stock-table-header h2 {
+    margin: 5px 0;
+    color: #f8fafc;
+    font-size: 22px;
+  }
+
+  .stock-table-wrap {
+    overflow-x: auto;
+  }
+
+  .stock-table {
+    width: 100%;
+    min-width: 1180px;
+    border-collapse: collapse;
+  }
+
+  .stock-table th {
+    padding: 13px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    color: #94a3b8;
+    background: rgba(2, 6, 23, 0.55);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .stock-table td {
+    padding: 14px 13px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    color: #e5e7eb;
+    font-size: 12px;
+    vertical-align: middle;
+  }
+
+  .row-critical {
+    background: rgba(127, 29, 29, 0.1);
+  }
+
+  .sku,
+  .product-name,
+  .warehouse-name {
+    font-weight: 900;
+  }
+
+  .sku {
+    color: #f8fafc;
+  }
+
+  .product-name {
+    color: #cbd5e1;
+  }
+
+  .warehouse-name {
+    color: #bae6fd;
+  }
+
+  .number {
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .number.available {
+    color: #86efac;
+  }
+
+  .number.reserved {
+    color: #fde68a;
+  }
+
+  .number.danger {
+    color: #fecaca;
+  }
+
+  .stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .stock-badge.ok {
+    border-color: rgba(34, 197, 94, 0.25);
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  .stock-badge.critical {
+    border-color: rgba(248, 113, 113, 0.28);
+    color: #fecaca;
+    background: rgba(248, 113, 113, 0.16);
+  }
+
+  .stock-badge.neutral {
+    border-color: rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    background: rgba(148, 163, 184, 0.12);
+  }
+
+  .stock-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 220px;
+  }
+
+  .stock-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 32px;
+    padding: 0 9px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .stock-action--entry {
+    border-color: rgba(34, 197, 94, 0.34);
+    color: #6ee7b7;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .stock-action--detail {
+    border-color: rgba(56, 189, 248, 0.3);
+    color: #7dd3fc;
+    background: rgba(56, 189, 248, 0.08);
+  }
+
+  .stock-action--disabled {
+    border-color: rgba(148, 163, 184, 0.17);
+    color: #64748b;
+    background: rgba(15, 23, 42, 0.62);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .empty-state {
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    padding: 42px 20px;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  .empty-state > i {
+    color: #38bdf8;
+    font-size: 28px;
+  }
+
+  .empty-state strong {
+    color: #f8fafc;
+    font-size: 20px;
+  }
+
+  .empty-state p {
+    margin: 0;
+  }
+
+  .stock-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 15px 17px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .stock-pagination-summary {
+    color: #94a3b8;
+    font-size: 11px;
+  }
+
+  .stock-pagination-summary strong {
+    color: #f8fafc;
+  }
+
+  .stock-pagination-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .stock-pagination-actions a,
+  .stock-pagination-actions span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .stock-pagination-actions a {
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    color: #7dd3fc;
+    background: rgba(14, 165, 233, 0.08);
+    text-decoration: none;
+  }
+
+  .stock-pagination-actions span {
+    color: #94a3b8;
+    background: #020617;
+  }
+
+  @media (max-width: 800px) {
+    .stock-hero,
+    .stock-table-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .stock-search {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .stock-search-result,
+    .stock-search-clear {
+      grid-column: span 1;
+    }
+
+    .stock-pagination {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>
+
+<section class="stock-page">
+  <div class="stock-hero">
+    <div>
+      <span class="stock-eyebrow">
+        Inventario / Existencias
+      </span>
+
+      <h1>
+        {% if stock_is_global_view %}
+          Stock consolidado
+        {% else %}
+          Stock de {{ stock_scope_label }}
+        {% endif %}
+      </h1>
+
+      <p>
+        Inventario físico, reservado, comprometido y disponible por SKU y
+        bodega. Detecta existencias bajas y consulta cada movimiento.
+      </p>
+    </div>
+
+    <div class="stock-hero-status">
+      {% if stock_is_global_view %}
+        <i class="bi bi-buildings"></i>
+
+        <div>
+          <small>Modo de consulta</small>
+          <strong>Todas las bodegas</strong>
+        </div>
+      {% else %}
+        <i class="bi bi-building-check"></i>
+
+        <div>
+          <small>Bodega seleccionada</small>
+          <strong>{{ stock_scope_label }}</strong>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stock-scope-banner">
+    <i class="bi bi-building"></i>
+
+    <div>
+      <strong>Inventario consultado:</strong>
+      {{ stock_scope_label }}
+
+      {% if stock_is_global_view %}
+        <span class="scope-badge global">
+          Vista consolidada · Solo consulta
+        </span>
+      {% else %}
+        <span class="scope-badge specific">
+          Bodega específica
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stock-actions">
+    <a
+      href="{% url 'inventory:lista_productos' %}"
+      class="stock-btn"
+    >
+      <i class="bi bi-box"></i>
+      Productos
+    </a>
+
+    {% if stock_is_global_view %}
+      <span
+        class="stock-btn-disabled"
+        title="Selecciona una bodega específica antes de registrar una entrada."
+        aria-disabled="true"
+      >
+        <i class="bi bi-box-arrow-in-down"></i>
+        Nueva entrada
+      </span>
+    {% else %}
+      <a
+        href="{% url 'inventory:lista_productos' %}"
+        class="stock-btn entry"
+      >
+        <i class="bi bi-box-arrow-in-down"></i>
+        Nueva entrada
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'inventory:movimientos_inventario' %}"
+      class="stock-btn"
+    >
+      <i class="bi bi-arrow-left-right"></i>
+      Movimientos
+    </a>
+
+    <a
+      href="{% url 'inventory:stock_critical_alerts' %}"
+      class="stock-btn danger"
+    >
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Alertas críticas
+    </a>
+  </div>
+
+  <form
+    method="get"
+    action="{% url 'inventory:lista_stock' %}"
+    class="stock-search"
+    id="stockSearchForm"
+    role="search"
+  >
+    <div class="stock-search-icon">
+      <i class="bi bi-search"></i>
+    </div>
+
+    <div class="stock-search-field">
+      <label for="stockSearchInput">
+        Buscar en inventario
+      </label>
+
+      <input
+        type="search"
+        id="stockSearchInput"
+        name="q"
+        value="{{ q }}"
+        maxlength="120"
+        autocomplete="off"
+        placeholder="SKU, producto, código de barras, categoría, marca o bodega..."
+      >
+
+      <small>
+        Los resultados no relacionados desaparecerán automáticamente.
+      </small>
+    </div>
+
+    <div class="stock-search-result">
+      <small>Resultados</small>
+      <strong>{{ total_results }}</strong>
+    </div>
+
+    {% if q %}
+      <a
+        href="{% url 'inventory:lista_stock' %}"
+        class="stock-search-clear"
+        title="Limpiar búsqueda"
+      >
+        <i class="bi bi-x-lg"></i>
+        Limpiar
+      </a>
+    {% endif %}
+  </form>
+
+  <div class="stock-table-card">
+    <div class="stock-table-header">
+      <div>
+        <span class="stock-eyebrow">
+          Existencias operativas
+        </span>
+
+        <h2>Inventario actual</h2>
+
+        <p>
+          {% if stock_is_global_view %}
+            Existencias consolidadas de todas las bodegas accesibles.
+          {% else %}
+            Existencias correspondientes a {{ stock_scope_label }}.
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="stock-table-scope">
+        {% if stock_is_global_view %}
+          <i class="bi bi-layers"></i>
+
+          <div>
+            <small>Alcance</small>
+            <strong>Vista consolidada</strong>
+          </div>
+        {% else %}
+          <i class="bi bi-geo-alt-fill"></i>
+
+          <div>
+            <small>Alcance</small>
+            <strong>{{ stock_scope_label }}</strong>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if stocks %}
+      <div class="stock-table-wrap">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Producto</th>
+              <th>Almacén</th>
+              <th>Físico</th>
+              <th>Reservado</th>
+              <th>Comprometido</th>
+              <th>Disponible</th>
+              <th>Mínimo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for stock in stocks %}
+              <tr class="{% if stock.is_critical %}row-critical{% endif %}">
+                <td>
+                  <div class="sku">
+                    {{ stock.variant.sku }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="product-name">
+                    {{ stock.variant.product.name }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="warehouse-name">
+                    {{ stock.warehouse.name }}
+                  </div>
+                </td>
+
+                <td>
+                  <span class="number">
+                    {{ stock.physical_stock }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="number reserved">
+                    {{ stock.reserved_stock }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="number">
+                    {{ stock.committed_stock }}
+                  </span>
+                </td>
+
+                <td>
+                  {% if stock.is_critical %}
+                    <span class="number danger">
+                      {{ stock.available_stock }}
+                    </span>
+                  {% else %}
+                    <span class="number available">
+                      {{ stock.available_stock }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if stock.variant.min_stock %}
+                    <span class="number">
+                      {{ stock.variant.min_stock }}
+                    </span>
+                  {% else %}
+                    <span class="stock-badge neutral">
+                      Sin mínimo
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if stock.is_critical %}
+                    <span class="stock-badge critical">
+                      <i class="bi bi-exclamation-triangle-fill"></i>
+                      Stock crítico
+                    </span>
+                  {% else %}
+                    <span class="stock-badge ok">
+                      <i class="bi bi-check-circle-fill"></i>
+                      Normal
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <div class="stock-row-actions">
+                    {% if stock_is_global_view %}
+                      <span
+                        class="stock-action stock-action--disabled"
+                        title="Selecciona una bodega específica para registrar una entrada."
+                        aria-disabled="true"
+                      >
+                        <i class="bi bi-box-arrow-in-down"></i>
+                        Entrada
+                      </span>
+                    {% else %}
+                      <a
+                        href="{% url 'inventory:agregar_stock' stock.variant.product_id %}"
+                        class="stock-action stock-action--entry"
+                        title="Registrar entrada para {{ stock.variant.sku }}"
+                      >
+                        <i class="bi bi-box-arrow-in-down"></i>
+                        Entrada
+                      </a>
+                    {% endif %}
+
+                    <a
+                      href="{% url 'inventory:detalle_producto' stock.variant.product_id %}"
+                      class="stock-action stock-action--detail"
+                      title="Consultar {{ stock.variant.product.name }}"
+                    >
+                      <i class="bi bi-eye"></i>
+                      Ver
+                    </a>
+
+                    <span
+                      class="stock-action stock-action--disabled"
+                      title="El ajuste auditable estará disponible próximamente."
+                      aria-disabled="true"
+                    >
+                      <i class="bi bi-sliders"></i>
+                      Ajustar
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <nav
+          class="stock-pagination"
+          aria-label="Paginación del inventario"
+        >
+          <div class="stock-pagination-summary">
+            Página
+            <strong>{{ page_obj.number }}</strong>
+            de
+            <strong>{{ page_obj.paginator.num_pages }}</strong>
+          </div>
+
+          <div class="stock-pagination-actions">
+            {% if page_obj.has_previous %}
+              <a href="?q={{ q|urlencode }}&page=1">
+                <i class="bi bi-chevron-double-left"></i>
+                Primera
+              </a>
+
+              <a href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i>
+                Anterior
+              </a>
+            {% endif %}
+
+            <span>
+              {{ page_obj.start_index }}–{{ page_obj.end_index }}
+              de {{ page_obj.paginator.count }}
+            </span>
+
+            {% if page_obj.has_next %}
+              <a href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">
+                Siguiente
+                <i class="bi bi-chevron-right"></i>
+              </a>
+
+              <a href="?q={{ q|urlencode }}&page={{ page_obj.paginator.num_pages }}">
+                Última
+                <i class="bi bi-chevron-double-right"></i>
+              </a>
+            {% endif %}
+          </div>
+        </nav>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+
+        {% if q %}
+          <strong>No encontramos coincidencias</strong>
+
+          <p>
+            No hay SKU, producto, código, categoría, marca o bodega
+            relacionada con “{{ q }}”.
+          </p>
+
+          <a
+            href="{% url 'inventory:lista_stock' %}"
+            class="stock-btn"
+          >
+            <i class="bi bi-x-circle"></i>
+            Limpiar búsqueda
+          </a>
+        {% else %}
+          <strong>No hay stock registrado</strong>
+
+          {% if stock_is_global_view %}
+            <p>
+              No existen registros de inventario en las bodegas accesibles.
+            </p>
+          {% else %}
+            <p>
+              {{ stock_scope_label }} todavía no tiene inventario registrado.
+            </p>
+
+            <a
+              href="{% url 'inventory:lista_productos' %}"
+              class="stock-btn entry"
+            >
+              <i class="bi bi-box-arrow-in-down"></i>
+              Registrar primera entrada
+            </a>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("stockSearchForm");
+  const input = document.getElementById("stockSearchInput");
+
+  if (!form || !input) {
+    return;
+  }
+
+  let searchTimer = null;
+  let previousValue = input.value.trim();
+
+  input.addEventListener("input", function () {
+    window.clearTimeout(searchTimer);
+
+    searchTimer = window.setTimeout(function () {
+      const currentValue = input.value.trim();
+
+      if (currentValue === previousValue) {
+        return;
+      }
+
+      previousValue = currentValue;
+      form.requestSubmit();
+    }, 400);
+  });
+
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      window.clearTimeout(searchTimer);
+      input.value = "";
+      form.requestSubmit();
+    }
+  });
+});
+</script>
+{% endblock %}

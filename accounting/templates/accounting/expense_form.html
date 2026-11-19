@@ -1,0 +1,79 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Gasto | PAKIVOX{% endblock %}
+{% block page_title %}Registrar Gasto{% endblock %}
+{% block page_subtitle %}
+El gasto generará automáticamente su póliza contable
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="financial-page">
+
+  <article class="financial-panel">
+    <div class="financial-panel-header">
+      <h2>Nuevo gasto de {{ company.name }}</h2>
+
+      <a class="financial-button"
+         href="{% url 'accounting:expense_list' %}">
+        Volver
+      </a>
+    </div>
+
+    <form method="post"
+          enctype="multipart/form-data"
+          class="financial-form">
+
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="financial-alert danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="financial-form-grid">
+        {% for field in form %}
+          <div class="financial-form-field
+                      {% if field.name == 'notes' or field.name == 'receipt_file' %}
+                        full
+                      {% endif %}">
+            <label for="{{ field.id_for_label }}">
+              {{ field.label }}
+            </label>
+
+            {{ field }}
+
+            {% for error in field.errors %}
+              <span class="financial-error">
+                {{ error }}
+              </span>
+            {% endfor %}
+
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="financial-actions">
+        <button class="financial-button success" type="submit">
+          <i class="bi bi-check-circle-fill"></i>
+          Guardar y contabilizar
+        </button>
+
+        <a class="financial-button"
+           href="{% url 'accounting:expense_list' %}">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </article>
+
+</section>
+{% endblock %}

@@ -1,0 +1,790 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Resolver duplicados | PAKIVOX{% endblock %}
+{% block page_title %}Resolver duplicados{% endblock %}
+{% block page_subtitle %}Compara los registros del Excel con los clientes existentes{% endblock %}
+
+{% block content %}
+<section class="dup-page">
+  <header class="dup-header">
+    <div>
+      <span>Folio {{ job.folio }}</span>
+      <h2>{{ job.original_filename }}</h2>
+      <p>
+        {{ pending_count }} pendientes · {{ resolved_count }} resueltos ·
+        Empresa: {{ company.name }}
+      </p>
+    </div>
+    <a
+  href="{% url 'data_imports:job_detail' job.pk %}"
+  class="btn-volver-analisis"
+>
+  <i class="bi bi-arrow-right-circle-fill"></i>
+  Continuar con la importación
+</a>
+  </header>
+
+  <div class="dup-info">
+    <i class="bi bi-shield-check"></i>
+    <p>
+      PAKIVOX nunca relaciona clientes entre empresas. El cliente existente,
+      la fila del Excel y cualquier dirección se vuelven a validar contra
+      <strong>{{ company.name }}</strong> antes de aplicar la decisión.
+          </p>
+  </div>
+
+  {% if pending_count %}
+    <section class="dup-guidance" role="alert">
+      <div class="dup-guidance__icon">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+
+      <div class="dup-guidance__content">
+        <span class="dup-guidance__kicker">Necesitamos tu atención</span>
+
+        <h3>
+          PAKIVOX encontró
+          {{ pending_count }}
+          {% if pending_count == 1 %}
+            posible cliente duplicado.
+          {% else %}
+            posibles clientes duplicados.
+          {% endif %}
+        </h3>
+
+        <p class="dup-guidance__lead">
+          Antes de continuar necesitamos saber qué hacer con estos registros
+          para evitar crear clientes repetidos.
+        </p>
+
+        {% if pending_count > 30 %}
+          <div class="dup-guidance__recommendation">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <div>
+              <strong>Tienes muchos duplicados pendientes.</strong>
+              <span>
+                No necesitas revisar los {{ pending_count }} uno por uno.
+                Empieza por la resolución rápida y deja para revisión manual
+                únicamente los casos que todavía necesiten una decisión.
+              </span>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="dup-guidance__choices">
+          <article class="dup-guidance-choice recommended">
+            <div class="dup-guidance-choice__top">
+              <i class="bi bi-stars"></i>
+              <div>
+                <strong>Resolución rápida</strong>
+                {% if pending_count > 30 %}
+                  <span class="dup-guidance-badge">Recomendada</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <p>
+              Aplica <strong>“Mantener existente, omitir”</strong> a grupos
+              completos de duplicados según su nivel de confianza.
+            </p>
+
+            <div class="dup-guidance-counts">
+              <span>
+                <b>{{ confidence_counts.alta }}</b>
+                alta confianza
+              </span>
+              <span>
+                <b>{{ confidence_counts.media }}</b>
+                media confianza
+              </span>
+            </div>
+
+            <small>
+              Alta confianza: coincide RFC o correo, o dos o más datos.
+              Media confianza: coincide solo teléfono o WhatsApp.
+            </small>
+
+            <div class="dup-guidance-quick-actions">
+              <form
+                method="post"
+                action="{% url 'data_imports:bulk_resolve_duplicates' job.pk %}"
+                onsubmit="return confirm('¿Aplicar \'Mantener existente, omitir\' a los {{ confidence_counts.alta }} duplicados de alta confianza en todo el lote?');"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="confidence" value="alta" />
+                <button
+                  type="submit"
+                  class="dup-guidance-action primary"
+                  {% if not confidence_counts.alta %}disabled{% endif %}
+                >
+                  Aplicar “Mantener existente” a alta confianza
+                  <span class="dup-guidance-action-count">{{ confidence_counts.alta }}</span>
+                </button>
+              </form>
+
+              <form
+                method="post"
+                action="{% url 'data_imports:bulk_resolve_duplicates' job.pk %}"
+                onsubmit="return confirm('¿Aplicar \'Mantener existente, omitir\' a los {{ confidence_counts.media }} duplicados de media confianza en todo el lote?');"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="confidence" value="media" />
+                <button
+                  type="submit"
+                  class="dup-guidance-action secondary"
+                  {% if not confidence_counts.media %}disabled{% endif %}
+                >
+                  Aplicar “Mantener existente” a media confianza
+                  <span class="dup-guidance-action-count">{{ confidence_counts.media }}</span>
+                </button>
+              </form>
+            </div>
+
+            <small class="dup-guidance-quick-note">
+              Estas acciones aplican a todo el lote y quedan auditadas.
+            </small>
+          </article>
+
+          <article class="dup-guidance-choice">
+            <div class="dup-guidance-choice__top">
+              <i class="bi bi-person-check"></i>
+              <div>
+                <strong>Revisión manual</strong>
+              </div>
+            </div>
+
+            <p>
+              Compara el cliente existente con la fila del Excel y decide
+              caso por caso cuando quieras tener control individual.
+            </p>
+
+            <small>
+              Puedes mantener el cliente existente, crear uno independiente
+              cuando realmente sea otro cliente o elegir la decisión disponible
+              para ese registro.
+            </small>
+
+            <button
+              type="button"
+              class="dup-guidance-action"
+              data-scroll-target="duplicateManualReview"
+            >
+              Revisar uno por uno
+              <i class="bi bi-arrow-down"></i>
+            </button>
+          </article>
+        </div>
+
+        <div class="dup-guidance__safety">
+          <i class="bi bi-shield-lock-fill"></i>
+          <span>
+            La resolución rápida no crea clientes nuevos: aplica
+            “Mantener existente, omitir” al grupo seleccionado y queda auditada.
+            PAKIVOX solo compara registros dentro de <strong>{{ company.name }}</strong>.
+          </span>
+        </div>
+      </div>
+    </section>
+  {% else %}
+    <section class="dup-guidance dup-guidance--done" role="status">
+      <div class="dup-guidance__icon">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="dup-guidance__content">
+        <span class="dup-guidance__kicker">Duplicados resueltos</span>
+        <h3>No tienes duplicados pendientes en este lote.</h3>
+        <p class="dup-guidance__lead">
+          Ya puedes volver al análisis y continuar con el siguiente paso.
+        </p>
+      </div>
+    </section>
+  {% endif %}
+
+  <form
+    method="post"
+    action="{% url 'data_imports:save_duplicates' job.pk %}"
+    class="dup-form"
+    id="duplicateManualReview"
+  >
+    {% csrf_token %}
+    {% for card in cards %}
+        <article class="dup-card {% if card.is_resolved %}resolved{% endif %}" data-row-id="{{ card.row.pk }}" data-confidence="{{ card.confidence }}" data-applied="{% if card.is_applied %}1{% endif %}">
+        <header>
+          <div>
+            <span class="dup-row">Fila #{{ card.row.row_number }}</span>
+            <h3>{{ card.incoming_customer.full_name|default:"Sin nombre" }}</h3>
+            <p>
+              Coincidencia:
+              {% for field in card.matched_fields %}
+                <b>{{ field }}</b>{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                <b>cliente relacionado anteriormente</b>
+              {% endfor %}
+            </p>
+          </div>
+
+          {% if card.is_applied %}
+            <span class="dup-badge applied">Aplicado</span>
+          {% elif card.is_resolved %}
+            <span class="dup-badge resolved">Resuelto</span>
+          {% else %}
+            <span class="dup-badge pending">Pendiente</span>
+          {% endif %}
+        </header>
+
+        <div class="dup-compare">
+          <section>
+            <span class="dup-label">Cliente existente / fila principal</span>
+
+            {% if card.customer %}
+              <h4>{{ card.customer.full_name }}</h4>
+              <dl>
+                <div><dt>RFC</dt><dd>{{ card.customer.rfc|default:"-" }}</dd></div>
+                <div><dt>Teléfono</dt><dd>{{ card.customer.phone|default:"-" }}</dd></div>
+                <div><dt>WhatsApp</dt><dd>{{ card.customer.whatsapp|default:"-" }}</dd></div>
+                <div><dt>Correo</dt><dd>{{ card.customer.email|default:"-" }}</dd></div>
+              </dl>
+
+              <div class="address-stack">
+                <strong>Direcciones registradas</strong>
+                {% for address in card.addresses %}
+                  <div>
+                    {{ address.get_address_type_display }} ·
+                    {{ address.street }} {{ address.exterior_number|default:"" }},
+                    {{ address.city }}, {{ address.state }},
+                    CP {{ address.zip_code }}
+                  </div>
+                {% empty %}
+                  <div>Sin direcciones registradas.</div>
+                {% endfor %}
+              </div>
+            {% elif card.source_row %}
+              <h4>
+                {{ card.source_row.normalized_data.customer.full_name|default:"Fila principal" }}
+              </h4>
+              <p>
+                Esta coincidencia corresponde a la fila
+                #{{ card.source_row.row_number }} del mismo archivo.
+                Al importar, PAKIVOX relacionará ambas filas con el mismo cliente.
+              </p>
+            {% else %}
+              <div class="dup-empty">No fue posible mostrar el registro relacionado.</div>
+            {% endif %}
+          </section>
+
+          <section>
+            <span class="dup-label">Registro recibido desde Excel</span>
+            <h4>{{ card.incoming_customer.full_name|default:"Sin nombre" }}</h4>
+            <dl>
+              <div><dt>RFC</dt><dd>{{ card.incoming_customer.rfc|default:"-" }}</dd></div>
+              <div><dt>Teléfono</dt><dd>{{ card.incoming_customer.phone|default:"-" }}</dd></div>
+              <div><dt>WhatsApp</dt><dd>{{ card.incoming_customer.whatsapp|default:"-" }}</dd></div>
+              <div><dt>Correo</dt><dd>{{ card.incoming_customer.email|default:"-" }}</dd></div>
+            </dl>
+
+            <div class="incoming-address {% if card.incoming_address_complete %}complete{% else %}incomplete{% endif %}">
+              <strong>Dirección del Excel</strong>
+              {% if card.incoming_address %}
+                <p>
+                  {{ card.incoming_address.street }}
+                  {{ card.incoming_address.exterior_number|default:"" }},
+                  {{ card.incoming_address.city|default:"Sin ciudad" }},
+                  {{ card.incoming_address.state|default:"Sin estado" }},
+                  CP {{ card.incoming_address.zip_code|default:"-" }}
+                </p>
+                <small>
+                  {% if card.incoming_address_complete %}
+                    Dirección completa: puede agregarse.
+                  {% else %}
+                    Dirección incompleta: el cliente puede resolverse,
+                    pero la dirección seguirá omitida.
+                  {% endif %}
+                </small>
+              {% else %}
+                <p>La fila no contiene una dirección.</p>
+              {% endif %}
+            </div>
+          </section>
+        </div>
+
+        <div class="dup-decision">
+          <label>
+            Decisión
+            <select name="resolution_{{ card.row.pk }}" {% if card.is_applied %}disabled{% endif %}>
+              <option value="">Selecciona una acción</option>
+              {% for value, label in resolution_choices %}
+                <option
+                  value="{{ value }}"
+                  {% if card.row.duplicate_resolution == value %}selected{% endif %}
+                >
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            Nota de resolución
+            <input
+              type="text"
+              name="notes_{{ card.row.pk }}"
+              value="{{ card.row.duplicate_resolution_notes }}"
+              placeholder="Ej. Es la segunda sucursal del mismo cliente"
+              {% if card.is_applied %}disabled{% endif %}
+            />
+          </label>
+
+          <label class="danger-confirm">
+            <input
+              type="checkbox"
+              name="confirm_create_{{ card.row.pk }}"
+              {% if card.is_applied %}disabled{% endif %}
+            />
+            Confirmo que “Crear como independiente” puede producir un duplicado real.
+          </label>
+        </div>
+      </article>
+    {% empty %}
+      <div class="dup-empty main">
+        <i class="bi bi-check-circle"></i>
+        No existen duplicados pendientes en este lote.
+      </div>
+        {% endfor %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="dup-pagination">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">&larr; Anterior</a>
+        {% endif %}
+        <span>
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          ({{ page_obj.paginator.count }} duplicados en total)
+        </span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Siguiente &rarr;</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+    {% if cards %}
+      <footer class="dup-footer">
+        <div>
+          <strong>
+            {% if job.status == "completed" %}
+              Las decisiones se aplicarán a los registros omitidos del lote completado.
+            {% else %}
+              Al guardar, el lote quedará listo cuando todos tengan una decisión.
+            {% endif %}
+          </strong>
+          <small>Las acciones quedan auditadas por usuario, empresa, fila y objeto.</small>
+        </div>
+
+        <button type="submit">
+          <i class="bi bi-check2-square"></i>
+          {% if job.status == "completed" %}
+            Guardar y aplicar resoluciones
+          {% else %}
+            Guardar resoluciones
+          {% endif %}
+        </button>
+      </footer>
+    {% endif %}
+    </form>
+  <script>
+    function aplicarEnBloque(confidence) {
+      const cards = document.querySelectorAll(
+        `.dup-card[data-confidence="${confidence}"]`
+      );
+      let aplicadas = 0;
+      cards.forEach((card) => {
+        if (card.dataset.applied === "1") {
+          return;
+        }
+        const rowId = card.dataset.rowId;
+        const select = card.querySelector(`select[name="resolution_${rowId}"]`);
+        if (select && !select.disabled) {
+          select.value = "skip";
+          aplicadas += 1;
+        }
+      });
+      if (aplicadas > 0) {
+        alert(
+          `Se marcaron ${aplicadas} filas como "Mantener existente, omitir". ` +
+          "Revisa las tarjetas resaltadas y da clic en Guardar resoluciones " +
+          "para confirmar."
+        );
+      } else {
+        alert("No hay filas pendientes en este grupo.");
+      }
+      resaltarGrupo(confidence);
+    }
+
+    function resaltarGrupo(confidence) {
+      document
+        .querySelectorAll(`.dup-card[data-confidence="${confidence}"]`)
+        .forEach((card) => {
+          card.classList.add("dup-bulk-highlight");
+        });
+    }
+
+    function actualizarContadoresBulk() {
+      ["alta", "media"].forEach((confidence) => {
+        const pendientes = document.querySelectorAll(
+          `.dup-card[data-confidence="${confidence}"][data-applied=""]`
+        ).length;
+        const counter = document.querySelector(
+          `[data-confidence-count="${confidence}"]`
+        );
+        if (counter) {
+          counter.textContent = pendientes;
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      actualizarContadoresBulk();
+
+      document
+        .querySelectorAll("[data-scroll-target]")
+        .forEach((button) => {
+          button.addEventListener("click", function () {
+            const target = document.getElementById(button.dataset.scrollTarget);
+            if (target) {
+              target.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }
+          });
+        });
+    });
+  </script>
+</section>
+
+<style>
+    .btn-volver-analisis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 44px;
+    padding: 0 18px;
+
+    background: #22d3ee;
+    border: 1px solid #22d3ee;
+    border-radius: 10px;
+
+    color: #06131d !important;
+    font-weight: 800;
+    text-decoration: none;
+
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, .08),
+                0 8px 22px rgba(34, 211, 238, .16);
+
+    transition: transform .15s ease,
+                background .15s ease,
+                box-shadow .15s ease;
+}
+
+.btn-volver-analisis:hover {
+    background: #67e8f9;
+    border-color: #67e8f9;
+    color: #06131d !important;
+
+    transform: translateY(-1px);
+
+    box-shadow: 0 10px 28px rgba(34, 211, 238, .24);
+}
+  .dup-page { display: grid; gap: 16px; }
+  .dup-header, .dup-info, .dup-card, .dup-footer, .dup-empty.main {
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 18px;
+    background: #0f172a;
+  }
+  .dup-header { padding: 20px; display:flex; justify-content:space-between; gap:16px; align-items:center; }
+  .dup-header span { color:#67e8f9; font-size:10px; font-weight:900; text-transform:uppercase; }
+  .dup-header h2 { margin:6px 0 3px; color:#f8fafc; }
+  .dup-header p { margin:0; color:#94a3b8; }
+  .dup-header a { min-height:40px; padding:0 13px; display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(148,163,184,.24); border-radius:10px; color:#cbd5e1; text-decoration:none; font-weight:900; }
+  .dup-info { padding:14px 16px; display:flex; gap:10px; color:#bae6fd; background:rgba(14,116,144,.08); }
+  .dup-info p { margin:0; }
+  .dup-form { display:grid; gap:14px; }
+  .dup-card { overflow:hidden; }
+  .dup-bulk-bar { padding:14px 17px; margin-bottom:14px; border:1px solid rgba(103,232,249,.28); border-radius:14px; background:rgba(103,232,249,.06); display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .dup-bulk-bar form { display:inline-flex; }
+  .dup-bulk-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .dup-bulk-bar strong { color:#67e8f9; font-size:13px; }
+  .dup-bulk-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:10px; border:1px solid rgba(103,232,249,.4); background:rgba(103,232,249,.12); color:#e2f8ff; cursor:pointer; font-size:12px; }
+  .dup-bulk-btn:hover { background:rgba(103,232,249,.22); }
+  .dup-bulk-count { background:rgba(15,23,42,.6); border-radius:999px; padding:1px 8px; font-weight:700; }
+  .dup-bulk-hint { flex-basis:100%; margin:4px 0 0; font-size:11px; color:#94a3b8; }
+  .dup-card.dup-bulk-highlight { border-color:rgba(103,232,249,.5); box-shadow:0 0 0 1px rgba(103,232,249,.3); }
+  .dup-card.resolved { border-color:rgba(34,197,94,.24); }
+  .dup-card > header { padding:17px; display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(148,163,184,.1); }
+  .dup-row, .dup-label { color:#a78bfa; font-size:10px; font-weight:900; text-transform:uppercase; }
+  .dup-card h3, .dup-card h4 { color:#f8fafc; }
+  .dup-card h3 { margin:5px 0 2px; }
+  .dup-card h4 { margin:8px 0 12px; }
+  .dup-card header p { margin:0; color:#94a3b8; }
+  .dup-badge { align-self:flex-start; padding:5px 8px; border-radius:999px; font-size:9px; font-weight:900; }
+  .dup-badge.pending { color:#fde68a; background:rgba(245,158,11,.12); }
+  .dup-badge.resolved, .dup-badge.applied { color:#bbf7d0; background:rgba(34,197,94,.12); }
+  .dup-compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dup-compare > section { padding:18px; }
+  .dup-compare > section + section { border-left:1px solid rgba(148,163,184,.1); }
+  .dup-compare dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; }
+  .dup-compare dl div { padding:9px; border-radius:10px; background:rgba(2,6,23,.36); }
+  .dup-compare dt { color:#64748b; font-size:9px; text-transform:uppercase; }
+  .dup-compare dd { margin:4px 0 0; color:#e2e8f0; }
+  .address-stack, .incoming-address { margin-top:14px; padding:12px; border-radius:11px; background:rgba(2,6,23,.36); color:#94a3b8; }
+  .address-stack strong, .incoming-address strong { color:#e2e8f0; }
+  .address-stack div { margin-top:7px; }
+  .incoming-address.complete { border:1px solid rgba(34,197,94,.2); }
+  .incoming-address.incomplete { border:1px solid rgba(245,158,11,.2); }
+  .incoming-address p { margin:7px 0; }
+  .dup-decision { padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; border-top:1px solid rgba(148,163,184,.1); background:rgba(2,6,23,.22); }
+  .dup-decision label { display:grid; gap:6px; color:#cbd5e1; font-size:11px; font-weight:850; }
+  .dup-decision select, .dup-decision input[type="text"] { width:100%; min-height:42px; padding:0 11px; border:1px solid rgba(148,163,184,.2); border-radius:10px; background:#020617; color:#f8fafc; }
+  .danger-confirm { grid-column:1/-1; display:flex!important; grid-template-columns:auto 1fr!important; align-items:center; color:#fca5a5!important; }
+  .dup-pagination { display:flex; justify-content:center; align-items:center; gap:16px; padding:14px; color:#94a3b8; font-size:13px; }
+  .dup-pagination a { color:#67e8f9; text-decoration:none; font-weight:800; }
+  .dup-pagination a:hover { text-decoration:underline; }
+  .dup-footer { padding:17px; display:flex; justify-content:space-between; gap:14px; align-items:center; }
+  .dup-footer strong, .dup-footer small { display:block; }
+  .dup-footer strong { color:#e2e8f0; }
+  .dup-footer small { margin-top:4px; color:#64748b; }
+  .dup-footer button { min-height:44px; padding:0 16px; border:0; border-radius:11px; background:#22c55e; color:#052e16; font-weight:900; cursor:pointer; }
+  .dup-empty { color:#94a3b8; }
+  .dup-empty.main { padding:40px; text-align:center; }
+  @media(max-width:900px){ .dup-compare{grid-template-columns:1fr}.dup-compare>section+section{border-left:0;border-top:1px solid rgba(148,163,184,.1)}.dup-decision{grid-template-columns:1fr}.dup-header,.dup-footer{align-items:stretch;flex-direction:column} }
+
+  .dup-guidance {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    gap:16px;
+    padding:20px;
+    border:1px solid rgba(233,168,46,.34);
+    border-radius:18px;
+    background:
+      linear-gradient(135deg,rgba(233,168,46,.08),transparent 56%),
+      #0b1728;
+    box-shadow:0 18px 48px rgba(0,0,0,.16);
+  }
+  .dup-guidance--done {
+    border-color:rgba(36,217,155,.3);
+    background:
+      linear-gradient(135deg,rgba(36,217,155,.07),transparent 56%),
+      #0b1728;
+  }
+  .dup-guidance__icon {
+    width:48px;height:48px;
+    display:grid;place-items:center;
+    border-radius:14px;
+    border:1px solid rgba(233,168,46,.28);
+    background:rgba(233,168,46,.1);
+    color:#f7c65a;
+    font-size:20px;
+  }
+  .dup-guidance--done .dup-guidance__icon {
+    border-color:rgba(36,217,155,.25);
+    background:rgba(36,217,155,.08);
+    color:#24D99B;
+  }
+  .dup-guidance__kicker {
+    color:#f7c65a;
+    font-size:10px;
+    font-weight:950;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+  }
+  .dup-guidance--done .dup-guidance__kicker { color:#24D99B; }
+  .dup-guidance h3 {
+    margin:5px 0 7px;
+    color:#F1F5F9;
+    font-size:22px;
+  }
+  .dup-guidance__lead {
+    margin:0;
+    color:#9fb3c8;
+    line-height:1.6;
+  }
+  .dup-guidance__recommendation {
+    margin-top:15px;
+    padding:13px 14px;
+    display:flex;
+    gap:11px;
+    border:1px solid rgba(37,194,215,.22);
+    border-radius:12px;
+    background:rgba(37,194,215,.06);
+    color:#25C2D7;
+  }
+  .dup-guidance__recommendation strong,
+  .dup-guidance__recommendation span { display:block; }
+  .dup-guidance__recommendation span {
+    margin-top:3px;
+    color:#9fb3c8;
+    line-height:1.5;
+    font-size:12px;
+  }
+  .dup-guidance__choices {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-top:16px;
+  }
+  .dup-guidance-choice {
+    display:flex;
+    flex-direction:column;
+    min-height:235px;
+    padding:16px;
+    border:1px solid rgba(23,53,80,.95);
+    border-radius:14px;
+    background:rgba(6,17,31,.76);
+  }
+  .dup-guidance-choice.recommended {
+    border-color:rgba(37,194,215,.32);
+    box-shadow:inset 0 0 0 1px rgba(37,194,215,.05);
+  }
+  .dup-guidance-choice__top {
+    display:flex;
+    gap:9px;
+    align-items:center;
+    color:#25C2D7;
+  }
+  .dup-guidance-choice__top strong {
+    color:#F1F5F9;
+    font-size:14px;
+  }
+  .dup-guidance-badge {
+    display:inline-flex;
+    margin-left:7px;
+    padding:3px 6px;
+    border-radius:999px;
+    background:rgba(36,217,155,.1);
+    color:#24D99B;
+    font-size:8px;
+    font-weight:900;
+    text-transform:uppercase;
+  }
+  .dup-guidance-choice p {
+    margin:12px 0 10px;
+    color:#b3c3d4;
+    line-height:1.55;
+    font-size:12px;
+  }
+  .dup-guidance-choice small {
+    color:#71879e;
+    line-height:1.5;
+  }
+  .dup-guidance-counts {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:0 0 10px;
+  }
+  .dup-guidance-counts span {
+    padding:6px 8px;
+    border:1px solid rgba(23,53,80,.9);
+    border-radius:9px;
+    background:rgba(9,24,42,.8);
+    color:#8FA4BA;
+    font-size:10px;
+  }
+  .dup-guidance-counts b { color:#F1F5F9; }
+  .dup-guidance-action {
+    margin-top:auto;
+    min-height:40px;
+    border:1px solid rgba(37,194,215,.28);
+    border-radius:10px;
+    background:rgba(37,194,215,.06);
+    color:#25C2D7;
+    cursor:pointer;
+    font-weight:900;
+  }
+  .dup-guidance-action.primary {
+    background:#25C2D7;
+    border-color:#25C2D7;
+    color:#03131B;
+  }
+  .dup-guidance__safety {
+    margin-top:14px;
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    color:#71879e;
+    font-size:11px;
+    line-height:1.55;
+  }
+  .dup-guidance__safety i { color:#24D99B; margin-top:2px; }
+  #duplicateBulkResolution,
+  #duplicateManualReview {
+    scroll-margin-top:90px;
+  }
+  @media(max-width:900px) {
+    .dup-guidance__choices { grid-template-columns:1fr; }
+  }
+  @media(max-width:640px) {
+    .dup-guidance { grid-template-columns:1fr; }
+    .dup-guidance__icon { width:42px;height:42px; }
+  }
+
+
+  .dup-guidance-quick-actions {
+    display:grid;
+    gap:8px;
+    margin-top:auto;
+  }
+
+  .dup-guidance-quick-actions form {
+    margin:0;
+  }
+
+  .dup-guidance-quick-actions .dup-guidance-action {
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:0 12px;
+  }
+
+  .dup-guidance-action.secondary {
+    background:rgba(37,194,215,.06);
+    border-color:rgba(37,194,215,.28);
+    color:#25C2D7;
+  }
+
+  .dup-guidance-action:disabled {
+    opacity:.42;
+    cursor:not-allowed;
+    filter:saturate(.45);
+  }
+
+  .dup-guidance-action-count {
+    min-width:28px;
+    height:24px;
+    padding:0 7px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    background:rgba(3,19,27,.18);
+    color:inherit;
+    font-size:11px;
+    font-weight:950;
+  }
+
+  .dup-guidance-action.secondary .dup-guidance-action-count {
+    background:rgba(37,194,215,.10);
+  }
+
+  .dup-guidance-quick-note {
+    display:block;
+    margin-top:7px;
+    color:#71879e;
+    line-height:1.45;
+  }
+
+</style>
+{% endblock %}

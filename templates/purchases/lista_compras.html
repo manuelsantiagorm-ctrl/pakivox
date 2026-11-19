@@ -1,0 +1,84 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compras | PAKIVOX{% endblock %}
+{% block page_title %}Compras y proveedores{% endblock %}
+{% block page_subtitle %}Abastecimiento, órdenes de compra y recepción de mercancía{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/lista_compras.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="purchases-page">
+  <header class="executive-head">
+    <div>
+      <div class="eyebrow">Abastecimiento</div>
+      <h2>Compras y proveedores</h2>
+      <p>Controla el capital, el avance de cada orden y las recepciones pendientes.</p>
+    </div>
+    <div class="head-actions">
+      {% if can_view_suppliers %}<a class="btn" href="{% url 'purchases:lista_proveedores' %}"><i class="bi bi-buildings"></i> Proveedores</a>{% endif %}
+      {% if can_create_purchase %}<a class="btn primary" href="{% url 'purchases:crear_orden_compra' %}"><i class="bi bi-plus-circle"></i> Nueva orden</a>{% endif %}
+    </div>
+  </header>
+
+  <div class="kpi-grid">
+    <article class="kpi money"><span class="kpi-label">Valor de órdenes abiertas</span>{% if can_view_purchase_costs %}<strong class="kpi-value">${{ open_orders_value|floatformat:2 }}</strong><small class="kpi-note">Borradores, enviadas y recepciones parciales</small>{% else %}<strong class="kpi-value">Restringido</strong><small class="kpi-note">Requiere permiso para consultar costos</small>{% endif %}</article>
+    <article class="kpi pending"><span class="kpi-label">Órdenes pendientes</span><strong class="kpi-value">{{ pending_orders_count }}</strong><small class="kpi-note">Requieren seguimiento operativo</small></article>
+    <article class="kpi receipts"><span class="kpi-label">Recepciones</span><strong class="kpi-value">{{ receipts_count }}</strong><small class="kpi-note">Historial de bodegas autorizadas</small></article>
+    <article class="kpi suppliers"><span class="kpi-label">Proveedores activos</span><strong class="kpi-value">{{ suppliers_count }}</strong><small class="kpi-note">Disponibles para nuevas órdenes</small></article>
+  </div>
+
+  <div class="flow-wrap">
+    <div class="section-head"><div><h3>Flujo de abastecimiento</h3><p>Selecciona una etapa para filtrar las órdenes.</p></div></div>
+    <nav class="flow-grid" aria-label="Estados de órdenes">
+      <a class="flow-card draft {% if status == 'draft' %}active{% endif %}" href="?status=draft"><div class="flow-top"><i class="bi bi-pencil-square"></i><strong>{{ status_counts.draft|default:0 }}</strong></div><span>Borradores</span></a>
+      <a class="flow-card sent {% if status == 'sent' %}active{% endif %}" href="?status=sent"><div class="flow-top"><i class="bi bi-send"></i><strong>{{ status_counts.sent|default:0 }}</strong></div><span>Enviadas</span></a>
+      <a class="flow-card partial {% if status == 'partially_received' %}active{% endif %}" href="?status=partially_received"><div class="flow-top"><i class="bi bi-box-seam"></i><strong>{{ status_counts.partially_received|default:0 }}</strong></div><span>Recepción parcial</span></a>
+      <a class="flow-card received {% if status == 'received' %}active{% endif %}" href="?status=received"><div class="flow-top"><i class="bi bi-check2-circle"></i><strong>{{ status_counts.received|default:0 }}</strong></div><span>Recibidas</span></a>
+      <a class="flow-card cancelled {% if status == 'cancelled' %}active{% endif %}" href="?status=cancelled"><div class="flow-top"><i class="bi bi-x-circle"></i><strong>{{ status_counts.cancelled|default:0 }}</strong></div><span>Canceladas</span></a>
+    </nav>
+  </div>
+
+  <div class="panel">
+    <form method="get" class="filters">
+      <div class="field"><label for="q">Buscar</label><input id="q" name="q" value="{{ q }}" placeholder="Folio, proveedor o bodega"></div>
+      <div class="field"><label for="status">Estado</label><select id="status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="supplier">Proveedor</label><select id="supplier" name="supplier"><option value="">Todos</option>{% for supplier in suppliers %}<option value="{{ supplier.id }}" {% if supplier_id == supplier.id|stringformat:'s' %}selected{% endif %}>{{ supplier.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="warehouse">Bodega</label><select id="warehouse" name="warehouse"><option value="">Todas autorizadas</option>{% for warehouse in warehouses %}<option value="{{ warehouse.id }}" {% if warehouse_id == warehouse.id|stringformat:'s' %}selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="date_from">Desde</label><input id="date_from" type="date" name="date_from" value="{{ date_from }}"></div>
+      <div class="field"><label for="date_to">Hasta</label><input id="date_to" type="date" name="date_to" value="{{ date_to }}"></div>
+      <div class="filter-actions"><button class="btn primary" type="submit"><i class="bi bi-funnel"></i> Aplicar</button><a class="clear-link" href="{% url 'purchases:lista_compras' %}" title="Limpiar filtros"><i class="bi bi-arrow-counterclockwise"></i></a></div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="table-head"><div><h3>Órdenes de compra</h3><span>{{ page_obj.paginator.count }} resultado{{ page_obj.paginator.count|pluralize:"s" }} con los filtros actuales</span></div></div>
+    <div class="table-scroll">
+      <table class="orders-table">
+        <thead><tr><th>Orden</th><th>Proveedor</th><th>Bodega</th><th>Estado</th><th>Recepción</th><th>Total</th><th>Fecha</th><th>Acción</th></tr></thead>
+        <tbody>
+        {% for purchase_order in purchase_orders %}
+          <tr>
+            <td><a class="folio" href="{% url 'purchases:detalle_orden_compra' purchase_order.id %}">{{ purchase_order.folio }}</a><span class="subtext">OC #{{ purchase_order.id }}</span></td>
+            <td><span class="supplier-name">{{ purchase_order.supplier.name }}</span>{% if purchase_order.expected_date %}<span class="subtext">Esperada: {{ purchase_order.expected_date|date:'d/m/Y' }}</span>{% endif %}</td>
+            <td>{{ purchase_order.warehouse.name }}</td>
+            <td><span class="status status-{{ purchase_order.status }}">{{ purchase_order.get_status_display }}</span></td>
+            <td><div class="progress-meta"><span>{{ purchase_order.ui_received_total }}/{{ purchase_order.ui_ordered_total }}</span><span>{{ purchase_order.receiving_progress }}%</span></div><div class="progress-track"><progress class="progress-bar" max="100" value="{{ purchase_order.receiving_progress }}" aria-label="Avance de recepción">{{ purchase_order.receiving_progress }}%</progress></div></td>
+            <td>{% if can_view_purchase_costs %}<span class="money-cell">${{ purchase_order.total|floatformat:2 }}</span>{% else %}<span class="restricted"><i class="bi bi-lock"></i> Restringido</span>{% endif %}</td>
+            <td>{{ purchase_order.created_at|date:"d/m/Y" }}<span class="subtext">{{ purchase_order.created_at|date:"H:i" }}</span></td>
+            <td><div class="row-actions"><a class="btn compact" href="{% url 'purchases:detalle_orden_compra' purchase_order.id %}">{% if purchase_order.status == 'draft' %}Continuar{% else %}Detalle{% endif %}</a>{% if purchase_order.can_receive_action %}<form method="post" action="{% url 'purchases:crear_recepcion' purchase_order.id %}">{% csrf_token %}<button class="btn compact success" type="submit"><i class="bi bi-box-arrow-in-down"></i> Recibir</button></form>{% endif %}</div></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8"><div class="empty"><i class="bi bi-inboxes"></i><strong>No encontramos órdenes</strong>Ajusta los filtros o crea una nueva orden de compra.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="pagination"><span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span><div class="pages">{% if page_obj.has_previous %}<a class="btn compact" href="?page={{ page_obj.previous_page_number }}&q={{ q|urlencode }}&status={{ status|urlencode }}&supplier={{ supplier_id|urlencode }}&warehouse={{ warehouse_id|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">Anterior</a>{% endif %}{% if page_obj.has_next %}<a class="btn compact" href="?page={{ page_obj.next_page_number }}&q={{ q|urlencode }}&status={{ status|urlencode }}&supplier={{ supplier_id|urlencode }}&warehouse={{ warehouse_id|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">Siguiente</a>{% endif %}</div></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

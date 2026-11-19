@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pedidos en curso | PAKIVOX{% endblock %}
+{% block page_title %}Pedidos en curso{% endblock %}
+{% block page_subtitle %}Los pedidos que todavía necesitan una acción: cobrar, preparar o enviar{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/pedidos_en_curso.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="pec">
+  <header class="pec-head">
+    <div>
+      <span class="pec-eyebrow">Ventas</span>
+      <h2>Pedidos en curso</h2>
+      <p>Cada pedido muestra en qué etapa va y cuál es el siguiente paso.</p>
+    </div>
+    <div class="pec-head-acciones">
+      <a class="pec-btn is-aviso" href="{% url 'sales:incidencias_pedidos' %}"><i class="bi bi-exclamation-diamond" aria-hidden="true"></i>Incidencias</a>
+      {% if capability_access_all or "sales.create" in user_capability_codes %}
+      <a class="pec-btn is-principal" href="{% url 'sales:crear_pedido' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Nuevo pedido</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <nav class="pec-etapas" id="inProgressSummary" aria-label="Filtrar por etapa">
+    <a href="?stage=all{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="pec-etapa is-todos{% if stage == 'all' %} is-on{% endif %}"{% if stage == 'all' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-list-ul" aria-hidden="true"></i>En curso</span>
+      <b>{{ summary.total|default:0 }}</b>
+      <small>Pedidos abiertos</small>
+    </a>
+    <a href="?stage=cobro{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="pec-etapa is-cobro{% if stage == 'cobro' %} is-on{% endif %}"{% if stage == 'cobro' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-cash-coin" aria-hidden="true"></i>Por cobrar</span>
+      <b>{{ summary.collection|default:0 }}</b>
+      <small>Pagos por revisar o saldo pendiente</small>
+    </a>
+    <a href="?stage=preparacion{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="pec-etapa is-preparacion{% if stage == 'preparacion' %} is-on{% endif %}"{% if stage == 'preparacion' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-box-seam" aria-hidden="true"></i>En preparación</span>
+      <b>{{ summary.preparation|default:0 }}</b>
+      <small>Pagados, surtiendo o empacando</small>
+    </a>
+    <a href="?stage=envio{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="pec-etapa is-envio{% if stage == 'envio' %} is-on{% endif %}"{% if stage == 'envio' %} aria-current="page"{% endif %}>
+      <span><i class="bi bi-truck" aria-hidden="true"></i>En envío</span>
+      <b>{{ summary.shipping|default:0 }}</b>
+      <small>Por despachar o en camino</small>
+    </a>
+  </nav>
+
+  <form method="get" class="pec-buscar" id="inProgressFilters" role="search" autocomplete="off">
+    <input type="hidden" name="stage" id="inProgressStage" value="{{ stage }}">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <label class="pec-oculto" for="inProgressSearch">Buscar pedidos en curso</label>
+    <input id="inProgressSearch" type="search" name="q" value="{{ q }}" placeholder="Buscar folio, cliente o teléfono">
+    <button id="inProgressClear" type="button" aria-label="Limpiar búsqueda"{% if not q %} hidden{% endif %}><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  </form>
+  <p class="pec-oculto" id="inProgressLive" aria-live="polite"></p>
+
+  <div id="inProgressResults">
+    <ol class="pec-lista">
+      {% for order in orders %}
+      <li class="pec-pedido is-{{ order.cs1e_stage }}">
+        <div class="pec-id">
+          <a class="pec-folio" href="{% url 'sales:detalle_pedido' order.id %}">{{ order.folio }}</a>
+          <span class="pec-cliente">{% if order.customer %}{{ order.customer.full_name }}{% else %}Sin cliente{% endif %}</span>
+          {% if order.customer %}
+            {% if order.customer.business_name and order.customer.business_name != order.customer.full_name %}
+            <small>{{ order.customer.business_name }}</small>
+            {% elif order.customer.phone %}
+            <small>{{ order.customer.phone }}</small>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="pec-etapa-pedido">
+          <span class="pec-chip is-{{ order.cs1e_stage }}"><i class="bi {% if order.cs1e_stage == 'cobro' %}bi-cash-coin{% elif order.cs1e_stage == 'envio' %}bi-truck{% else %}bi-box-seam{% endif %}" aria-hidden="true"></i>{{ order.cs1e_stage_label }}</span>
+          <small>Pedido: {{ order.get_status_display }}</small>
+        </div>
+
+        <dl class="pec-dinero">
+          <div><dt>Total</dt><dd>${{ order.total|floatformat:"2g" }}</dd></div>
+          <div>
+            <dt>Por cobrar</dt>
+            {% if order.balance_due > 0 %}<dd class="is-debe">${{ order.balance_due|floatformat:"2g" }}</dd>{% else %}<dd class="is-pagado">Pagado</dd>{% endif %}
+          </div>
+        </dl>
+
+        <div class="pec-meta">
+          {% if order.cs1e_warehouse_label %}<span><i class="bi bi-building" aria-hidden="true"></i>{{ order.cs1e_warehouse_label }}</span>{% endif %}
+          <span title="{{ order.updated_at|date:'d/m/Y H:i' }}"><i class="bi bi-clock" aria-hidden="true"></i>{{ order.updated_at|date:"j M · H:i" }}</span>
+        </div>
+
+        <a class="pec-btn{% if order.cs1e_action_label != 'Ver pedido' %} is-principal{% endif %}" href="{{ order.cs1e_action_url }}">
+          <i class="bi {{ order.cs1e_action_icon }}" aria-hidden="true"></i>{{ order.cs1e_action_label }}
+        </a>
+      </li>
+      {% empty %}
+      <li class="pec-vacio">
+        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+        <strong>No hay pedidos en esta cola</strong>
+        <p>{% if q or stage != 'all' %}Prueba con otra etapa o limpia la búsqueda.{% else %}Cuando un pedido necesite cobro, preparación o envío aparecerá aquí.{% endif %}</p>
+        {% if q or stage != 'all' %}<a href="{% url 'sales:pedidos_en_curso' %}">Ver todos los pedidos en curso</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+
+    {% include "components/paginacion.html" with page_obj=page_obj %}
+  </div>
+</section>
+
+<script src="{% static 'js/pedidos_en_curso.js' %}" defer></script>
+{% endblock %}

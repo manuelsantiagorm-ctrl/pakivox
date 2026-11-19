@@ -1,0 +1,1566 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Mapear productos | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Relacionar columnas
+{% endblock %}
+
+{% block page_subtitle %}
+Indica a PAKIVOX qué representa cada columna de tu archivo.
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .product-map {
+    display: grid;
+    gap: 18px;
+  }
+
+  .map-card {
+    padding: 20px;
+    border-radius: 17px;
+    border: 1px solid rgba(125, 162, 205, 0.15);
+    background: #0c192b;
+  }
+
+  .map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 16px;
+  }
+
+  .map-header h2 {
+    margin: 0;
+    color: #f2f7ff;
+  }
+
+  .map-header p {
+    margin: 4px 0 0;
+    color: #7890aa;
+  }
+
+  .map-file-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(103, 232, 249, 0.18);
+    background: rgba(14, 116, 144, 0.08);
+    color: #a5f3fc;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  /* ==========================================================
+     MAPEO
+  ========================================================== */
+
+  .map-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .map-row {
+    display: grid;
+    grid-template-columns:
+      minmax(210px, 0.8fr)
+      minmax(360px, 1.4fr);
+
+    gap: 15px;
+    align-items: center;
+
+    padding: 12px;
+
+    border-radius: 11px;
+
+    background: rgba(255, 255, 255, 0.025);
+
+    border: 1px solid rgba(125, 162, 205, 0.09);
+  }
+
+  .map-source {
+    min-width: 0;
+  }
+
+  .map-source strong {
+    display: block;
+    color: #d9e8f7;
+    font-weight: 900;
+  }
+
+  .map-source small {
+    display: block;
+    margin-top: 4px;
+    color: #5f7894;
+    font-size: 9px;
+  }
+
+  .mapping-field-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mapping-field-controls select {
+    width: 100%;
+    min-height: 42px;
+
+    padding: 0 10px;
+
+    border-radius: 9px;
+
+    color: #eaf4ff;
+
+    background: #071421;
+
+    border: 1px solid rgba(126, 163, 207, 0.2);
+  }
+
+  .mapping-create-field {
+    min-height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    padding: 0 12px;
+
+    white-space: nowrap;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(34, 197, 94, 0.45);
+
+    background: rgba(34, 197, 94, 0.1);
+
+    color: #86efac;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .mapping-create-field:hover {
+    transform: translateY(-1px);
+
+    background: rgba(34, 197, 94, 0.16);
+
+    border-color: rgba(34, 197, 94, 0.7);
+  }
+
+  .mapping-field-error {
+    margin-top: 7px;
+    color: #fecaca;
+    font-size: 10px;
+  }
+
+  /* ==========================================================
+     ACCIONES
+  ========================================================== */
+
+  .map-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 17px;
+  }
+
+  .map-button {
+    min-height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 0 16px;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(48, 146, 255, 0.25);
+
+    color: #dcebfa;
+
+    background: rgba(39, 140, 255, 0.08);
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    font-weight: 850;
+  }
+
+  .map-button.primary {
+    color: white;
+
+    border: 0;
+
+    background:
+      linear-gradient(
+        110deg,
+        #6547ff,
+        #2589ff,
+        #1cd3c6
+      );
+  }
+
+  /* ==========================================================
+     OBLIGATORIOS
+  ========================================================== */
+
+  .required-box {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    margin-top: 16px;
+
+    padding: 13px;
+
+    border-radius: 12px;
+
+    color: #bae6fd;
+
+    border: 1px solid rgba(56, 189, 248, 0.14);
+
+    background: rgba(14, 116, 144, 0.08);
+  }
+
+  .required-box i {
+    color: #67e8f9;
+    margin-top: 2px;
+  }
+
+  .required-box strong {
+    color: #f0f9ff;
+  }
+
+  .required-box p {
+    margin: 3px 0 0;
+    color: #7d96b1;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  /* ==========================================================
+     VALIDACIÓN
+  ========================================================== */
+
+  .validation-grid {
+    display: grid;
+
+    grid-template-columns:
+      repeat(4, 1fr);
+
+    gap: 10px;
+  }
+
+  .validation-kpi {
+    padding: 14px;
+
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.025);
+
+    border: 1px solid rgba(126, 163, 207, 0.1);
+  }
+
+  .validation-kpi span {
+    display: block;
+
+    color: #7188a3;
+
+    font-size: 9px;
+
+    font-weight: 850;
+
+    text-transform: uppercase;
+  }
+
+  .validation-kpi strong {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #edf6ff;
+
+    font-size: 22px;
+  }
+
+  .validation-errors {
+    display: grid;
+    gap: 8px;
+
+    margin-top: 15px;
+  }
+
+  .validation-error {
+    padding: 11px;
+
+    border-radius: 10px;
+
+    color: #fecaca;
+
+    background: rgba(127, 29, 29, 0.22);
+
+    border: 1px solid rgba(239, 68, 68, 0.22);
+  }
+
+  .validation-error strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ==========================================================
+     ADMINISTRAR CAMPOS
+  ========================================================== */
+
+  .mapping-manage-fields {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 16px;
+
+    margin-top: 16px;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(148, 163, 184, 0.1);
+
+    background: rgba(2, 6, 23, 0.24);
+  }
+
+  .mapping-manage-fields strong {
+    display: block;
+    color: #e2e8f0;
+  }
+
+  .mapping-manage-fields p {
+    margin: 3px 0 0;
+
+    color: #64748b;
+
+    font-size: 10px;
+  }
+
+  .mapping-manage-button {
+    min-height: 38px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 0 12px;
+
+    border-radius: 9px;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+    color: #c4b5fd;
+
+    border: 1px solid rgba(167, 139, 250, 0.22);
+
+    background: rgba(109, 40, 217, 0.08);
+
+    font-size: 10px;
+
+    font-weight: 900;
+  }
+
+  /* ==========================================================
+     MODAL CAMPOS PERSONALIZADOS
+  ========================================================== */
+
+  .cf-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10000;
+
+    display: grid;
+    place-items: center;
+
+    padding: 20px;
+
+    background: rgba(2, 6, 23, 0.78);
+
+    backdrop-filter: blur(5px);
+  }
+
+  .cf-modal[hidden] {
+    display: none;
+  }
+
+  .cf-modal-card {
+    width: min(620px, 100%);
+
+    border: 1px solid rgba(148, 163, 184, 0.22);
+
+    border-radius: 18px;
+
+    padding: 22px;
+
+    background: #0f172a;
+
+    box-shadow:
+      0 25px 70px
+      rgba(0, 0, 0, 0.45);
+  }
+
+  .cf-modal-card header,
+  .cf-modal-card footer {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 12px;
+  }
+
+  .cf-modal-card h3 {
+    margin: 4px 0 0;
+
+    color: #f8fafc;
+  }
+
+  .cf-modal-card small {
+    color: #86efac;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+  }
+
+  .cf-close {
+    border: 0;
+
+    background: transparent;
+
+    color: #cbd5e1;
+
+    font-size: 30px;
+
+    cursor: pointer;
+  }
+
+  .cf-grid {
+    display: grid;
+
+    grid-template-columns:
+      1fr
+      1fr;
+
+    gap: 14px;
+
+    margin: 20px 0;
+  }
+
+  .cf-grid label {
+    display: grid;
+
+    gap: 7px;
+
+    color: #e2e8f0;
+
+    font-weight: 800;
+  }
+
+  .cf-grid input:not([type="checkbox"]),
+  .cf-grid select,
+  .cf-grid textarea {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    border: 1px solid #334155;
+
+    border-radius: 10px;
+
+    padding: 11px;
+
+    background: #020617;
+
+    color: #f8fafc;
+  }
+
+  .cf-full {
+    grid-column:
+      1 / -1;
+  }
+
+  .cf-check {
+    grid-column:
+      1 / -1;
+
+    display: flex !important;
+
+    align-items: center;
+
+    gap: 9px;
+  }
+
+  .cf-errors {
+    margin-top: 15px;
+
+    padding: 11px;
+
+    border-radius: 10px;
+
+    color: #fecaca;
+
+    background: rgba(127, 29, 29, 0.3);
+  }
+
+  /* ==========================================================
+     RESPONSIVE
+  ========================================================== */
+
+  @media (max-width: 800px) {
+
+    .map-row {
+      grid-template-columns: 1fr;
+    }
+
+    .validation-grid {
+      grid-template-columns:
+        1fr
+        1fr;
+    }
+
+    .mapping-manage-fields {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .mapping-manage-button {
+      width: 100%;
+    }
+
+  }
+
+
+  @media (max-width: 520px) {
+
+    .mapping-field-controls {
+      grid-template-columns: 1fr;
+    }
+
+    .mapping-create-field {
+      width: 100%;
+    }
+
+    .validation-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .cf-grid {
+      grid-template-columns: 1fr;
+    }
+
+  }
+</style>
+
+
+<section class="product-map">
+
+  <!-- ==========================================================
+       MAPEO DE COLUMNAS
+  ========================================================== -->
+
+  <article class="map-card">
+
+    <div class="map-header">
+
+      <div>
+
+        <h2>
+          {{ job.original_filename }}
+        </h2>
+
+        <p>
+          {{ job.total_rows }} filas detectadas.
+          Relaciona cada columna con un campo de PAKIVOX.
+        </p>
+
+      </div>
+
+
+      <span class="map-file-badge">
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+        Productos
+      </span>
+
+    </div>
+
+
+    <form
+      method="post"
+      class="mapping-panel"
+    >
+
+      {% csrf_token %}
+
+      <input
+        type="hidden"
+        name="action"
+        value="save_mapping"
+      >
+
+
+      {% if mapping_form.non_field_errors %}
+
+        <div class="validation-error">
+          {{ mapping_form.non_field_errors }}
+        </div>
+
+      {% endif %}
+
+
+      <div class="map-grid">
+
+        {% for row in mapping_rows %}
+
+          <div class="map-row">
+
+            <div class="map-source">
+
+              <strong>
+                {{ row.header }}
+              </strong>
+
+              <small>
+                Columna {{ row.index|add:"1" }}
+              </small>
+
+            </div>
+
+
+            <div>
+
+              <div class="mapping-field-controls">
+
+                {{ row.field }}
+
+                <button
+                  type="button"
+                  class="mapping-create-field"
+                  data-target-select="{{ row.field.id_for_label }}"
+                  data-source-name="{{ row.header }}"
+                >
+                  <i class="bi bi-plus-lg"></i>
+                  Crear campo
+                </button>
+
+              </div>
+
+
+              {% if row.field.errors %}
+
+                <div class="mapping-field-error">
+                  {{ row.field.errors }}
+                </div>
+
+              {% endif %}
+
+            </div>
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+
+      <div class="required-box">
+
+        <i class="bi bi-info-circle"></i>
+
+        <div>
+
+          <strong>
+            Campos obligatorios
+          </strong>
+
+          <p>
+            Debes relacionar al menos una columna con
+            <strong>Producto · Nombre</strong>
+            y otra con
+            <strong>Variante · SKU</strong>.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="map-actions">
+
+        <a
+          href="{% url 'data_imports:dashboard' %}"
+          class="map-button"
+        >
+          Cancelar
+        </a>
+
+        <button
+          class="map-button primary"
+          type="submit"
+        >
+          Guardar relación
+
+          <i class="bi bi-arrow-right"></i>
+        </button>
+
+      </div>
+
+
+      <div class="mapping-manage-fields">
+
+        <div>
+
+          <strong>
+            ¿Necesitas corregir un campo personalizado?
+          </strong>
+
+          <p>
+            Administra los campos personalizados disponibles
+            para tu empresa.
+          </p>
+
+        </div>
+
+
+        <a
+          href="{% url 'custom_fields:field_list' %}"
+          class="mapping-manage-button"
+          target="_blank"
+          rel="noopener"
+        >
+          <i class="bi bi-pencil-square"></i>
+          Modificar campos
+        </a>
+
+      </div>
+
+    </form>
+
+  </article>
+
+
+  <!-- ==========================================================
+       VALIDACIÓN
+  ========================================================== -->
+
+  <article class="map-card">
+
+    <div class="map-header">
+
+      <div>
+
+        <h2>
+          Validación
+        </h2>
+
+        <p>
+          Comprueba SKUs, precios, duplicados y campos
+          antes de importar.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {% if validation_summary %}
+
+      <div class="validation-grid">
+
+        <div class="validation-kpi">
+
+          <span>
+            Filas
+          </span>
+
+          <strong>
+            {{ validation_summary.total_rows }}
+          </strong>
+
+        </div>
+
+
+        <div class="validation-kpi">
+
+          <span>
+            Correctas
+          </span>
+
+          <strong>
+            {{ validation_summary.valid_rows }}
+          </strong>
+
+        </div>
+
+
+        <div class="validation-kpi">
+
+          <span>
+            Advertencias
+          </span>
+
+          <strong>
+            {{ validation_summary.warning_rows }}
+          </strong>
+
+        </div>
+
+
+        <div class="validation-kpi">
+
+          <span>
+            Errores
+          </span>
+
+          <strong>
+            {{ validation_summary.error_rows }}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      {% if validation_summary.errors %}
+
+        <div class="validation-errors">
+
+          {% for error in validation_summary.errors|slice:":20" %}
+
+            <div class="validation-error">
+
+              <strong>
+
+                Fila {{ error.row }}
+
+                {% if error.sku %}
+                  · {{ error.sku }}
+                {% endif %}
+
+              </strong>
+
+
+              {% for message in error.messages %}
+
+                <div>
+                  {{ message }}
+                </div>
+
+              {% endfor %}
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+      {% endif %}
+
+    {% endif %}
+
+
+    <div class="map-actions">
+
+      <form
+        method="post"
+        action="{% url 'data_imports:validate_products' job.pk %}"
+      >
+
+        {% csrf_token %}
+
+        <button
+          type="submit"
+          class="map-button"
+        >
+          <i class="bi bi-shield-check"></i>
+          Validar archivo
+        </button>
+
+      </form>
+
+
+      {% if job.status == "ready" %}
+
+        <form
+          method="post"
+          action="{% url 'data_imports:confirm_product_import' job.pk %}"
+        >
+
+          {% csrf_token %}
+
+          <button
+            type="submit"
+            class="map-button primary"
+          >
+            <i class="bi bi-cloud-check"></i>
+            Importar productos
+          </button>
+
+        </form>
+
+      {% endif %}
+
+    </div>
+
+  </article>
+
+</section>
+
+
+<!-- ============================================================
+     MODAL · CREAR CAMPO PERSONALIZADO
+============================================================ -->
+
+<div
+  id="customFieldModal"
+  class="cf-modal"
+  hidden
+>
+
+  <div
+    class="cf-modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cfModalTitle"
+  >
+
+    <header>
+
+      <div>
+
+        <small>
+          Sin salir de la importación
+        </small>
+
+        <h3 id="cfModalTitle">
+          Crear campo para productos
+        </h3>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="cfModalClose"
+        class="cf-close"
+        aria-label="Cerrar"
+      >
+        &times;
+      </button>
+
+    </header>
+
+
+    <div
+      id="cfModalErrors"
+      class="cf-errors"
+      hidden
+    ></div>
+
+
+    <div class="cf-grid">
+
+      <label>
+
+        <span>
+          Nombre del campo *
+        </span>
+
+        <input
+          id="cfName"
+          type="text"
+          maxlength="100"
+          placeholder="Ej. Material"
+        >
+
+      </label>
+
+
+      <label>
+
+        <span>
+          Tipo *
+        </span>
+
+        <select id="cfType">
+
+          <option value="text">
+            Texto
+          </option>
+
+          <option value="number">
+            Número
+          </option>
+
+          <option value="date">
+            Fecha
+          </option>
+
+          <option value="boolean">
+            Sí / No
+          </option>
+
+          <option value="select">
+            Lista de opciones
+          </option>
+
+          <option value="email">
+            Correo
+          </option>
+
+          <option value="phone">
+            Teléfono
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="cf-full">
+
+        <span>
+          Texto de ayuda
+        </span>
+
+        <input
+          id="cfHelp"
+          type="text"
+          maxlength="250"
+          placeholder="Ej. Material principal del producto"
+        >
+
+      </label>
+
+
+      <label
+        id="cfOptionsWrap"
+        class="cf-full"
+        hidden
+      >
+
+        <span>
+          Opciones (una por línea) *
+        </span>
+
+        <textarea
+          id="cfOptions"
+          rows="4"
+          placeholder="Opción 1&#10;Opción 2&#10;Opción 3"
+        ></textarea>
+
+      </label>
+
+
+      <label class="cf-check">
+
+        <input
+          id="cfRequired"
+          type="checkbox"
+        >
+
+        <span>
+          Este campo es obligatorio
+        </span>
+
+      </label>
+
+    </div>
+
+
+    <footer>
+
+      <button
+        type="button"
+        id="cfModalCancel"
+        class="map-button"
+      >
+        Cancelar
+      </button>
+
+
+      <button
+        type="button"
+        id="cfModalSave"
+        class="map-button primary"
+      >
+        Crear y seleccionar
+      </button>
+
+    </footer>
+
+  </div>
+
+</div>
+
+
+<script>
+(() => {
+
+  const modal =
+    document.getElementById(
+      "customFieldModal"
+    );
+
+  const nameInput =
+    document.getElementById(
+      "cfName"
+    );
+
+  const typeInput =
+    document.getElementById(
+      "cfType"
+    );
+
+  const helpInput =
+    document.getElementById(
+      "cfHelp"
+    );
+
+  const optionsInput =
+    document.getElementById(
+      "cfOptions"
+    );
+
+  const optionsWrap =
+    document.getElementById(
+      "cfOptionsWrap"
+    );
+
+  const requiredInput =
+    document.getElementById(
+      "cfRequired"
+    );
+
+  const errorsBox =
+    document.getElementById(
+      "cfModalErrors"
+    );
+
+  const saveButton =
+    document.getElementById(
+      "cfModalSave"
+    );
+
+  let targetSelect = null;
+
+
+  const csrfInput =
+    document.querySelector(
+      ".mapping-panel input[name=csrfmiddlewaretoken]"
+    );
+
+
+  if (!csrfInput) {
+    console.error(
+      "PAKIVOX: no se encontró el token CSRF del mapeo."
+    );
+
+    return;
+  }
+
+
+  const csrfToken =
+    csrfInput.value;
+
+
+  function closeModal() {
+
+    modal.hidden = true;
+
+    document.body.style.overflow =
+      "";
+
+  }
+
+
+  function openModal(button) {
+
+    targetSelect =
+      document.getElementById(
+        button.dataset.targetSelect
+      );
+
+
+    nameInput.value =
+      button.dataset.sourceName || "";
+
+    typeInput.value =
+      "text";
+
+    helpInput.value =
+      "";
+
+    optionsInput.value =
+      "";
+
+    requiredInput.checked =
+      false;
+
+    optionsWrap.hidden =
+      true;
+
+    errorsBox.hidden =
+      true;
+
+    errorsBox.textContent =
+      "";
+
+    modal.hidden =
+      false;
+
+    document.body.style.overflow =
+      "hidden";
+
+    nameInput.focus();
+
+    nameInput.select();
+
+  }
+
+
+  document
+    .querySelectorAll(
+      ".mapping-create-field"
+    )
+    .forEach((button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+          openModal(
+            button
+          );
+        }
+      );
+
+    });
+
+
+  typeInput.addEventListener(
+    "change",
+    () => {
+
+      optionsWrap.hidden =
+        typeInput.value !== "select";
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "cfModalClose"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+
+  document
+    .getElementById(
+      "cfModalCancel"
+    )
+    .addEventListener(
+      "click",
+      closeModal
+    );
+
+
+  modal.addEventListener(
+    "click",
+    (event) => {
+
+      if (
+        event.target === modal
+      ) {
+        closeModal();
+      }
+
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Escape"
+        && !modal.hidden
+      ) {
+        closeModal();
+      }
+
+    }
+  );
+
+
+  saveButton.addEventListener(
+    "click",
+    async () => {
+
+      errorsBox.hidden =
+        true;
+
+      errorsBox.textContent =
+        "";
+
+      saveButton.disabled =
+        true;
+
+      saveButton.textContent =
+        "Creando...";
+
+
+      const body =
+        new FormData();
+
+
+      body.append(
+        "csrfmiddlewaretoken",
+        csrfToken
+      );
+
+
+      /*
+       * CRÍTICO:
+       * este campo pertenece al módulo PRODUCT.
+       */
+      body.append(
+        "module",
+        "product"
+      );
+
+
+      body.append(
+        "name",
+        nameInput.value.trim()
+      );
+
+
+      body.append(
+        "field_type",
+        typeInput.value
+      );
+
+
+      body.append(
+        "help_text",
+        helpInput.value.trim()
+      );
+
+
+      body.append(
+        "options_text",
+        optionsInput.value
+      );
+
+
+      body.append(
+        "required",
+        requiredInput.checked
+          ? "on"
+          : ""
+      );
+
+
+      body.append(
+        "show_in_form",
+        "on"
+      );
+
+
+      body.append(
+        "allow_import",
+        "on"
+      );
+
+
+      body.append(
+        "allow_export",
+        "on"
+      );
+
+
+      body.append(
+        "is_active",
+        "on"
+      );
+
+
+      body.append(
+        "order",
+        "0"
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            "{% url 'custom_fields:field_create_inline' %}",
+            {
+              method: "POST",
+
+              body: body,
+
+              headers: {
+                "X-Requested-With":
+                  "XMLHttpRequest"
+              }
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok
+          || !data.ok
+        ) {
+
+          const messages =
+            Object
+              .values(
+                data.errors || {}
+              )
+              .flat();
+
+
+          throw new Error(
+            messages.join(" ")
+            || data.message
+            || "No se pudo crear el campo."
+          );
+
+        }
+
+
+        /*
+         * Agregar el nuevo campo a TODOS
+         * los selects del mapeador.
+         */
+        document
+          .querySelectorAll(
+            ".import-mapping-select"
+          )
+          .forEach((select) => {
+
+            const exists =
+              [...select.options]
+                .some(
+                  (option) =>
+                    option.value
+                    === data.value
+                );
+
+
+            if (!exists) {
+
+              select.add(
+                new Option(
+                  data.label,
+                  data.value
+                )
+              );
+
+            }
+
+          });
+
+
+        /*
+         * Seleccionarlo automáticamente
+         * en la columna desde donde se creó.
+         */
+        if (targetSelect) {
+
+          targetSelect.value =
+            data.value;
+
+          targetSelect.dispatchEvent(
+            new Event(
+              "change",
+              {
+                bubbles: true
+              }
+            )
+          );
+
+        }
+
+
+        closeModal();
+
+      }
+
+      catch (error) {
+
+        errorsBox.textContent =
+          error.message;
+
+        errorsBox.hidden =
+          false;
+
+      }
+
+      finally {
+
+        saveButton.disabled =
+          false;
+
+        saveButton.textContent =
+          "Crear y seleccionar";
+
+      }
+
+    }
+  );
+
+})();
+</script>
+
+{% endblock %}

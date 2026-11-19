@@ -1,0 +1,801 @@
+﻿{% extends "owner/base_owner.html" %}
+
+{% block title %}
+{{ company.name }} | Owner PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Perfil de cliente SaaS
+{% endblock %}
+
+{% block page_subtitle %}
+Vista ejecutiva, comercial y operativa de {{ company.name }}
+{% endblock %}
+
+{% block content %}
+<section class="owner-company-page">
+  <header class="owner-company-hero">
+    <div class="owner-company-identity">
+      <div class="owner-company-avatar">
+        {{ initials }}
+      </div>
+
+      <div>
+        <div class="owner-company-badges">
+          {% if company.is_active %}
+            <span class="owner-company-badge success">
+              Empresa activa
+            </span>
+          {% else %}
+            <span class="owner-company-badge danger">
+              Empresa suspendida
+            </span>
+          {% endif %}
+
+          {% if subscription %}
+            <span class="owner-company-badge gold">
+              {{ subscription.get_status_display }}
+            </span>
+          {% else %}
+            <span class="owner-company-badge danger">
+              Sin suscripción
+            </span>
+          {% endif %}
+        </div>
+
+        <h2>{{ company.name }}</h2>
+
+        <p>
+          Cliente SaaS #{{ company.id }}
+          · Alta {{ company.created_at|date:"d/m/Y" }}
+        </p>
+      </div>
+    </div>
+
+    <div class="owner-company-actions">
+      <a
+        href="{% url 'owner:console' %}#clientes"
+        class="owner-company-button secondary"
+      >
+        ← Volver
+      </a>
+
+      <a
+        href="{% url 'owner:company_edit' company.id %}"
+        class="owner-company-button gold"
+      >
+        Editar empresa
+      </a>
+    </div>
+  </header>
+
+  <div class="owner-company-kpis">
+    <article>
+      <span>Salud de cuenta</span>
+      <strong>{{ health_score }}/100</strong>
+      <small>{{ health_label }}</small>
+    </article>
+
+    <article>
+      <span>Ventas del mes</span>
+      <strong>${{ month_sales|floatformat:2 }}</strong>
+      <small>{{ month_orders_count }} pedidos</small>
+    </article>
+
+    <article>
+      <span>Usuarios activos</span>
+      <strong>{{ active_users_count }}</strong>
+      <small>
+        {% if plan %}
+          de {{ plan.max_users }}
+        {% else %}
+          sin plan
+        {% endif %}
+      </small>
+    </article>
+
+    <article>
+      <span>Clientes CRM</span>
+      <strong>{{ customers_count }}</strong>
+      <small>Clientes comerciales</small>
+    </article>
+
+    <article>
+      <span>Productos</span>
+      <strong>{{ products_count }}</strong>
+      <small>{{ active_products_count }} activos</small>
+    </article>
+
+    <article>
+      <span>Renovación</span>
+      <strong>
+        {% if renewal_date %}
+          {{ renewal_date|date:"d/m/Y" }}
+        {% else %}
+          Sin fecha
+        {% endif %}
+      </strong>
+      <small>
+        {% if days_to_renewal != None %}
+          {{ days_to_renewal }} días
+        {% else %}
+          Revisar cuenta
+        {% endif %}
+      </small>
+    </article>
+  </div>
+
+  <div class="owner-company-grid two">
+    <article class="owner-company-card">
+      <header>
+        <div>
+          <span>Información corporativa</span>
+          <h3>Identidad de la empresa</h3>
+        </div>
+      </header>
+
+      <dl class="owner-company-data">
+        <div>
+          <dt>Nombre</dt>
+          <dd>{{ company.name }}</dd>
+        </div>
+
+        <div>
+          <dt>RFC</dt>
+          <dd>{{ company.rfc|default:"Pendiente" }}</dd>
+        </div>
+
+        <div>
+          <dt>Correo</dt>
+          <dd>{{ company.email|default:"Pendiente" }}</dd>
+        </div>
+
+        <div>
+          <dt>Teléfono</dt>
+          <dd>{{ company.phone|default:"Pendiente" }}</dd>
+        </div>
+
+        <div class="full">
+          <dt>Dirección</dt>
+          <dd>{{ company.address|default:"Pendiente"|linebreaksbr }}</dd>
+        </div>
+      </dl>
+
+      <div class="owner-company-lines">
+        {% for link in company_lines %}
+          <span class="{% if link.is_primary %}primary{% endif %}">
+            {{ link.business_line.name }}
+            {% if link.is_primary %}
+              · principal
+            {% endif %}
+          </span>
+        {% empty %}
+          <p>No tiene giros comerciales configurados.</p>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="owner-company-card">
+      <header>
+        <div>
+          <span>Suscripción</span>
+          <h3>
+            {% if plan %}
+              Plan {{ plan.name }}
+            {% else %}
+              Sin plan asignado
+            {% endif %}
+          </h3>
+        </div>
+
+        {% if subscription %}
+          <span class="owner-company-badge {% if subscription.is_valid %}success{% else %}danger{% endif %}">
+            {{ subscription.get_status_display }}
+          </span>
+        {% endif %}
+      </header>
+
+      {% if plan %}
+        <strong class="owner-company-price">
+          ${{ plan.price|floatformat:2 }}
+          <small>/ {{ plan.get_billing_period_display|lower }}</small>
+        </strong>
+
+        <p class="muted">
+          {{ plan.description|default:"Plan operativo PAKIVOX" }}
+        </p>
+      {% endif %}
+
+      <dl class="owner-company-data">
+        <div>
+          <dt>Inicio</dt>
+          <dd>
+            {% if subscription %}
+              {{ subscription.start_date|date:"d/m/Y" }}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Próximo cobro</dt>
+          <dd>
+            {% if subscription and subscription.next_billing_date %}
+              {{ subscription.next_billing_date|date:"d/m/Y" }}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Fin</dt>
+          <dd>
+            {% if subscription and subscription.end_date %}
+              {{ subscription.end_date|date:"d/m/Y" }}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Renovación automática</dt>
+          <dd>
+            {% if subscription and subscription.auto_renew %}
+              Sí
+            {% else %}
+              No
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </article>
+  </div>
+
+  <article class="owner-company-card">
+    <header>
+      <div>
+        <span>Consumo del contrato</span>
+        <h3>Límites y uso actual</h3>
+      </div>
+    </header>
+
+    <div class="owner-company-usage">
+      <div>
+        <div>
+          <span>Usuarios</span>
+          <strong>{{ usage.users.current }} / {{ usage.users.maximum }}</strong>
+        </div>
+        <div class="owner-usage-track">
+          <span style="width: {{ usage.users.percentage }}%;"></span>
+        </div>
+      </div>
+
+      <div>
+        <div>
+          <span>Productos</span>
+          <strong>{{ usage.products.current }} / {{ usage.products.maximum|default:"sin límite" }}</strong>
+        </div>
+        <div class="owner-usage-track">
+          <span style="width: {{ usage.products.percentage }}%;"></span>
+        </div>
+      </div>
+
+      <div>
+        <div>
+          <span>Bodegas</span>
+          <strong>{{ usage.warehouses.current }} / {{ usage.warehouses.maximum }}</strong>
+        </div>
+        <div class="owner-usage-track">
+          <span style="width: {{ usage.warehouses.percentage }}%;"></span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <div class="owner-company-grid three">
+    <article class="owner-company-card compact">
+      <span>Ventas históricas</span>
+      <strong>${{ total_sales|floatformat:2 }}</strong>
+      <small>{{ orders_count }} pedidos válidos</small>
+    </article>
+
+    <article class="owner-company-card compact">
+      <span>Utilidad histórica</span>
+      <strong class="positive">${{ total_profit|floatformat:2 }}</strong>
+      <small>Generada por la operación</small>
+    </article>
+
+    <article class="owner-company-card compact">
+      <span>WhatsApp Premium</span>
+      <strong>{{ whatsapp_credits }}</strong>
+      <small>Créditos en {{ channels_count }} canales</small>
+    </article>
+  </div>
+
+  <div class="owner-company-grid two">
+    <article class="owner-company-card">
+      <header>
+        <div>
+          <span>Equipo del cliente</span>
+          <h3>Usuarios recientes</h3>
+        </div>
+
+        <small>{{ users_count }} registrados</small>
+      </header>
+
+      <div class="owner-company-list">
+        {% for item in recent_users %}
+          <div>
+            <div>
+              <strong>
+                {{ item.user.get_full_name|default:item.user.username }}
+              </strong>
+              <p>{{ item.user.email|default:item.user.username }}</p>
+            </div>
+
+            <div class="right">
+              <strong>{{ item.get_role_display }}</strong>
+              <small>
+                {% if item.user.last_login %}
+                  {{ item.user.last_login|date:"d/m/Y H:i" }}
+                {% else %}
+                  Sin acceso
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        {% empty %}
+          <p class="empty">No hay usuarios registrados.</p>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="owner-company-card">
+      <header>
+        <div>
+          <span>Operación</span>
+          <h3>Pedidos recientes</h3>
+        </div>
+
+        <small>{{ active_orders_count }} activos</small>
+      </header>
+
+      <div class="owner-company-list">
+        {% for order in recent_orders %}
+          <div>
+            <div>
+              <strong>{{ order.folio }}</strong>
+              <p>{{ order.customer.full_name }}</p>
+            </div>
+
+            <div class="right">
+              <strong>${{ order.total|floatformat:2 }}</strong>
+              <small>{{ order.get_status_display }}</small>
+            </div>
+          </div>
+        {% empty %}
+          <p class="empty">No hay pedidos registrados.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+
+  <article class="owner-company-card">
+    <header>
+      <div>
+        <span>Facturación SaaS</span>
+        <h3>Pagos de suscripción</h3>
+      </div>
+    </header>
+
+    <div class="owner-company-table-wrap">
+      <table class="owner-company-table">
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Fecha</th>
+            <th>Método</th>
+            <th>Estado</th>
+            <th>Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in subscription_payments %}
+            <tr>
+              <td><strong>{{ payment.folio }}</strong></td>
+              <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ payment.get_payment_method_display }}</td>
+              <td>{{ payment.get_status_display }}</td>
+              <td>${{ payment.amount|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">No hay pagos registrados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .owner-company-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .owner-company-hero,
+  .owner-company-card,
+  .owner-company-kpis article {
+    border: 1px solid rgba(148, 163, 184, .14);
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .2);
+  }
+
+  .owner-company-hero {
+    padding: 24px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background:
+      radial-gradient(circle at top right, rgba(245, 158, 11, .16), transparent 35%),
+      #0f172a;
+  }
+
+  .owner-company-identity {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+  }
+
+  .owner-company-avatar {
+    width: 76px;
+    height: 76px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 24px;
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    font-size: 26px;
+    font-weight: 950;
+    box-shadow: 0 18px 36px rgba(245, 158, 11, .2);
+  }
+
+  .owner-company-badges,
+  .owner-company-actions,
+  .owner-company-lines {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .owner-company-hero h2 {
+    margin: 7px 0 3px;
+    color: #f8fafc;
+    font-size: 27px;
+    letter-spacing: -.04em;
+  }
+
+  .owner-company-hero p,
+  .muted {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .owner-company-badge {
+    width: fit-content;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .owner-company-badge.success {
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, .28);
+    background: rgba(34, 197, 94, .12);
+  }
+
+  .owner-company-badge.danger {
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, .28);
+    background: rgba(239, 68, 68, .12);
+  }
+
+  .owner-company-badge.gold {
+    color: #fde68a;
+    border: 1px solid rgba(245, 158, 11, .28);
+    background: rgba(245, 158, 11, .12);
+  }
+
+  .owner-company-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .owner-company-button.secondary {
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .2);
+    background: #020617;
+  }
+
+  .owner-company-button.gold {
+    color: #111827;
+    background: #f59e0b;
+  }
+
+  .owner-company-kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .owner-company-kpis article,
+  .owner-company-card {
+    padding: 18px;
+    border-radius: 18px;
+    min-width: 0;
+  }
+
+  .owner-company-kpis span,
+  .owner-company-card > span,
+  .owner-company-card header span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .owner-company-kpis strong {
+    display: block;
+    margin-top: 7px;
+    color: #f8fafc;
+    font-size: 20px;
+  }
+
+  .owner-company-kpis small,
+  .owner-company-card small {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+  }
+
+  .owner-company-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .owner-company-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .owner-company-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .owner-company-card > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 17px;
+  }
+
+  .owner-company-card h3 {
+    margin: 5px 0 0;
+    color: #f8fafc;
+    font-size: 17px;
+  }
+
+  .owner-company-data {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+  }
+
+  .owner-company-data > div {
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .46);
+  }
+
+  .owner-company-data .full {
+    grid-column: 1 / -1;
+  }
+
+  .owner-company-data dt {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .owner-company-data dd {
+    margin: 5px 0 0;
+    color: #e2e8f0;
+  }
+
+  .owner-company-lines {
+    margin-top: 14px;
+  }
+
+  .owner-company-lines span {
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .15);
+    background: rgba(2, 6, 23, .42);
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .owner-company-lines span.primary {
+    color: #fde68a;
+    border-color: rgba(245, 158, 11, .25);
+    background: rgba(245, 158, 11, .1);
+  }
+
+  .owner-company-price {
+    display: block;
+    margin: 12px 0 8px;
+    color: #f8fafc;
+    font-size: 29px;
+  }
+
+  .owner-company-price small {
+    display: inline;
+    font-size: 12px;
+  }
+
+  .owner-company-usage {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .owner-company-usage > div > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+    color: #cbd5e1;
+    font-size: 12px;
+  }
+
+  .owner-usage-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #020617;
+  }
+
+  .owner-usage-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+  }
+
+  .compact {
+    text-align: center;
+  }
+
+  .compact > strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 27px;
+  }
+
+  .compact > strong.positive {
+    color: #86efac;
+  }
+
+  .owner-company-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .owner-company-list > div {
+    padding: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(148, 163, 184, .1);
+    border-radius: 11px;
+    background: rgba(2, 6, 23, .42);
+  }
+
+  .owner-company-list strong {
+    color: #e2e8f0;
+    font-size: 12px;
+  }
+
+  .owner-company-list p,
+  .owner-company-list small {
+    margin: 3px 0 0;
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .owner-company-list .right {
+    text-align: right;
+  }
+
+  .empty {
+    color: #64748b;
+  }
+
+  .owner-company-table-wrap {
+    overflow-x: auto;
+  }
+
+  .owner-company-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .owner-company-table th,
+  .owner-company-table td {
+    padding: 11px;
+    border-bottom: 1px solid rgba(148, 163, 184, .1);
+    text-align: left;
+    color: #cbd5e1;
+    font-size: 12px;
+  }
+
+  .owner-company-table th {
+    color: #64748b;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 1250px) {
+    .owner-company-kpis {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 850px) {
+    .owner-company-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .owner-company-kpis,
+    .owner-company-grid.two,
+    .owner-company-grid.three,
+    .owner-company-usage {
+      grid-template-columns: 1fr;
+    }
+
+    .owner-company-data {
+      grid-template-columns: 1fr;
+    }
+
+    .owner-company-data .full {
+      grid-column: auto;
+    }
+  }
+</style>
+{% endblock %}

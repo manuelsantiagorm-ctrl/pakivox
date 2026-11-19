@@ -1,0 +1,1419 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Conectar WhatsApp con Meta | PAKIVOX
+{% endblock %}
+
+{% block content %}
+<style>
+    .meta-signup-shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 28px 20px 48px;
+    }
+
+    .meta-signup-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 22px;
+    }
+
+    .meta-signup-eyebrow {
+        margin: 0 0 8px;
+        color: #8291ad;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+    }
+
+    .meta-signup-title {
+        margin: 0;
+        color: #f8fafc;
+        font-size: clamp(26px, 4vw, 38px);
+        font-weight: 850;
+        line-height: 1.1;
+    }
+
+    .meta-signup-subtitle {
+        max-width: 740px;
+        margin: 12px 0 0;
+        color: #8291ad;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    .meta-signup-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        padding: 9px 13px;
+        border: 1px solid #abefc6;
+        border-radius: 999px;
+        background: #ecfdf3;
+        color: #067647;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .meta-signup-status::before {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #17b26a;
+        content: "";
+    }
+
+    .meta-signup-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+        gap: 20px;
+    }
+
+    .meta-card {
+        border: 1px solid #e4e7ec;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 8px 28px rgba(16, 24, 40, .10);
+        overflow: hidden;
+    }
+
+    .meta-card-body {
+        padding: 25px;
+    }
+
+    .meta-card-title {
+        margin: 0;
+        color: #101828;
+        font-size: 19px;
+        font-weight: 800;
+    }
+
+    .meta-card-copy {
+        margin: 8px 0 0;
+        color: #667085;
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .meta-field {
+        margin-top: 24px;
+    }
+
+    .meta-field label {
+        display: block;
+        margin-bottom: 8px;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .meta-field select {
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 13px;
+        border: 1px solid #d0d5dd;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #101828;
+        font: inherit;
+        outline: none;
+    }
+
+    .meta-field select:focus {
+        border-color: #7f56d9;
+        box-shadow: 0 0 0 4px rgba(127, 86, 217, .12);
+    }
+
+    .meta-button {
+        width: 100%;
+        min-height: 50px;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 11px;
+        background: #1877f2;
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        transition:
+            transform .15s ease,
+            opacity .15s ease,
+            background .15s ease;
+    }
+
+    .meta-button:hover:not(:disabled) {
+        background: #0d65d9;
+        transform: translateY(-1px);
+    }
+
+    .meta-button:disabled {
+        background: #d0d5dd;
+        color: #667085;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .meta-button-note {
+        margin: 10px 0 0;
+        color: #98a2b3;
+        font-size: 12px;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .meta-feedback {
+        display: none;
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    .meta-feedback.is-visible {
+        display: block;
+    }
+
+    .meta-feedback.is-success {
+        border: 1px solid #abefc6;
+        background: #ecfdf3;
+        color: #067647;
+    }
+
+    .meta-feedback.is-error {
+        border: 1px solid #fecdca;
+        background: #fef3f2;
+        color: #b42318;
+    }
+
+    .meta-security-list {
+        display: grid;
+        gap: 14px;
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .meta-security-item {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        align-items: start;
+    }
+
+    .meta-security-icon {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 8px;
+        background: #f4ebff;
+        color: #6941c6;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .meta-security-label {
+        margin: 0;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .meta-security-copy {
+        margin: 3px 0 0;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .meta-technical-box {
+        margin-top: 20px;
+        padding: 14px;
+        border: 1px solid #eaecf0;
+        border-radius: 11px;
+        background: #f9fafb;
+    }
+
+    .meta-technical-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 5px 0;
+        color: #667085;
+        font-size: 12px;
+    }
+
+    .meta-technical-row strong {
+        color: #344054;
+        text-align: right;
+    }
+
+    /* ======================================================
+       ES-4 · ESTADO OPERATIVO DE LA CONEXIÓN
+       ====================================================== */
+
+    .meta-connection-panel {
+        display: none;
+        margin-top: 20px;
+        border: 1px solid #e4e7ec;
+        border-radius: 14px;
+        background: #f9fafb;
+        overflow: hidden;
+    }
+
+    .meta-connection-panel.is-visible {
+        display: block;
+    }
+
+    .meta-connection-panel.is-ready {
+        border-color: #abefc6;
+        background: #f6fef9;
+    }
+
+    .meta-connection-panel.is-verifying {
+        border-color: #fedf89;
+        background: #fffaeb;
+    }
+
+    .meta-connection-panel.is-error {
+        border-color: #fecdca;
+        background: #fef3f2;
+    }
+
+    .meta-connection-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px 18px;
+        border-bottom: 1px solid rgba(16, 24, 40, .08);
+    }
+
+    .meta-connection-head strong {
+        color: #101828;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    .meta-connection-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: #eaecf0;
+        color: #475467;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+    .meta-connection-panel.is-ready .meta-connection-badge {
+        background: #dcfae6;
+        color: #067647;
+    }
+
+    .meta-connection-panel.is-verifying .meta-connection-badge {
+        background: #fef0c7;
+        color: #b54708;
+    }
+
+    .meta-connection-panel.is-error .meta-connection-badge {
+        background: #fee4e2;
+        color: #b42318;
+    }
+
+    .meta-connection-copy {
+        margin: 0;
+        padding: 14px 18px 0;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .meta-connection-list {
+        display: grid;
+        gap: 0;
+        margin: 12px 0 0;
+        padding: 0 18px 16px;
+        list-style: none;
+    }
+
+    .meta-connection-row {
+        display: grid;
+        grid-template-columns: minmax(125px, .7fr) minmax(0, 1.3fr);
+        gap: 14px;
+        padding: 10px 0;
+        border-top: 1px solid rgba(16, 24, 40, .07);
+        font-size: 12px;
+    }
+
+    .meta-connection-row span {
+        color: #667085;
+    }
+
+    .meta-connection-row strong {
+        min-width: 0;
+        color: #101828;
+        font-weight: 800;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 850px) {
+        .meta-signup-header {
+            display: block;
+        }
+
+        .meta-signup-status {
+            margin-top: 16px;
+        }
+
+        .meta-signup-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="meta-signup-shell">
+    <header class="meta-signup-header">
+        <div>
+            <p class="meta-signup-eyebrow">
+                WhatsApp Premium
+            </p>
+
+            <h1 class="meta-signup-title">
+                Conectar WhatsApp con Meta
+            </h1>
+
+            <p class="meta-signup-subtitle">
+                Vincula una cuenta oficial de WhatsApp Business
+                con {{ company.name }} y asígnala a una bodega
+                autorizada de PAKIVOX.
+            </p>
+        </div>
+
+        <span class="meta-signup-status">
+            Configuración segura lista
+        </span>
+    </header>
+
+    <div class="meta-signup-grid">
+        <article class="meta-card">
+            <div class="meta-card-body">
+                <h2 class="meta-card-title">
+                    Selecciona la bodega
+                </h2>
+
+                <p class="meta-card-copy">
+                    Cada número debe pertenecer a una bodega
+                    concreta. La empresa siempre se obtiene
+                    desde tu sesión de PAKIVOX.
+                </p>
+
+                <form id="meta-security-form">
+                    {% csrf_token %}
+                </form>
+
+                <div class="meta-field">
+                    <label for="meta-warehouse">
+                        Bodega autorizada
+                    </label>
+
+                    <select
+                        id="meta-warehouse"
+                        name="warehouse"
+                        autocomplete="off"
+                    >
+                        <option value="">
+                            Selecciona una bodega
+                        </option>
+
+                        {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.pk }}">
+                                {{ warehouse.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button
+                    id="meta-connect-button"
+                    class="meta-button"
+                    type="button"
+                    disabled
+                >
+                    Cargando conexión segura…
+                </button>
+
+                <p
+                    id="meta-button-note"
+                    class="meta-button-note"
+                >
+                    Selecciona una bodega y espera a que
+                    termine de cargar el SDK oficial de Meta.
+                </p>
+
+                <div
+                    id="meta-feedback"
+                    class="meta-feedback"
+                    role="status"
+                    aria-live="polite"
+                ></div>
+
+                <section
+                    id="meta-connection-panel"
+                    class="meta-connection-panel"
+                    aria-live="polite"
+                    aria-atomic="true"
+                >
+                    <div class="meta-connection-head">
+                        <strong>Estado de conexión</strong>
+                        <span
+                            id="meta-connection-badge"
+                            class="meta-connection-badge"
+                        >
+                            Preparando
+                        </span>
+                    </div>
+
+                    <p
+                        id="meta-connection-copy"
+                        class="meta-connection-copy"
+                    >
+                        PAKIVOX mostrará aquí el resultado seguro
+                        del proceso de conexión.
+                    </p>
+
+                    <ul class="meta-connection-list">
+                        <li class="meta-connection-row">
+                            <span>SDK Meta</span>
+                            <strong id="meta-step-sdk">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>Business</span>
+                            <strong id="meta-step-business">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>WABA</span>
+                            <strong id="meta-step-waba">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>Número</span>
+                            <strong id="meta-step-phone">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>Webhook</span>
+                            <strong id="meta-step-webhook">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>Bodega</span>
+                            <strong id="meta-step-warehouse">Pendiente</strong>
+                        </li>
+                        <li class="meta-connection-row">
+                            <span>Proveedor</span>
+                            <strong>Meta Cloud API</strong>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </article>
+
+        <aside class="meta-card">
+            <div class="meta-card-body">
+                <h2 class="meta-card-title">
+                    Protección PAKIVOX
+                </h2>
+
+                <ul class="meta-security-list">
+                    <li class="meta-security-item">
+                        <span class="meta-security-icon">1</span>
+                        <div>
+                            <p class="meta-security-label">
+                                Aislamiento por empresa
+                            </p>
+                            <p class="meta-security-copy">
+                                La empresa se obtiene de la sesión,
+                                nunca desde el navegador.
+                            </p>
+                        </div>
+                    </li>
+
+                    <li class="meta-security-item">
+                        <span class="meta-security-icon">2</span>
+                        <div>
+                            <p class="meta-security-label">
+                                Bodega revalidada
+                            </p>
+                            <p class="meta-security-copy">
+                                El servidor comprueba nuevamente que
+                                puedes administrarla.
+                            </p>
+                        </div>
+                    </li>
+
+                    <li class="meta-security-item">
+                        <span class="meta-security-icon">3</span>
+                        <div>
+                            <p class="meta-security-label">
+                                Token cifrado
+                            </p>
+                            <p class="meta-security-copy">
+                                La credencial empresarial nunca se
+                                imprime ni se devuelve al navegador.
+                            </p>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="meta-technical-box">
+                    <div class="meta-technical-row">
+                        <span>Proveedor</span>
+                        <strong>Meta Cloud API</strong>
+                    </div>
+
+                    <div class="meta-technical-row">
+                        <span>Graph API</span>
+                        <strong>{{ meta_public.api_version }}</strong>
+                    </div>
+
+                    <div class="meta-technical-row">
+                        <span>Embedded Signup</span>
+                        <strong>Preparado</strong>
+                    </div>
+
+                    <div class="meta-technical-row">
+                        <span>Configuración previa</span>
+                        <strong>
+                            {% if existing_configuration %}
+                                Detectada
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+
+{{ meta_public|json_script:"meta-embedded-signup-config" }}
+{{ signup_nonce|json_script:"meta-embedded-signup-nonce" }}
+
+<script>
+(function () {
+    "use strict";
+
+    const configurationElement = document.getElementById(
+        "meta-embedded-signup-config"
+    );
+
+    const nonceElement = document.getElementById(
+        "meta-embedded-signup-nonce"
+    );
+
+    const warehouseSelect = document.getElementById(
+        "meta-warehouse"
+    );
+
+    const connectButton = document.getElementById(
+        "meta-connect-button"
+    );
+
+    const buttonNote = document.getElementById(
+        "meta-button-note"
+    );
+
+    const feedback = document.getElementById(
+        "meta-feedback"
+    );
+
+    const connectionPanel = document.getElementById(
+        "meta-connection-panel"
+    );
+
+    const connectionBadge = document.getElementById(
+        "meta-connection-badge"
+    );
+
+    const connectionCopy = document.getElementById(
+        "meta-connection-copy"
+    );
+
+    const stepSdk = document.getElementById(
+        "meta-step-sdk"
+    );
+
+    const stepBusiness = document.getElementById(
+        "meta-step-business"
+    );
+
+    const stepWaba = document.getElementById(
+        "meta-step-waba"
+    );
+
+    const stepPhone = document.getElementById(
+        "meta-step-phone"
+    );
+
+    const stepWebhook = document.getElementById(
+        "meta-step-webhook"
+    );
+
+    const stepWarehouse = document.getElementById(
+        "meta-step-warehouse"
+    );
+
+    const csrfInput = document.querySelector(
+        "#meta-security-form input[name='csrfmiddlewaretoken']"
+    );
+
+    const configuration = JSON.parse(
+        configurationElement.textContent
+    );
+
+    const signupNonce = JSON.parse(
+        nonceElement.textContent
+    );
+    let sdkReady = false;
+    let requestInProgress = false;
+    let embeddedSessionEvent = "";
+    let embeddedSessionStep = "";
+    let embeddedBusinessId = "";
+    let embeddedWabaId = "";
+    let embeddedPhoneNumberId = "";
+
+    window.addEventListener(
+        "message",
+        function (event) {
+            let originUrl;
+
+            try {
+                originUrl = new URL(
+                    event.origin
+                );
+            } catch (error) {
+                return;
+            }
+
+            const isFacebookOrigin = (
+                originUrl.protocol === "https:"
+                && (
+                    originUrl.hostname === "facebook.com"
+                    || originUrl.hostname.endsWith(
+                        ".facebook.com"
+                    )
+                )
+            );
+
+            if (!isFacebookOrigin) {
+                return;
+            }
+
+            let eventPayload = event.data;
+
+            if (
+                typeof eventPayload === "string"
+            ) {
+                try {
+                    eventPayload = JSON.parse(
+                        eventPayload
+                    );
+                } catch (error) {
+                    return;
+                }
+            }
+
+            if (
+                !eventPayload
+                || typeof eventPayload !== "object"
+                || eventPayload.type !== "WA_EMBEDDED_SIGNUP"
+            ) {
+                return;
+            }
+
+            embeddedSessionEvent = String(
+                eventPayload.event || ""
+            );
+
+            const eventData = (
+                eventPayload.data
+                && typeof eventPayload.data === "object"
+            )
+                ? eventPayload.data
+                : {};
+
+            embeddedSessionStep = String(
+                eventData.current_step
+                || eventData.step
+                || ""
+            );
+
+            if (
+                embeddedSessionEvent === "CANCEL"
+            ) {
+                requestInProgress = false;
+                updateButtonState();
+
+                const stepMessage = embeddedSessionStep
+                    ? (
+                        " Paso reportado por Meta: "
+                        + embeddedSessionStep
+                        + "."
+                    )
+                    : "";
+
+                showFeedback(
+                    "Meta canceló el registro insertado."
+                    + stepMessage,
+                    "error"
+                );
+            }
+
+            if (
+                embeddedSessionEvent === "ERROR"
+            ) {
+                requestInProgress = false;
+                updateButtonState();
+
+                showFeedback(
+                    "Meta reportó un error durante "
+                    + "el registro insertado.",
+                    "error"
+                );
+            }
+                        const isCoexistenceFinish = (
+                embeddedSessionEvent
+                === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING"
+            );
+
+            if (
+                embeddedSessionEvent === "FINISH"
+                || isCoexistenceFinish
+            ) {
+                embeddedBusinessId = String(
+                    eventData.business_id
+                    || ""
+                ).trim();
+                embeddedWabaId = String(
+                    eventData.waba_id
+                    || ""
+                ).trim();
+                embeddedPhoneNumberId = String(
+                    eventData.phone_number_id
+                    || ""
+                ).trim();
+                const numericIdPattern = /^\d+$/;
+                const wabaMissing = (
+                    !embeddedWabaId
+                    || !numericIdPattern.test(
+                        embeddedWabaId
+                    )
+                );
+                const phoneMissing = (
+                    !embeddedPhoneNumberId
+                    || !numericIdPattern.test(
+                        embeddedPhoneNumberId
+                    )
+                );
+                if (
+                    wabaMissing
+                    || (
+                        phoneMissing
+                        && !isCoexistenceFinish
+                    )
+                ) {
+                    requestInProgress = false;
+                    updateButtonState();
+                    showFeedback(
+                        "Meta terminó el registro, pero no devolvió "
+                        + "los identificadores técnicos necesarios. "
+                        + "Recarga la página e inténtalo nuevamente.",
+                        "error"
+                    );
+                    return;
+                }
+                showFeedback(
+                    "Meta terminó la selección. "
+                    + "PAKIVOX está preparando la validación "
+                    + "segura de la cuenta y el número…",
+                    "success"
+                );
+
+                setConnectionPanel(
+                    "verifying",
+                    (
+                        "Meta terminó la selección. PAKIVOX está "
+                        + "validando los activos autorizados."
+                    ),
+                    {
+                        sdk: "Listo",
+                        business: "Validando",
+                        waba: "Validando",
+                        phone: (
+                            phoneMissing
+                            ? "Detectando automáticamente"
+                            : "Validando"
+                        ),
+                        webhook: "Pendiente",
+                        warehouse: selectedWarehouseName()
+                    }
+                );
+            }
+        }
+    );
+
+    function safeText(value, fallback) {
+        const normalized = String(value || "").trim();
+
+        return normalized || fallback;
+    }
+
+    function selectedWarehouseName() {
+        const selectedOption = (
+            warehouseSelect.options[
+                warehouseSelect.selectedIndex
+            ]
+        );
+
+        if (!selectedOption) {
+            return "No seleccionada";
+        }
+
+        return safeText(
+            selectedOption.textContent,
+            "No seleccionada"
+        );
+    }
+
+    function setConnectionPanel(state, message, details) {
+        const safeDetails = details || {};
+
+        connectionPanel.className = (
+            "meta-connection-panel is-visible "
+            + (
+                state === "ready"
+                ? "is-ready"
+                : (
+                    state === "verifying"
+                    ? "is-verifying"
+                    : (
+                        state === "error"
+                        ? "is-error"
+                        : ""
+                    )
+                )
+            )
+        );
+
+        connectionBadge.textContent = (
+            state === "ready"
+            ? "Activo"
+            : (
+                state === "verifying"
+                ? "Verificando"
+                : (
+                    state === "error"
+                    ? "No activado"
+                    : "Preparando"
+                )
+            )
+        );
+
+        connectionCopy.textContent = safeText(
+            message,
+            "PAKIVOX está procesando la conexión."
+        );
+
+        stepSdk.textContent = safeText(
+            safeDetails.sdk,
+            sdkReady ? "Listo" : "Pendiente"
+        );
+
+        stepBusiness.textContent = safeText(
+            safeDetails.business,
+            "Pendiente"
+        );
+
+        stepWaba.textContent = safeText(
+            safeDetails.waba,
+            "Pendiente"
+        );
+
+        stepPhone.textContent = safeText(
+            safeDetails.phone,
+            "Pendiente"
+        );
+
+        stepWebhook.textContent = safeText(
+            safeDetails.webhook,
+            "Pendiente"
+        );
+
+        stepWarehouse.textContent = safeText(
+            safeDetails.warehouse,
+            selectedWarehouseName()
+        );
+    }
+
+    function resetConnectionPanel() {
+        setConnectionPanel(
+            "preparing",
+            (
+                "PAKIVOX validará Business, WABA, número y "
+                + "suscripción del webhook antes de activar el canal."
+            ),
+            {
+                sdk: sdkReady ? "Listo" : "Pendiente",
+                business: "Pendiente",
+                waba: "Pendiente",
+                phone: "Pendiente",
+                webhook: "Pendiente",
+                warehouse: selectedWarehouseName()
+            }
+        );
+    }
+
+    function showFeedback(message, type) {
+        feedback.textContent = message;
+        feedback.className = (
+            "meta-feedback is-visible "
+            + (
+                type === "success"
+                ? "is-success"
+                : "is-error"
+            )
+        );
+    }
+
+    function clearFeedback() {
+        feedback.textContent = "";
+        feedback.className = "meta-feedback";
+    }
+
+    function updateButtonState() {
+        const warehouseSelected = Boolean(
+            warehouseSelect.value
+        );
+
+        connectButton.disabled = (
+            !sdkReady
+            || !warehouseSelected
+            || requestInProgress
+        );
+
+        if (requestInProgress) {
+            connectButton.textContent = (
+                "Protegiendo la conexión…"
+            );
+
+            return;
+        }
+
+        if (!sdkReady) {
+            connectButton.textContent = (
+                "Cargando conexión segura…"
+            );
+
+            return;
+        }
+
+        connectButton.textContent = (
+            "Continuar con Meta"
+        );
+
+        buttonNote.textContent = warehouseSelected
+            ? (
+                "Meta abrirá una ventana segura para "
+                + "seleccionar la cuenta y el número."
+            )
+            : "Selecciona una bodega para continuar.";
+    }
+
+    async function sendAuthorizationCode(code) {
+        const response = await fetch(
+            configuration.callback_url,
+            {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfInput.value
+                },
+                body: JSON.stringify({
+                    code: code,
+                    nonce: signupNonce,
+                    warehouse_id: warehouseSelect.value,
+                    business_id: embeddedBusinessId,
+                    waba_id: embeddedWabaId,
+                    phone_number_id: embeddedPhoneNumberId
+                })
+            }
+        );
+
+        let payload = {};
+
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = {};
+        }
+
+        if (!response.ok || payload.ok !== true) {
+            throw new Error(
+                payload.error
+                || (
+                    "No fue posible completar "
+                    + "la conexión con Meta."
+                )
+            );
+        }
+
+        return payload;
+    }
+
+    function facebookLoginCallback(response) {
+        const authorizationCode = (
+            response
+            && response.authResponse
+            && response.authResponse.code
+        );
+
+        if (!authorizationCode) {
+            const responseStatus = String(
+                (
+                    response
+                    && response.status
+                )
+                || "sin_estado"
+            );
+
+            /*
+             * Facebook puede ejecutar este callback con
+             * status=unknown mientras el diálogo de Embedded
+             * Signup continúa abierto.
+             *
+             * No se considera cancelación hasta recibir un evento
+             * WA_EMBEDDED_SIGNUP CANCEL o ERROR.
+             */
+            if (
+                responseStatus === "unknown"
+                && !embeddedSessionEvent
+            ) {
+                return;
+            }
+
+            requestInProgress = false;
+            updateButtonState();
+
+            const diagnostics = [
+                "estado=" + responseStatus,
+                embeddedSessionEvent
+                    ? (
+                        "evento="
+                        + embeddedSessionEvent
+                    )
+                    : "",
+                embeddedSessionStep
+                    ? (
+                        "paso="
+                        + embeddedSessionStep
+                    )
+                    : ""
+            ]
+            .filter(Boolean)
+            .join(", ");
+
+            showFeedback(
+                "Meta no completó la autorización. "
+                + "("
+                + diagnostics
+                + ")",
+                "error"
+            );
+
+            return;
+        }
+
+        sendAuthorizationCode(
+            authorizationCode
+        )
+        .then(function (payload) {
+            const nextStep = String(
+                payload.next_step || ""
+            ).trim();
+
+            const phone = (
+                payload.phone
+                && typeof payload.phone === "object"
+            )
+                ? payload.phone
+                : {};
+
+            const displayNumber = safeText(
+                phone.display_number,
+                "Validado"
+            );
+
+            const verifiedName = safeText(
+                phone.verified_name,
+                ""
+            );
+
+            requestInProgress = false;
+
+            if (nextStep === "ready") {
+                showFeedback(
+                    payload.message,
+                    "success"
+                );
+
+                connectButton.textContent = (
+                    "WhatsApp conectado"
+                );
+
+                connectButton.disabled = true;
+
+                buttonNote.textContent = (
+                    "El canal quedó activo y la suscripción "
+                    + "del webhook fue confirmada por PAKIVOX."
+                );
+
+                setConnectionPanel(
+                    "ready",
+                    (
+                        "WhatsApp quedó conectado. PAKIVOX validó "
+                        + "los activos de Meta y confirmó el webhook."
+                    ),
+                    {
+                        sdk: "Listo",
+                        business: "Validado",
+                        waba: "Validada",
+                        phone: (
+                            verifiedName
+                            ? (
+                                verifiedName
+                                + " · "
+                                + displayNumber
+                            )
+                            : displayNumber
+                        ),
+                        webhook: "Conectado",
+                        warehouse: selectedWarehouseName()
+                    }
+                );
+
+                return;
+            }
+
+            if (nextStep === "verifying") {
+                showFeedback(
+                    payload.message,
+                    "success"
+                );
+
+                connectButton.textContent = (
+                    "Activación en progreso"
+                );
+
+                connectButton.disabled = true;
+
+                buttonNote.textContent = (
+                    "PAKIVOX detectó otro proceso válido para "
+                    + "este mismo canal y no inició un duplicado."
+                );
+
+                setConnectionPanel(
+                    "verifying",
+                    (
+                        "La activación ya está en proceso. "
+                        + "No vuelvas a iniciar Embedded Signup "
+                        + "para este mismo número."
+                    ),
+                    {
+                        sdk: "Listo",
+                        business: "Validado",
+                        waba: "Validada",
+                        phone: displayNumber,
+                        webhook: "Verificando",
+                        warehouse: selectedWarehouseName()
+                    }
+                );
+
+                return;
+            }
+
+            showFeedback(
+                payload.message
+                || "Meta respondió correctamente.",
+                "success"
+            );
+
+            connectButton.textContent = (
+                "Proceso recibido"
+            );
+
+            connectButton.disabled = true;
+
+            setConnectionPanel(
+                "verifying",
+                (
+                    "PAKIVOX recibió la respuesta, pero todavía "
+                    + "no declaró el canal como activo."
+                ),
+                {
+                    sdk: "Listo",
+                    business: "Validado",
+                    waba: "Validada",
+                    phone: displayNumber,
+                    webhook: "Pendiente",
+                    warehouse: selectedWarehouseName()
+                }
+            );
+        })
+        .catch(function (error) {
+            requestInProgress = false;
+            updateButtonState();
+
+            showFeedback(
+                error.message,
+                "error"
+            );
+
+            setConnectionPanel(
+                "error",
+                (
+                    "No se activó ningún canal. Puedes volver "
+                    + "a intentarlo de forma segura."
+                ),
+                {
+                    sdk: sdkReady ? "Listo" : "No disponible",
+                    business: (
+                        embeddedBusinessId
+                        ? "Recibido"
+                        : "No confirmado"
+                    ),
+                    waba: (
+                        embeddedWabaId
+                        ? "Recibida"
+                        : "No confirmada"
+                    ),
+                    phone: (
+                        embeddedPhoneNumberId
+                        ? "Recibido"
+                        : "No confirmado"
+                    ),
+                    webhook: "No confirmado",
+                    warehouse: selectedWarehouseName()
+                }
+            );
+        });
+    }
+
+    function launchWhatsAppSignup() {
+        if (
+            requestInProgress
+            || !sdkReady
+            || !warehouseSelect.value
+        ) {
+            return;
+        }
+
+        clearFeedback();
+        resetConnectionPanel();
+
+        requestInProgress = true;
+        updateButtonState();
+        window.FB.login(
+            facebookLoginCallback,
+            {
+                config_id: configuration.config_id,
+                response_type: "code",
+                override_default_response_type: true,
+                extras: {}
+            }
+        );
+    }
+
+    warehouseSelect.addEventListener(
+        "change",
+        updateButtonState
+    );
+
+    connectButton.addEventListener(
+        "click",
+        launchWhatsAppSignup
+    );
+
+    window.fbAsyncInit = function () {
+        window.FB.init({
+            appId: configuration.app_id,
+            cookie: true,
+            xfbml: false,
+            version: configuration.api_version
+        });
+
+        sdkReady = true;
+        updateButtonState();
+
+        if (connectionPanel.classList.contains("is-visible")) {
+            stepSdk.textContent = "Listo";
+        }
+    };
+
+    window.setTimeout(
+        function () {
+            if (!sdkReady) {
+                showFeedback(
+                    "El navegador está bloqueando el SDK "
+                    + "de Meta. Desactiva el bloqueo para "
+                    + "este sitio o abre la página en Chrome.",
+                    "error"
+                );
+            }
+        },
+        10000
+    );
+
+    const firstScript = document.getElementsByTagName(
+        "script"
+    )[0];
+
+    const sdkScript = document.createElement(
+        "script"
+    );
+
+    sdkScript.id = "facebook-jssdk";
+    sdkScript.async = true;
+    sdkScript.defer = true;
+    sdkScript.crossOrigin = "anonymous";
+    sdkScript.src = (
+        "https://connect.facebook.net/es_LA/sdk.js"
+    );
+
+    sdkScript.onerror = function () {
+        showFeedback(
+            "No fue posible cargar el SDK oficial de Meta. "
+            + "Revisa el bloqueo de contenido del navegador.",
+            "error"
+        );
+    };
+
+    firstScript.parentNode.insertBefore(
+        sdkScript,
+        firstScript
+    );
+
+    updateButtonState();
+})();
+</script>
+{% endblock %}
+

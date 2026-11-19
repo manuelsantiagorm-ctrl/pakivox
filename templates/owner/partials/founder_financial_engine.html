@@ -1,0 +1,168 @@
+﻿<section class="founder-section" id="negocio">
+
+  <div class="founder-section-head">
+
+    <div>
+      <span class="founder-section-number">01</span>
+
+      <div>
+        <h2>SaaS Financial Engine</h2>
+
+        <p>
+          Salud financiera contractual de PAKIVOX.
+        </p>
+      </div>
+    </div>
+
+    <span class="founder-chip ok">
+      Datos reales
+    </span>
+
+  </div>
+
+
+  <div class="founder-grid">
+
+    <article class="founder-metric featured">
+
+      <span class="founder-metric-label">
+        MRR contractual
+      </span>
+
+      <strong>
+        ${{ founder.financial.mrr_contractual|floatformat:2 }}
+      </strong>
+
+      <small>
+        Suscripciones ACTIVE mensualizadas.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric featured">
+
+      <span class="founder-metric-label">
+        ARR contractual
+      </span>
+
+      <strong>
+        ${{ founder.financial.arr_contractual|floatformat:2 }}
+      </strong>
+
+      <small>
+        MRR contractual × 12.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        Suscripciones pagadas
+      </span>
+
+      <strong>
+        {{ founder.financial.paid_subscriptions }}
+      </strong>
+
+      <small>
+        Contratos actualmente contabilizados en MRR.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        Clientes operativos
+      </span>
+
+      <strong>
+        {{ active_clients_count }}
+      </strong>
+
+      <small>
+        Clientes considerados activos por el Owner.
+      </small>
+
+    </article>
+
+  </div>
+
+
+  <div class="founder-grid founder-grid-secondary">
+
+    <article class="founder-metric pending">
+
+      <span class="founder-metric-label">
+        Margen neto de guías
+      </span>
+
+      <strong>
+        Pendiente
+      </strong>
+
+      <small>
+        Necesitamos registrar costo proveedor,
+        precio cobrado al cliente y moneda por compra.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric pending">
+
+      <span class="founder-metric-label">
+        Consultoría & Setup
+      </span>
+
+      <strong>
+        Pendiente
+      </strong>
+
+      <small>
+        Necesitamos registrar ingresos no recurrentes.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric pending">
+
+      <span class="founder-metric-label">
+        LTV
+      </span>
+
+      <strong>
+        Pendiente
+      </strong>
+
+      <small>
+        Dependerá de retención y revenue histórico.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric pending">
+
+      <span class="founder-metric-label">
+        CAC
+      </span>
+
+      <strong>
+        Pendiente
+      </strong>
+
+      <small>
+        Requiere gasto real de adquisición por periodo.
+      </small>
+
+    </article>
+
+  </div>
+
+</section>

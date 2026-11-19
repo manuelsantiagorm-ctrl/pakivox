@@ -1,0 +1,143 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Crea la cuenta de tu empresa en PAKIVOX y prueba el sistema 14 días gratis.">
+  <meta name="theme-color" content="#052659">
+  <title>Crear cuenta | PAKIVOX</title>
+  <link rel="icon" type="image/png" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="{% static 'legal/legal.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'style/crear_cuenta.css' %}">
+</head>
+<body>
+  <div class="auth">
+    <aside class="auth-side">
+      <a class="auth-brand" href="{% url 'landing' %}" aria-label="Ir a la página principal de PAKIVOX">
+        <img src="{% static 'branding/pakivox_icon.png' %}" alt="">PAKIVOX
+      </a>
+
+      <div class="auth-side-body">
+        <h1>Prueba PAKIVOX 14 días gratis.</h1>
+        <p>Crea la cuenta de tu empresa, sube tus productos e invita a tu equipo. No necesitas tarjeta.</p>
+
+        {% if trial_plan %}
+        <div class="plan-box">
+          <div class="plan-box-head"><b>Tu prueba incluye</b><span>$0 por 14 días</span></div>
+          <ul>
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>{% if trial_plan.max_warehouses == 1 %}1 bodega{% else %}{{ trial_plan.max_warehouses }} bodegas{% endif %}</li>
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>Hasta {{ trial_plan.max_users }} usuarios</li>
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>Hasta {{ trial_plan.max_products }} productos</li>
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>Picking, packing y guías</li>
+            {% if trial_plan.has_ai and trial_plan.max_ai_queries %}
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>{{ trial_plan.max_ai_queries }} consultas con IA</li>
+            {% endif %}
+            <li><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></svg>Clientes y reportes</li>
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+
+      <p class="auth-side-foot">Tu información está separada de la de cualquier otra empresa.</p>
+    </aside>
+
+    <main class="auth-main">
+      <div class="auth-top">
+        <a class="auth-brand auth-brand-sm" href="{% url 'landing' %}" aria-label="Ir a la página principal de PAKIVOX">
+          <img src="{% static 'branding/pakivox_icon.png' %}" alt="">PAKIVOX
+        </a>
+        <a class="auth-top-link" href="{% url 'accounts:login' %}">Ya tengo cuenta</a>
+      </div>
+
+      <div class="auth-card wide">
+        <h2>Crea la cuenta de tu empresa</h2>
+        <p class="auth-lede">Te enviaremos un correo para confirmar tu dirección y activar la prueba.</p>
+
+        {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <form id="registration-form" class="auth-form" method="post" novalidate data-password-input="{{ form.password1.id_for_label }}">
+          {% csrf_token %}
+
+          <div class="form-row">
+            <div class="field {% if form.owner_name.errors %}has-error{% endif %}">
+              <label for="{{ form.owner_name.id_for_label }}">Tu nombre</label>
+              <div class="input-wrap">{{ form.owner_name }}</div>
+              {% if form.owner_name.errors %}<ul class="field-errors">{% for error in form.owner_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="field {% if form.company_name.errors %}has-error{% endif %}">
+              <label for="{{ form.company_name.id_for_label }}">Nombre de la empresa</label>
+              <div class="input-wrap">{{ form.company_name }}</div>
+              {% if form.company_name.errors %}<ul class="field-errors">{% for error in form.company_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="field {% if form.email.errors %}has-error{% endif %}">
+            <label for="{{ form.email.id_for_label }}">Correo</label>
+            <div class="input-wrap">{{ form.email }}</div>
+            {% if form.email.errors %}<ul class="field-errors">{% for error in form.email.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <div class="form-row">
+            <div class="field {% if form.password1.errors %}has-error{% endif %}">
+              <label for="{{ form.password1.id_for_label }}">Contraseña</label>
+              <div class="input-wrap has-toggle">
+                {{ form.password1 }}
+                <button class="password-toggle" type="button" data-password-toggle="{{ form.password1.id_for_label }}" aria-label="Mostrar contraseña">Mostrar</button>
+              </div>
+              <div id="password-strength" class="password-strength" aria-hidden="true">
+                <span class="strength-bar"></span><span class="strength-bar"></span><span class="strength-bar"></span><span class="strength-bar"></span>
+              </div>
+              <p class="password-hint">Mínimo 8 caracteres. Evita contraseñas comunes.</p>
+              {% if form.password1.errors %}<ul class="field-errors">{% for error in form.password1.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="field {% if form.password2.errors %}has-error{% endif %}">
+              <label for="{{ form.password2.id_for_label }}">Confirma la contraseña</label>
+              <div class="input-wrap has-toggle">
+                {{ form.password2 }}
+                <button class="password-toggle" type="button" data-password-toggle="{{ form.password2.id_for_label }}" aria-label="Mostrar contraseña">Mostrar</button>
+              </div>
+              {% if form.password2.errors %}<ul class="field-errors">{% for error in form.password2.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div>
+            <div class="terms-field">
+              {{ form.accept_terms }}
+              <label for="{{ form.accept_terms.id_for_label }}">
+                Acepto los <a href="{% url 'legal:document' 'terminos-condiciones' %}" target="_blank" rel="noopener">Términos y condiciones</a>,
+                el <a href="{% url 'legal:document' 'aviso-privacidad' %}" target="_blank" rel="noopener">Aviso de privacidad</a>
+                y el <a href="{% url 'legal:document' 'tratamiento-datos' %}" target="_blank" rel="noopener">Acuerdo de tratamiento de datos</a> de PAKIVOX.
+              </label>
+            </div>
+            {% if form.accept_terms.errors %}<ul class="field-errors">{% for error in form.accept_terms.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <button id="submit-button" class="submit-button" type="submit">
+            <span id="submit-text">Crear cuenta y empezar la prueba</span>
+          </button>
+        </form>
+
+        <p class="auth-switch">¿Tu empresa ya usa PAKIVOX? <a href="{% url 'accounts:login' %}">Inicia sesión</a></p>
+      </div>
+
+      <footer class="auth-foot">
+        <a href="{% url 'legal:document' 'aviso-privacidad' %}">Privacidad</a>
+        <a href="{% url 'legal:document' 'terminos-condiciones' %}">Términos</a>
+        <a href="{% url 'legal:document' 'politica-cookies' %}">Cookies</a>
+        <span>© {% now "Y" %} PAKIVOX</span>
+      </footer>
+    </main>
+  </div>
+
+  {% include 'legal/_cookie_banner.html' %}
+  <script src="{% static 'legal/cookie-consent.js' %}" defer></script>
+  <script src="{% static 'js/crear_cuenta.js' %}" defer></script>
+</body>
+</html>

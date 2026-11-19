@@ -1,0 +1,542 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Agenda comercial | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Agenda comercial
+{% endblock %}
+
+{% block page_subtitle %}
+Seguimientos pendientes del equipo comercial
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .agenda-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .agenda-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .agenda-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .agenda-tab {
+    text-decoration: none;
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #020617;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .agenda-tab.active {
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.45);
+    background: rgba(34, 197, 94, 0.12);
+  }
+
+  .agenda-hero-premium {
+    display: grid;
+    grid-template-columns: 1fr 120px;
+    gap: 20px;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(34, 197, 94, 0.12));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 26px;
+  }
+
+  .agenda-hero-premium span {
+    color: #93c5fd;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .agenda-hero-premium h2 {
+    margin: 8px 0;
+    font-size: 32px;
+    font-weight: 900;
+    color: #f8fafc;
+  }
+
+  .agenda-hero-premium p {
+    margin: 0;
+    color: #cbd5e1;
+  }
+
+  .agenda-counter {
+    width: 96px;
+    height: 96px;
+    border-radius: 24px;
+    background: #020617;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #22c55e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 900;
+    justify-self: end;
+  }
+
+  .agenda-grid-premium {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .agenda-card-premium {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 18px;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: 0.2s ease;
+  }
+
+  .agenda-card-premium:hover {
+    border-color: rgba(59, 130, 246, 0.55);
+    transform: translateY(-2px);
+  }
+
+  .agenda-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .agenda-type-pill,
+  .agenda-status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .agenda-type-pill {
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #bfdbfe;
+  }
+
+  .agenda-status-success {
+    background: rgba(34, 197, 94, 0.14);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #bbf7d0;
+  }
+
+  .agenda-status-warning {
+    background: rgba(234, 179, 8, 0.14);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    color: #fde68a;
+  }
+
+  .agenda-status-danger {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fecaca;
+  }
+
+  .agenda-status-completed {
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #22c55e;
+  }
+
+  .agenda-status-muted,
+  .agenda-status-pending {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+  }
+
+  .agenda-date-box {
+    text-align: right;
+  }
+
+  .agenda-date-box strong,
+  .agenda-date-box small {
+    display: block;
+  }
+
+  .agenda-date-box strong {
+    color: #22c55e;
+    font-size: 13px;
+  }
+
+  .agenda-date-box small {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .agenda-card-premium h3 {
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font-size: 19px;
+    font-weight: 900;
+    line-height: 1.25;
+  }
+
+  .agenda-customer-premium {
+    margin: 0 0 5px;
+    color: #cbd5e1;
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  .agenda-deal-premium {
+    margin: 0 0 12px;
+    color: #93c5fd;
+    font-size: 13px;
+  }
+
+  .agenda-description-premium {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 12px 0;
+  }
+
+  .agenda-date-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .agenda-date-input {
+    width: 100%;
+    background: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e5e7eb;
+    border-radius: 12px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .agenda-date-btn {
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(37, 99, 235, 0.14);
+    color: #bfdbfe;
+    border-radius: 12px;
+    padding: 9px 10px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .agenda-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 14px;
+    margin-bottom: 12px;
+  }
+
+  .agenda-complete-btn,
+  .agenda-reopen-btn {
+    width: 100%;
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-weight: 800;
+    font-size: 12px;
+    transition: 0.2s ease;
+  }
+
+  .agenda-complete-btn {
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+    color: #bbf7d0;
+  }
+
+  .agenda-reopen-btn {
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(37, 99, 235, 0.12);
+    color: #bfdbfe;
+  }
+
+  .agenda-footer-premium {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-size: 13px;
+  }
+
+  .agenda-avatar-premium {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #22c55e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 12px;
+  }
+
+  @media (max-width: 1200px) {
+    .agenda-grid-premium {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .agenda-hero-premium {
+      grid-template-columns: 1fr;
+    }
+
+    .agenda-counter {
+      justify-self: start;
+    }
+
+    .agenda-grid-premium {
+      grid-template-columns: 1fr;
+    }
+
+    .agenda-date-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="agenda-page">
+  <div class="agenda-actions">
+    <a href="{% url 'crm_kanban' %}" class="btn btn-sm btn-outline-light">
+      Volver al Kanban
+    </a>
+
+    <div class="agenda-tabs">
+      <a href="?status=pending&alert=all" class="agenda-tab {% if status_filter == 'pending' and alert_filter == 'all' %}active{% endif %}">
+        Pendientes
+      </a>
+      <a href="?status=pending&alert=overdue" class="agenda-tab {% if alert_filter == 'overdue' %}active{% endif %}">
+        Vencidas
+      </a>
+      <a href="?status=pending&alert=today" class="agenda-tab {% if alert_filter == 'today' %}active{% endif %}">
+        Hoy
+      </a>
+      <a href="?status=pending&alert=upcoming" class="agenda-tab {% if alert_filter == 'upcoming' %}active{% endif %}">
+        Próximas
+      </a>
+      <a href="?status=pending&alert=no_date" class="agenda-tab {% if alert_filter == 'no_date' %}active{% endif %}">
+        Sin fecha
+      </a>
+      <a href="?status=completed&alert=all" class="agenda-tab {% if status_filter == 'completed' %}active{% endif %}">
+        Completadas
+      </a>
+      <a href="?status=all&alert=all" class="agenda-tab {% if status_filter == 'all' %}active{% endif %}">
+        Todas
+      </a>
+    </div>
+  </div>
+
+  <section class="agenda-hero-premium">
+    <div>
+      <span>CRM operativo</span>
+      <h2>Seguimientos comerciales</h2>
+      <p>Controla llamadas, WhatsApp, correos, reuniones y cotizaciones pendientes.</p>
+    </div>
+
+    <div class="agenda-counter">
+      {{ activities|length }}
+    </div>
+  </section>
+
+  <section class="agenda-grid-premium">
+    {% for activity in activities %}
+      <article class="agenda-card-premium">
+        <div>
+          <div class="agenda-card-header">
+            <div>
+              <span class="agenda-type-pill">
+                {{ activity.get_activity_type_display }}
+              </span>
+
+              <span class="agenda-status-pill {{ activity.status_class }}">
+                {{ activity.status_label }}
+              </span>
+            </div>
+
+            <div class="agenda-date-box">
+              {% if activity.due_date %}
+                <strong>{{ activity.due_date|date:"d/m/Y" }}</strong>
+                <small>{{ activity.due_date|date:"H:i" }}</small>
+              {% else %}
+                <strong>Sin fecha</strong>
+                <small>Pendiente</small>
+              {% endif %}
+            </div>
+          </div>
+
+          <h3>{{ activity.title }}</h3>
+
+          <p class="agenda-customer-premium">
+            {{ activity.customer.full_name }}
+          </p>
+
+          {% if activity.deal %}
+            <p class="agenda-deal-premium">
+              {{ activity.deal.title }}
+            </p>
+          {% endif %}
+
+          {% if activity.description %}
+            <p class="agenda-description-premium">
+              {{ activity.description }}
+            </p>
+          {% endif %}
+        </div>
+
+        <div>
+          <form
+            class="agenda-date-form"
+            onsubmit="updateActivityDueDate(event, {{ activity.id }}, this)"
+          >
+            {% csrf_token %}
+            <input
+              type="datetime-local"
+              name="due_date"
+              class="agenda-date-input"
+              value="{% if activity.due_date %}{{ activity.due_date|date:'Y-m-d\\TH:i' }}{% endif %}"
+            >
+
+            <button type="submit" class="agenda-date-btn">
+              Programar fecha
+            </button>
+          </form>
+
+          <div class="agenda-buttons">
+            {% if activity.completed_at %}
+              <button
+                type="button"
+                class="agenda-reopen-btn"
+                onclick="reopenActivity({{ activity.id }}, this)"
+              >
+                Regresar a pendiente
+              </button>
+            {% else %}
+              <button
+                type="button"
+                class="agenda-complete-btn"
+                onclick="completeActivity({{ activity.id }}, this)"
+              >
+                Marcar completada
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="agenda-footer-premium">
+            <div class="agenda-avatar-premium">
+              {% if activity.assigned_to %}
+                {{ activity.assigned_to.username|first|upper }}
+              {% else %}
+                W
+              {% endif %}
+            </div>
+
+            <span>
+              {% if activity.assigned_to %}
+                {{ activity.assigned_to.username }}
+              {% else %}
+                PAKIVOX
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="panel">
+        <h3>No hay actividades</h3>
+        <p class="text-muted">
+          Cuando agendas llamadas, WhatsApp o reuniones desde una oportunidad,
+          aparecerán aquí.
+        </p>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+
+<script>
+function completeActivity(activityId, button) {
+  fetch(`/crm/activity/${activityId}/complete/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+    },
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.success) {
+      location.reload();
+    }
+  });
+}
+
+function reopenActivity(activityId, button) {
+  fetch(`/crm/activity/${activityId}/reopen/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+    },
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.success) {
+      location.reload();
+    }
+  });
+}
+
+function updateActivityDueDate(event, activityId, form) {
+  event.preventDefault();
+
+  const formData = new FormData(form);
+
+  fetch(`/crm/activity/${activityId}/due-date/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+    },
+    body: formData,
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.success) {
+      location.reload();
+    }
+  });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,321 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Proveedores sugeridos | PAKIVOX{% endblock %}
+
+{% block page_title %}Proveedores sugeridos{% endblock %}
+{% block page_subtitle %}Selecciona a quién solicitar reabastecimiento por WhatsApp{% endblock %}
+
+{% block content %}
+
+<style>
+  .supplier-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .supplier-hero,
+  .supplier-card,
+  .supplier-table-wrap {
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .supplier-hero h1 {
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font-size: 24px;
+    font-weight: 950;
+  }
+
+  .supplier-hero p {
+    margin: 0;
+    color: #93c5fd;
+    font-size: 13px;
+  }
+
+  .supplier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .supplier-kpi {
+    background: rgba(2, 6, 23, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .supplier-kpi span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 900;
+  }
+
+  .supplier-kpi strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 22px;
+    font-weight: 950;
+  }
+
+  .supplier-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .supplier-table th,
+  .supplier-table td {
+    padding: 14px 10px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    text-align: left;
+    vertical-align: top;
+    color: #e5e7eb;
+    font-size: 13px;
+  }
+
+  .supplier-table th {
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .badge-history {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #86efac;
+    font-weight: 900;
+    font-size: 11px;
+  }
+
+  .badge-no-history {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #facc15;
+    font-weight: 900;
+    font-size: 11px;
+  }
+
+  .supplier-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-supplier {
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 13px;
+    font-weight: 950;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #052e16;
+  }
+
+  .btn-secondary {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #e5e7eb;
+  }
+
+  .btn-whatsapp {
+    background: #25D366;
+    color: #052e16;
+  }
+
+  .existing-order {
+    background: rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(14, 165, 233, 0.35);
+    border-radius: 18px;
+    padding: 16px;
+    color: #e0f2fe;
+  }
+
+  @media (max-width: 900px) {
+    .supplier-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .supplier-table-wrap {
+      overflow-x: auto;
+    }
+  }
+</style>
+
+<section class="supplier-page">
+
+  <div class="supplier-hero">
+    <h1>Solicitar a proveedor</h1>
+    <p>
+      PAKIVOX encontró una alerta de stock crítico. Selecciona un proveedor histórico
+      para generar la orden de compra y abrir WhatsApp con el pedido redactado.
+    </p>
+  </div>
+
+  <div class="supplier-grid">
+    <div class="supplier-kpi">
+      <span>SKU</span>
+      <strong>{{ alert.variant.sku }}</strong>
+    </div>
+
+    <div class="supplier-kpi">
+      <span>Disponible</span>
+      <strong>{{ alert.current_available }}</strong>
+    </div>
+
+    <div class="supplier-kpi">
+      <span>Mínimo</span>
+      <strong>{{ alert.min_stock }}</strong>
+    </div>
+
+    <div class="supplier-kpi">
+      <span>Sugerido comprar</span>
+      <strong>{{ suggestion.suggested_quantity }}</strong>
+    </div>
+  </div>
+
+  <div class="supplier-card">
+    <h2 style="margin:0 0 6px; color:#f8fafc;">
+      {{ alert.variant.product.name }}
+    </h2>
+    <p style="margin:0; color:#93c5fd;">
+      Bodega: {{ alert.warehouse.name }} |
+      Referencia: {{ alert.reference|default:"Sin referencia" }}
+    </p>
+  </div>
+
+  {% if existing_order %}
+    <div class="existing-order">
+      <strong>Esta alerta ya tiene una orden abierta:</strong>
+      {{ existing_order.folio }}.
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        {% if existing_whatsapp_url %}
+          <a href="{{ existing_whatsapp_url }}" target="_blank" class="btn-supplier btn-whatsapp">
+            Abrir WhatsApp de la orden existente
+          </a>
+        {% endif %}
+
+        <a href="{% url 'purchases:lista_compras' %}" class="btn-supplier btn-secondary">
+          Ver compras
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="supplier-table-wrap">
+    <table class="supplier-table">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Historial</th>
+          <th>Última compra</th>
+          <th>Último costo</th>
+          <th>Sugerido</th>
+          <th>Teléfono</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for option in supplier_options %}
+          <tr>
+            <td>
+              <strong>{{ option.supplier.name }}</strong>
+              {% if option.supplier.contact_name %}
+                <br>
+                <small>{{ option.supplier.contact_name }}</small>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if option.has_history %}
+                <span class="badge-history">Con historial</span>
+                <br>
+                <small>OC: {{ option.last_purchase_order.folio }}</small>
+              {% else %}
+                <span class="badge-no-history">Sin historial SKU</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if option.last_date %}
+                {{ option.last_date|date:"d/m/Y H:i" }}
+                <br>
+                <small>Cantidad: {{ option.last_quantity }}</small>
+              {% else %}
+                Sin compras previas
+              {% endif %}
+            </td>
+
+            <td>
+              ${{ option.last_cost }}
+            </td>
+
+            <td>
+              {{ option.suggested_quantity }}
+              <br>
+              <small>Total ref: ${{ option.estimated_total }}</small>
+            </td>
+
+            <td>
+              {% if option.phone %}
+                {{ option.phone }}
+              {% else %}
+                <span style="color:#fca5a5;">Sin teléfono</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <div class="supplier-actions">
+                <form method="post" action="{% url 'inventory:stock_critical_alert_create_reorder_with_supplier' alert.id option.supplier.id %}">
+                  {% csrf_token %}
+
+                  <button type="submit" class="btn-supplier btn-primary">
+                    Crear OC + WhatsApp
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7">
+              No hay proveedores activos para esta empresa.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <a href="{% url 'inventory:stock_critical_alerts' %}" class="btn-supplier btn-secondary">
+      Volver a alertas
+    </a>
+  </div>
+
+</section>
+
+{% endblock %}

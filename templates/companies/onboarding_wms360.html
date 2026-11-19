@@ -1,0 +1,2624 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bienvenido a PAKIVOX{% endblock %}
+
+{% block page_title %}Bienvenido a PAKIVOX{% endblock %}
+
+{% block page_subtitle %}
+Configura tu operación y conoce tu nueva plataforma.
+{% endblock %}
+
+{% block content %}
+
+<style>
+/* ============================================================
+   PAKIVOX · ONBOARDING
+   Pantalla completa dentro del layout principal
+============================================================ */
+
+.wms-onboarding {
+    --bg: #07111f;
+    --panel: #0b182b;
+    --panel-2: #0d1d33;
+    --line: rgba(132, 173, 222, .15);
+    --text: #f5f9ff;
+    --muted: #8499b3;
+
+    --cyan: #22d4d0;
+    --blue: #258cff;
+    --purple: #8b5cff;
+    --green: #28dc9c;
+
+    position: relative;
+
+    width: 100%;
+    max-width: none;
+
+    min-height: calc(100vh - 145px);
+
+    padding: 22px 14px 26px;
+
+    overflow: hidden;
+
+    color: var(--text);
+}
+
+
+/* Fondo ambiental */
+
+.wms-onboarding::before {
+    content: "";
+
+    position: absolute;
+
+    width: 850px;
+    height: 500px;
+
+    left: 20%;
+    top: -330px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(32, 135, 255, .16),
+            transparent 68%
+        );
+
+    filter: blur(60px);
+
+    pointer-events: none;
+}
+
+
+.wms-onboarding::after {
+    content: "";
+
+    position: absolute;
+
+    width: 650px;
+    height: 500px;
+
+    right: -250px;
+    bottom: -280px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(124, 76, 255, .10),
+            transparent 68%
+        );
+
+    filter: blur(70px);
+
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+============================================================ */
+
+.ob-shell {
+    position: relative;
+    z-index: 2;
+
+    width: 100%;
+    max-width: none;
+
+    margin: 0 auto;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.ob-header {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 30px;
+
+    margin-bottom: 22px;
+
+    padding:
+        0
+        clamp(12px, 1.5vw, 28px);
+}
+
+
+.ob-header-main {
+    min-width: 0;
+}
+
+
+.ob-kicker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 8px;
+
+    color: #54baff;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+}
+
+
+.ob-kicker-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #36d9d1;
+
+    box-shadow:
+        0 0 12px
+        rgba(54, 217, 209, .8);
+}
+
+
+.ob-title {
+    margin: 0;
+
+    color: #fff;
+
+    font-size:
+        clamp(30px, 2.7vw, 48px);
+
+    font-weight: 950;
+
+    line-height: 1.05;
+
+    letter-spacing: -1.5px;
+}
+
+
+.ob-company {
+    background:
+        linear-gradient(
+            90deg,
+            #28d8ca,
+            #2f9cff
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+}
+
+
+.ob-subtitle {
+    margin: 9px 0 0;
+
+    color: var(--muted);
+
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   ESTADO TRIAL / PREMIUM
+============================================================ */
+
+.ob-status {
+    flex: 0 0 auto;
+
+    min-width: 255px;
+
+    padding: 15px 18px;
+
+    border-radius: 16px;
+
+    border:
+        1px solid
+        rgba(44, 220, 157, .24);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(31, 206, 145, .07),
+            rgba(8, 25, 43, .88)
+        );
+
+    box-shadow:
+        0 16px 40px
+        rgba(0, 0, 0, .13);
+}
+
+
+.ob-status-top {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: #42e3a8;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: .7px;
+
+    text-transform: uppercase;
+}
+
+
+.ob-status-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #35df9f;
+
+    box-shadow:
+        0 0 14px
+        rgba(53, 223, 159, .8);
+}
+
+
+.ob-status strong {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #fff;
+
+    font-size: 15px;
+}
+
+
+.ob-status small {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #7890ac;
+
+    font-size: 10px;
+}
+
+
+/* ============================================================
+   ESCENARIO DEL CARRUSEL
+============================================================ */
+
+.ob-stage {
+    position: relative;
+
+    width: 100%;
+
+    height:
+        clamp(
+            570px,
+            62vh,
+            690px
+        );
+
+    perspective: 1800px;
+
+    overflow: hidden;
+
+    border-radius: 26px;
+}
+
+
+/* ============================================================
+   TARJETAS
+============================================================ */
+
+.ob-slide {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    /*
+       MUY IMPORTANTE:
+       antes estaba limitado a 980px.
+       Ahora utiliza casi todo el contenido.
+    */
+    width: calc(100% - 190px);
+
+    max-width: none;
+
+    height: calc(100% - 24px);
+
+    min-height: 540px;
+
+    border-radius: 26px;
+
+    overflow: hidden;
+
+    border:
+        1px solid
+        rgba(130, 171, 220, .16);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13, 31, 55, .98),
+            rgba(6, 18, 33, .99)
+        );
+
+    box-shadow:
+        0 35px 90px
+        rgba(0, 0, 0, .32);
+
+    transform-origin: center;
+
+    transition:
+        transform
+        .72s
+        cubic-bezier(.18, .74, .22, 1),
+        opacity .55s ease,
+        filter .55s ease;
+
+    will-change:
+        transform,
+        opacity;
+}
+
+
+/* CENTRAL */
+
+.ob-slide.is-center {
+    transform:
+        translate(-50%, -50%)
+        translateX(0)
+        scale(1);
+
+    opacity: 1;
+
+    z-index: 10;
+
+    filter: none;
+}
+
+
+/* IZQUIERDA */
+
+.ob-slide.is-left {
+    transform:
+        translate(-50%, -50%)
+        translateX(-87%)
+        scale(.83)
+        rotateY(16deg);
+
+    opacity: .34;
+
+    z-index: 3;
+
+    filter: brightness(.68);
+}
+
+
+/* DERECHA */
+
+.ob-slide.is-right {
+    transform:
+        translate(-50%, -50%)
+        translateX(87%)
+        scale(.83)
+        rotateY(-16deg);
+
+    opacity: .34;
+
+    z-index: 3;
+
+    filter: brightness(.68);
+}
+
+
+/* OCULTAS */
+
+.ob-slide.is-hidden-left {
+    transform:
+        translate(-50%, -50%)
+        translateX(-155%)
+        scale(.7);
+
+    opacity: 0;
+
+    z-index: 1;
+}
+
+
+.ob-slide.is-hidden-right {
+    transform:
+        translate(-50%, -50%)
+        translateX(155%)
+        scale(.7);
+
+    opacity: 0;
+
+    z-index: 1;
+}
+
+
+/* ============================================================
+   CONTENIDO DE CADA SLIDE
+============================================================ */
+
+.ob-slide-inner {
+    width: 100%;
+    height: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(380px, .88fr);
+
+    align-items: center;
+
+    gap:
+        clamp(35px, 4vw, 75px);
+
+    padding:
+        clamp(38px, 4vw, 68px)
+        clamp(45px, 5vw, 90px);
+}
+
+
+.ob-counter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 60px;
+    height: 32px;
+
+    margin-bottom: 19px;
+
+    padding: 0 12px;
+
+    border-radius: 10px;
+
+    border:
+        1px solid
+        rgba(46, 159, 255, .25);
+
+    background:
+        rgba(35, 128, 255, .08);
+
+    color: #69b7ff;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+
+.ob-eyebrow {
+    margin-bottom: 11px;
+
+    color: #3bc7ed;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 1.4px;
+
+    text-transform: uppercase;
+}
+
+
+.ob-slide-title {
+    max-width: 700px;
+
+    margin: 0;
+
+    color: white;
+
+    font-size:
+        clamp(39px, 4vw, 65px);
+
+    line-height: .98;
+
+    font-weight: 950;
+
+    letter-spacing: -2px;
+}
+
+
+.ob-gradient {
+    background:
+        linear-gradient(
+            90deg,
+            #29dfca,
+            #2d9cff
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+}
+
+
+.ob-gradient-purple {
+    background:
+        linear-gradient(
+            90deg,
+            #bc82ff,
+            #825cff
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+}
+
+
+.ob-description {
+    max-width: 680px;
+
+    margin:
+        20px
+        0
+        0;
+
+    color: #a0b4cc;
+
+    font-size: 15px;
+
+    line-height: 1.75;
+}
+
+
+/* ============================================================
+   SLIDE 1 · FUNCIONES
+============================================================ */
+
+.ob-modules {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 11px;
+
+    margin-top: 31px;
+}
+
+
+.ob-module {
+    min-height: 93px;
+
+    padding: 15px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255,255,255,.026);
+
+    border:
+        1px solid
+        rgba(132, 168, 210, .11);
+
+    transition: .22s ease;
+}
+
+
+.ob-module:hover {
+    transform: translateY(-2px);
+
+    background:
+        rgba(34, 136, 255, .05);
+
+    border-color:
+        rgba(43, 163, 255, .25);
+}
+
+
+.ob-module-icon {
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+    place-items: center;
+
+    margin-bottom: 9px;
+
+    border-radius: 9px;
+
+    color: #37dfd2;
+
+    background:
+        rgba(37, 213, 205, .08);
+
+    border:
+        1px solid
+        rgba(37, 213, 205, .15);
+}
+
+
+.ob-module strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 11px;
+}
+
+
+.ob-module span {
+    color: #7188a3;
+
+    font-size: 9.5px;
+
+    line-height: 1.4;
+}
+
+
+/* ============================================================
+   VISUAL PAKIVOX
+============================================================ */
+
+.ob-dashboard-area {
+    min-height: 400px;
+
+    display: grid;
+    place-items: center;
+
+    position: relative;
+}
+
+
+.ob-dashboard-glow {
+    position: absolute;
+
+    width: 450px;
+    height: 450px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(29, 140, 255, .18),
+            transparent 67%
+        );
+}
+
+
+.ob-dashboard {
+    position: relative;
+    z-index: 2;
+
+    width: min(470px, 100%);
+
+    padding: 27px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #102745,
+            #081729
+        );
+
+    border:
+        1px solid
+        rgba(44, 170, 255, .20);
+
+    box-shadow:
+        0 34px 70px
+        rgba(0, 0, 0, .38);
+}
+
+
+.ob-dashboard-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 20px;
+}
+
+
+.ob-dashboard-brand {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+}
+
+
+.ob-dashboard-logo {
+    width: 49px;
+    height: 49px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #1abeb8,
+            #2578ff
+        );
+
+    font-size: 20px;
+    font-weight: 950;
+}
+
+
+.ob-dashboard-brand strong {
+    display: block;
+
+    font-size: 13px;
+}
+
+
+.ob-dashboard-brand small {
+    color: #728aa4;
+
+    font-size: 9px;
+}
+
+
+.ob-dashboard-live {
+    color: #31dfa1;
+
+    font-size: 9px;
+    font-weight: 900;
+}
+
+
+.ob-metrics {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 10px;
+}
+
+
+.ob-metric {
+    min-height: 79px;
+
+    padding: 15px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.045);
+}
+
+
+.ob-metric span {
+    color: #758da8;
+
+    font-size: 9px;
+}
+
+
+.ob-metric strong {
+    display: block;
+
+    margin-top: 7px;
+
+    color: white;
+
+    font-size: 21px;
+}
+
+
+/* ============================================================
+   SLIDE 2
+============================================================ */
+
+.ob-steps {
+    display: grid;
+
+    gap: 12px;
+
+    margin-top: 30px;
+}
+
+
+.ob-step {
+    display: grid;
+
+    grid-template-columns:
+        48px
+        minmax(0,1fr);
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255,255,255,.025);
+
+    border:
+        1px solid
+        rgba(130,168,210,.11);
+}
+
+
+.ob-step-number {
+    width: 48px;
+    height: 48px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 14px;
+
+    color: white;
+
+    font-weight: 950;
+
+    background:
+        linear-gradient(
+            145deg,
+            #1874ff,
+            #27b8f2
+        );
+}
+
+
+.ob-step strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 13px;
+}
+
+
+.ob-step span {
+    color: #7f96b0;
+
+    font-size: 10.5px;
+
+    line-height: 1.45;
+}
+
+
+.ob-setup-visual {
+    display: grid;
+    place-items: center;
+
+    min-height: 420px;
+}
+
+
+.ob-setup-circle {
+    position: relative;
+
+    width: 340px;
+    height: 340px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(33, 132, 255, .17),
+            transparent 68%
+        );
+
+    border:
+        1px solid
+        rgba(41, 148, 255, .15);
+}
+
+
+.ob-main-symbol {
+    font-size: 115px;
+}
+
+
+.ob-float {
+    position: absolute;
+
+    width: 65px;
+    height: 65px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 18px;
+
+    background: #0b1d33;
+
+    border:
+        1px solid
+        rgba(55, 157, 255, .25);
+
+    font-size: 27px;
+
+    box-shadow:
+        0 16px 35px
+        rgba(0,0,0,.25);
+}
+
+
+.ob-float.a {
+    right: 10px;
+    top: 15px;
+}
+
+
+.ob-float.b {
+    left: 0;
+    bottom: 20px;
+}
+
+
+.ob-float.c {
+    right: -14px;
+    bottom: 78px;
+}
+
+
+/* ============================================================
+   PREMIUM
+============================================================ */
+
+.ob-premium-list {
+    display: grid;
+
+    gap: 10px;
+
+    margin-top: 30px;
+}
+
+
+.ob-premium-item {
+    display: grid;
+
+    grid-template-columns:
+        43px 1fr;
+
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 12px 14px;
+
+    border-radius: 13px;
+
+    background:
+        rgba(255,255,255,.025);
+
+    border:
+        1px solid
+        rgba(139, 86, 255, .11);
+}
+
+
+.ob-premium-icon {
+    width: 43px;
+    height: 43px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 12px;
+
+    background:
+        rgba(139, 86, 255, .11);
+
+    color: #bb83ff;
+}
+
+
+.ob-premium-item strong {
+    display: block;
+
+    font-size: 12px;
+}
+
+
+.ob-premium-item span {
+    color: #7d92ab;
+
+    font-size: 9.5px;
+}
+
+
+.ob-premium-visual {
+    min-height: 420px;
+
+    display: grid;
+    place-items: center;
+}
+
+
+.ob-diamond-orb {
+    width: 400px;
+    height: 400px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(121, 68, 255, .25),
+            rgba(90, 55, 190, .07) 48%,
+            transparent 70%
+        );
+}
+
+
+.ob-diamond {
+    font-size: 145px;
+
+    filter:
+        drop-shadow(
+            0 24px 48px
+            rgba(105, 72, 255, .35)
+        );
+}
+
+
+/* ============================================================
+   FLECHAS
+============================================================ */
+
+.ob-arrow {
+    position: absolute;
+
+    top: 50%;
+
+    z-index: 30;
+
+    width: 51px;
+    height: 51px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    border:
+        1px solid
+        rgba(126, 170, 221, .31);
+
+    background:
+        rgba(7, 22, 40, .95);
+
+    color: white;
+
+    font-size: 25px;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+
+    transform:
+        translateY(-50%);
+}
+
+
+.ob-arrow:hover {
+    background: #153756;
+
+    transform:
+        translateY(-50%)
+        scale(1.08);
+}
+
+
+.ob-arrow.prev {
+    left: 28px;
+}
+
+
+.ob-arrow.next {
+    right: 28px;
+}
+
+
+/* ============================================================
+   INDICADORES
+============================================================ */
+
+.ob-dots {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 4px;
+}
+
+
+.ob-dot {
+    width: 8px;
+    height: 8px;
+
+    border: 0;
+
+    padding: 0;
+
+    border-radius: 999px;
+
+    background: #344c68;
+
+    cursor: pointer;
+
+    transition: .25s ease;
+}
+
+
+.ob-dot.active {
+    width: 30px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #29d7cc,
+            #268eff
+        );
+}
+
+
+/* ============================================================
+   BARRA INFERIOR
+============================================================ */
+
+.ob-bottom {
+    width: 100%;
+
+    margin-top: 18px;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(300px, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 25px;
+
+    padding: 19px 24px;
+
+    border-radius: 18px;
+
+    border:
+        1px solid
+        rgba(128, 169, 219, .15);
+
+    background:
+        rgba(10, 25, 44, .88);
+}
+
+
+.ob-bottom-left {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+
+.ob-bottom-icon {
+    width: 53px;
+    height: 53px;
+
+    flex: 0 0 53px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 15px;
+
+    background:
+        rgba(39, 131, 255, .09);
+
+    border:
+        1px solid
+        rgba(39, 131, 255, .19);
+
+    color: #79baff;
+
+    font-size: 22px;
+}
+
+
+.ob-bottom-left strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 14px;
+}
+
+
+.ob-bottom-left span {
+    color: #8198b3;
+
+    font-size: 11px;
+}
+
+
+.ob-bottom-right {
+    display: flex;
+
+    align-items: center;
+
+    gap: 24px;
+}
+
+
+.ob-small-benefits {
+    display: flex;
+
+    align-items: center;
+
+    gap: 22px;
+}
+
+
+.ob-small-benefit {
+    min-width: 74px;
+
+    text-align: center;
+}
+
+
+.ob-small-benefit strong {
+    display: block;
+
+    color: #e5f1ff;
+
+    font-size: 10px;
+}
+
+
+.ob-small-benefit span {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #617995;
+
+    font-size: 8.5px;
+}
+
+
+.ob-start {
+    min-width: 255px;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 11px;
+
+    padding: 16px 26px;
+
+    border-radius: 13px;
+
+    color: white !important;
+
+    text-decoration: none !important;
+
+    font-size: 14px;
+
+    font-weight: 950;
+
+    background:
+        linear-gradient(
+            110deg,
+            #6547ff 0%,
+            #2385ff 48%,
+            #1dd4c7 100%
+        );
+
+    box-shadow:
+        0 12px 30px
+        rgba(32, 133, 255, .20);
+
+    transition: .2s ease;
+}
+
+
+.ob-start:hover {
+    transform: translateY(-2px);
+
+    filter: brightness(1.08);
+}
+
+
+.ob-security {
+    margin-top: 11px;
+
+    text-align: center;
+
+    color: #536d88;
+
+    font-size: 9px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1250px) {
+
+    .ob-slide {
+        width:
+            calc(100% - 130px);
+    }
+
+    .ob-slide-inner {
+        grid-template-columns:
+            minmax(0, 1fr)
+            340px;
+
+        padding:
+            40px 55px;
+
+        gap: 35px;
+    }
+
+}
+
+
+@media (max-width: 1050px) {
+
+    .ob-stage {
+        height: 650px;
+    }
+
+    .ob-slide {
+        width:
+            calc(100% - 90px);
+    }
+
+    .ob-slide-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .ob-dashboard-area,
+    .ob-setup-visual,
+    .ob-premium-visual {
+        display: none;
+    }
+
+}
+
+
+@media (max-width: 760px) {
+
+    .wms-onboarding {
+        padding:
+            14px
+            4px
+            22px;
+    }
+
+    .ob-header {
+        flex-direction: column;
+
+        align-items: stretch;
+    }
+
+    .ob-status {
+        width: 100%;
+    }
+
+    .ob-stage {
+        height: 720px;
+    }
+
+    .ob-slide {
+        width:
+            calc(100% - 22px);
+
+        min-height: 650px;
+    }
+
+    .ob-slide-inner {
+        padding:
+            34px
+            24px;
+    }
+
+    .ob-slide-title {
+        font-size: 35px;
+    }
+
+    .ob-modules {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .ob-slide.is-left,
+    .ob-slide.is-right {
+        opacity: 0;
+    }
+
+    .ob-arrow {
+        top: auto;
+        bottom: 13px;
+
+        width: 42px;
+        height: 42px;
+
+        transform: none;
+    }
+
+    .ob-arrow:hover {
+        transform: scale(1.05);
+    }
+
+    .ob-arrow.prev {
+        left: 14px;
+    }
+
+    .ob-arrow.next {
+        right: 14px;
+    }
+
+    .ob-bottom {
+        grid-template-columns:
+            1fr;
+    }
+
+    .ob-bottom-right {
+        flex-direction: column;
+
+        align-items: stretch;
+    }
+
+    .ob-small-benefits {
+        justify-content:
+            space-around;
+    }
+
+    .ob-start {
+        width: 100%;
+    }
+
+}
+</style>
+
+
+<section class="wms-onboarding">
+
+    <div class="ob-shell">
+
+        <!-- ====================================================
+             CABECERA
+        ===================================================== -->
+
+        <header class="ob-header">
+
+            <div class="ob-header-main">
+
+                <div class="ob-kicker">
+
+                    <span class="ob-kicker-dot"></span>
+
+                    Configuración inicial
+
+                </div>
+
+
+                <h1 class="ob-title">
+
+                    Bienvenido a PAKIVOX,
+
+                    <span class="ob-company">
+                        {{ onboarding_company.name }}
+                    </span>
+
+                    👋
+
+                </h1>
+
+
+                <p class="ob-subtitle">
+                    Tu centro de operaciones logísticas comienza aquí.
+                </p>
+
+            </div>
+
+
+            <aside class="ob-status">
+
+                <div class="ob-status-top">
+
+                    <span class="ob-status-dot"></span>
+
+                    {{ subscription_label }}
+
+                </div>
+
+
+                {% if is_trial %}
+
+                    <strong>
+
+                        {% if trial_days_remaining %}
+                            {{ trial_days_remaining }}
+                            día{{ trial_days_remaining|pluralize }}
+                            restante{{ trial_days_remaining|pluralize }}
+                        {% else %}
+                            Prueba gratuita
+                        {% endif %}
+
+                    </strong>
+
+
+                    {% if trial_day_number %}
+
+                        <small>
+                            Día {{ trial_day_number }} de 14
+                        </small>
+
+                    {% endif %}
+
+
+                {% elif is_premium %}
+
+                    <strong>
+                        PAKIVOX Premium
+                    </strong>
+
+                    <small>
+                        Plan activo
+                    </small>
+
+
+                {% else %}
+
+                    <strong>
+                        Cuenta PAKIVOX
+                    </strong>
+
+                {% endif %}
+
+            </aside>
+
+        </header>
+
+
+        <!-- ====================================================
+             CARRUSEL
+        ===================================================== -->
+
+        <div
+            class="ob-stage"
+            id="obStage"
+        >
+
+            <button
+                class="ob-arrow prev"
+                id="obPrev"
+                type="button"
+                aria-label="Anterior"
+            >
+                ‹
+            </button>
+
+
+            <button
+                class="ob-arrow next"
+                id="obNext"
+                type="button"
+                aria-label="Siguiente"
+            >
+                ›
+            </button>
+
+
+            <!-- =================================================
+                 1 / 3
+            ================================================== -->
+
+            <article
+                class="ob-slide"
+                data-slide="0"
+            >
+
+                <div class="ob-slide-inner">
+
+                    <div>
+
+                        <div class="ob-counter">
+                            1 / 3
+                        </div>
+
+
+                        <div class="ob-eyebrow">
+                            Todo tu centro de operaciones
+                        </div>
+
+
+                        <h2 class="ob-slide-title">
+
+                            Todo tu almacén,
+
+                            <span class="ob-gradient">
+                                en un solo sistema.
+                            </span>
+
+                        </h2>
+
+
+                        <p class="ob-description">
+
+                            PAKIVOX centraliza las operaciones
+                            esenciales de tu empresa para controlar
+                            inventario, ubicaciones, pedidos,
+                            movimientos y envíos desde una sola
+                            plataforma.
+
+                        </p>
+
+
+                        <div class="ob-modules">
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    ◇
+                                </div>
+
+                                <strong>
+                                    Inventario
+                                </strong>
+
+                                <span>
+                                    Control total de stock.
+                                </span>
+
+                            </div>
+
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    ⌖
+                                </div>
+
+                                <strong>
+                                    Ubicaciones
+                                </strong>
+
+                                <span>
+                                    Organización física.
+                                </span>
+
+                            </div>
+
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    ⇄
+                                </div>
+
+                                <strong>
+                                    Operación
+                                </strong>
+
+                                <span>
+                                    Entradas y salidas.
+                                </span>
+
+                            </div>
+
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    🛒
+                                </div>
+
+                                <strong>
+                                    Pedidos
+                                </strong>
+
+                                <span>
+                                    Ventas y surtido.
+                                </span>
+
+                            </div>
+
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    🚚
+                                </div>
+
+                                <strong>
+                                    Envíos
+                                </strong>
+
+                                <span>
+                                    Logística integrada.
+                                </span>
+
+                            </div>
+
+
+                            <div class="ob-module">
+
+                                <div class="ob-module-icon">
+                                    ▥
+                                </div>
+
+                                <strong>
+                                    Reportes
+                                </strong>
+
+                                <span>
+                                    Decisiones con datos.
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="ob-dashboard-area">
+
+                        <div class="ob-dashboard-glow"></div>
+
+
+                        <div class="ob-dashboard">
+
+                            <div class="ob-dashboard-header">
+
+                                <div class="ob-dashboard-brand">
+
+                                    <img class="ob-dashboard-logo pakivox-brand-image" src="{% static 'branding/pakivox_icon.png' %}" alt="">
+
+                                    <div>
+
+                                        <strong>
+                                            PAKIVOX
+                                        </strong>
+
+                                        <small>
+                                            Centro operativo
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="ob-dashboard-live">
+                                    ● Sistema activo
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-metrics">
+
+                                <div class="ob-metric">
+
+                                    <span>
+                                        Inventario
+                                    </span>
+
+                                    <strong>
+                                        2,453
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="ob-metric">
+
+                                    <span>
+                                        Pedidos
+                                    </span>
+
+                                    <strong>
+                                        287
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="ob-metric">
+
+                                    <span>
+                                        Envíos
+                                    </span>
+
+                                    <strong>
+                                        56
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="ob-metric">
+
+                                    <span>
+                                        Operación
+                                    </span>
+
+                                    <strong>
+                                        Activa
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+
+            <!-- =================================================
+                 2 / 3
+            ================================================== -->
+
+            <article
+                class="ob-slide"
+                data-slide="1"
+            >
+
+                <div class="ob-slide-inner">
+
+                    <div>
+
+                        <div class="ob-counter">
+                            2 / 3
+                        </div>
+
+
+                        <div class="ob-eyebrow">
+                            Primeros pasos
+                        </div>
+
+
+                        <h2 class="ob-slide-title">
+
+                            Empieza en
+
+                            <span class="ob-gradient">
+                                tres pasos.
+                            </span>
+
+                        </h2>
+
+
+                        <p class="ob-description">
+
+                            PAKIVOX necesita conocer la estructura
+                            inicial de tu operación antes de comenzar
+                            a controlar inventario y movimientos.
+
+                        </p>
+
+
+                        <div class="ob-steps">
+
+                            <div class="ob-step">
+
+                                <div class="ob-step-number">
+                                    1
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Registra tu primera bodega
+                                    </strong>
+
+                                    <span>
+                                        Define dónde se encuentra tu
+                                        operación principal.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-step">
+
+                                <div class="ob-step-number">
+                                    2
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Agrega tus productos
+                                    </strong>
+
+                                    <span>
+                                        Crea tu catálogo e inventario
+                                        inicial.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-step">
+
+                                <div class="ob-step-number">
+                                    3
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Comienza a operar
+                                    </strong>
+
+                                    <span>
+                                        Entradas, salidas, picking,
+                                        ventas y envíos.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="ob-setup-visual">
+
+                        <div class="ob-setup-circle">
+
+                            <div class="ob-main-symbol">
+                                📋
+                            </div>
+
+                            <div class="ob-float a">
+                                🏭
+                            </div>
+
+                            <div class="ob-float b">
+                                📦
+                            </div>
+
+                            <div class="ob-float c">
+                                🚚
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+
+            <!-- =================================================
+                 3 / 3
+            ================================================== -->
+
+            <article
+                class="ob-slide"
+                data-slide="2"
+            >
+
+                <div class="ob-slide-inner">
+
+                    <div>
+
+                        <div class="ob-counter">
+                            3 / 3
+                        </div>
+
+
+                        <div
+                            class="ob-eyebrow"
+                            style="color:#b07aff;"
+                        >
+                            Crece cuando tu operación lo necesite
+                        </div>
+
+
+                        <h2 class="ob-slide-title">
+
+                            Descubre
+
+                            <span class="ob-gradient-purple">
+                                PAKIVOX Premium.
+                            </span>
+
+                        </h2>
+
+
+                        <p class="ob-description">
+
+                            Cuando necesites más automatización,
+                            inteligencia y capacidad operativa,
+                            Premium lleva PAKIVOX al siguiente nivel.
+
+                        </p>
+
+
+                        <div class="ob-premium-list">
+
+                            <div class="ob-premium-item">
+
+                                <div class="ob-premium-icon">
+                                    ◉
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        WhatsApp operativo
+                                    </strong>
+
+                                    <span>
+                                        Atención y seguimiento integrado.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-premium-item">
+
+                                <div class="ob-premium-icon">
+                                    ✦
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Copiloto con IA
+                                    </strong>
+
+                                    <span>
+                                        Análisis inteligente de la operación.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-premium-item">
+
+                                <div class="ob-premium-icon">
+                                    ◫
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Multi-bodega
+                                    </strong>
+
+                                    <span>
+                                        Escala tu empresa desde PAKIVOX.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="ob-premium-item">
+
+                                <div class="ob-premium-icon">
+                                    ↗
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Shipping Hub y automatización
+                                    </strong>
+
+                                    <span>
+                                        Más herramientas para crecer.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="ob-premium-visual">
+
+                        <div class="ob-diamond-orb">
+
+                            <div class="ob-diamond">
+                                💎
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+        </div>
+
+
+        <!-- ====================================================
+             INDICADORES
+        ===================================================== -->
+
+        <div class="ob-dots">
+
+            <button
+                class="ob-dot active"
+                type="button"
+                data-go="0"
+            ></button>
+
+            <button
+                class="ob-dot"
+                type="button"
+                data-go="1"
+            ></button>
+
+            <button
+                class="ob-dot"
+                type="button"
+                data-go="2"
+            ></button>
+
+        </div>
+
+
+        <!-- ====================================================
+             CTA FINAL
+        ===================================================== -->
+
+        <div class="ob-bottom">
+
+            <div class="ob-bottom-left">
+
+                <div class="ob-bottom-icon">
+                    ★
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Estás a solo un paso de comenzar
+                    </strong>
+
+                    <span>
+
+                        Registra tu primera bodega y empieza
+                        a construir la operación de
+
+                        {{ onboarding_company.name }}.
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="ob-bottom-right">
+
+                <div class="ob-small-benefits">
+
+                    <div class="ob-small-benefit">
+
+                        <strong>
+                            ⚡ Rápido
+                        </strong>
+
+                        <span>
+                            Configuración simple
+                        </span>
+
+                    </div>
+
+
+                    <div class="ob-small-benefit">
+
+                        <strong>
+                            🔒 Seguro
+                        </strong>
+
+                        <span>
+                            Datos aislados
+                        </span>
+
+                    </div>
+
+
+                    <div class="ob-small-benefit">
+
+                        <strong>
+                            ↗ Escalable
+                        </strong>
+
+                        <span>
+                            Crece contigo
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <a
+                    href="{% url 'companies:warehouse_create' %}"
+                    class="ob-start"
+                >
+
+                    🚀 Empezar ahora
+
+                    <span>
+                        →
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="ob-security">
+
+            🔒 La información de
+            {{ onboarding_company.name }}
+            permanece separada de las demás empresas
+            dentro de PAKIVOX.
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<script>
+(function () {
+
+    "use strict";
+
+    const slides = Array.from(
+        document.querySelectorAll(".ob-slide")
+    );
+
+    const dots = Array.from(
+        document.querySelectorAll(".ob-dot")
+    );
+
+    const prev =
+        document.getElementById("obPrev");
+
+    const next =
+        document.getElementById("obNext");
+
+    const stage =
+        document.getElementById("obStage");
+
+
+    if (
+        !slides.length ||
+        !prev ||
+        !next ||
+        !stage
+    ) {
+        return;
+    }
+
+
+    let current = 0;
+
+    let touchStart = 0;
+    let touchEnd = 0;
+
+
+    function normalize(index) {
+
+        const total = slides.length;
+
+        return (
+            (index % total) + total
+        ) % total;
+
+    }
+
+
+    function render() {
+
+        const total = slides.length;
+
+
+        slides.forEach(
+            function (slide, index) {
+
+                slide.classList.remove(
+                    "is-center",
+                    "is-left",
+                    "is-right",
+                    "is-hidden-left",
+                    "is-hidden-right"
+                );
+
+
+                const difference =
+                    (
+                        index -
+                        current +
+                        total
+                    ) % total;
+
+
+                if (difference === 0) {
+
+                    slide.classList.add(
+                        "is-center"
+                    );
+
+                }
+
+                else if (difference === 1) {
+
+                    slide.classList.add(
+                        "is-right"
+                    );
+
+                }
+
+                else if (
+                    difference ===
+                    total - 1
+                ) {
+
+                    slide.classList.add(
+                        "is-left"
+                    );
+
+                }
+
+                else if (
+                    difference <
+                    total / 2
+                ) {
+
+                    slide.classList.add(
+                        "is-hidden-right"
+                    );
+
+                }
+
+                else {
+
+                    slide.classList.add(
+                        "is-hidden-left"
+                    );
+
+                }
+
+            }
+        );
+
+
+        dots.forEach(
+            function (dot, index) {
+
+                dot.classList.toggle(
+                    "active",
+                    index === current
+                );
+
+            }
+        );
+
+    }
+
+
+    function go(index) {
+
+        current =
+            normalize(index);
+
+        render();
+
+    }
+
+
+    prev.addEventListener(
+        "click",
+        function () {
+
+            go(current - 1);
+
+        }
+    );
+
+
+    next.addEventListener(
+        "click",
+        function () {
+
+            go(current + 1);
+
+        }
+    );
+
+
+    dots.forEach(
+        function (dot) {
+
+            dot.addEventListener(
+                "click",
+                function () {
+
+                    go(
+                        Number(
+                            dot.dataset.go
+                        )
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key ===
+                "ArrowLeft"
+            ) {
+
+                go(current - 1);
+
+            }
+
+
+            if (
+                event.key ===
+                "ArrowRight"
+            ) {
+
+                go(current + 1);
+
+            }
+
+        }
+    );
+
+
+    stage.addEventListener(
+        "touchstart",
+        function (event) {
+
+            touchStart =
+                event
+                .changedTouches[0]
+                .screenX;
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    stage.addEventListener(
+        "touchend",
+        function (event) {
+
+            touchEnd =
+                event
+                .changedTouches[0]
+                .screenX;
+
+
+            const difference =
+                touchStart -
+                touchEnd;
+
+
+            if (
+                Math.abs(difference)
+                < 45
+            ) {
+                return;
+            }
+
+
+            if (difference > 0) {
+
+                go(current + 1);
+
+            }
+
+            else {
+
+                go(current - 1);
+
+            }
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    render();
+
+})();
+</script>
+
+{% endblock %}
+<style id="pakivox-brand-v2">
+.pakivox-brand-image { object-fit: cover !important; padding: 0 !important; overflow: hidden !important; }
+</style>

@@ -1,0 +1,135 @@
+﻿<section class="fv3-command">
+
+  <div class="fv3-command-top">
+
+    <div>
+      <span class="fv3-eyebrow">
+        PAKIVOX · FOUNDER NETWORK OPERATIONS CENTER
+      </span>
+
+      <h2>
+        Estado ejecutivo del SaaS
+      </h2>
+
+      <p>
+        Finanzas, clientes, infraestructura y operación crítica desde un solo punto.
+      </p>
+    </div>
+
+
+    {% if founder.system.database.ok and founder.system.shipping_worker.online and not founder.system.shipping_purchases.possible_charge and not founder.system.shipping_events.dead_letter %}
+
+      <span class="fv3-platform-state good">
+        <span class="fv3-state-dot"></span>
+        Plataforma estable
+      </span>
+
+    {% elif not founder.system.database.ok or not founder.system.shipping_worker.online %}
+
+      <span class="fv3-platform-state bad">
+        <span class="fv3-state-dot"></span>
+        Atención crítica
+      </span>
+
+    {% else %}
+
+      <span class="fv3-platform-state warn">
+        <span class="fv3-state-dot"></span>
+        Operación con alertas
+      </span>
+
+    {% endif %}
+
+  </div>
+
+
+  <div class="fv3-kpi-strip">
+
+    <article class="fv3-mini-kpi">
+      <span>MRR</span>
+      <strong>
+        ${{ founder.financial.mrr_contractual|floatformat:2 }}
+      </strong>
+    </article>
+
+
+    <article class="fv3-mini-kpi">
+      <span>ARR</span>
+      <strong>
+        ${{ founder.financial.arr_contractual|floatformat:2 }}
+      </strong>
+    </article>
+
+
+    <article class="fv3-mini-kpi">
+      <span>Empresas activas</span>
+      <strong>
+        {{ founder.portfolio.companies_active }}
+      </strong>
+    </article>
+
+
+    <article class="fv3-mini-kpi">
+      <span>Bodegas</span>
+      <strong>
+        {{ founder.portfolio.warehouses_total }}
+      </strong>
+    </article>
+
+
+    <article class="
+      fv3-mini-kpi
+      {% if founder.system.database.ok %}good{% else %}bad{% endif %}
+    ">
+      <span>PostgreSQL</span>
+
+      <strong>
+        {% if founder.system.database.ok %}
+          {{ founder.system.database.latency_ms }} ms
+        {% else %}
+          DOWN
+        {% endif %}
+      </strong>
+    </article>
+
+
+    <article class="
+      fv3-mini-kpi
+      {% if founder.system.shipping_worker.online %}good{% else %}bad{% endif %}
+    ">
+      <span>Shipping Worker</span>
+
+      <strong>
+        {% if founder.system.shipping_worker.online %}
+          ONLINE
+        {% else %}
+          OFFLINE
+        {% endif %}
+      </strong>
+    </article>
+
+
+    <article class="
+      fv3-mini-kpi
+      {% if founder.system.shipping_purchases.manual_review %}warn{% else %}good{% endif %}
+    ">
+      <span>Guías revisión</span>
+      <strong>
+        {{ founder.system.shipping_purchases.manual_review }}
+      </strong>
+    </article>
+
+
+    <article class="
+      fv3-mini-kpi
+      {% if founder.system.shipping_events.dead_letter %}bad{% else %}good{% endif %}
+    ">
+      <span>Dead Letters</span>
+      <strong>
+        {{ founder.system.shipping_events.dead_letter }}
+      </strong>
+    </article>
+
+  </div>
+
+</section>

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4"><h1 class="h3">Transportistas personalizados</h1><p class="text-muted">Fleteras, mensajerías regionales y operadores sin API.</p>
+<div class="row g-4"><div class="col-lg-5"><div class="card"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Registrar transportista</button></form></div></div></div>
+<div class="col-lg-7"><div class="card"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Estado</th></tr></thead><tbody>{% for carrier in carriers %}<tr><td>{{ carrier.name }}</td><td>{{ carrier.contact_name|default:"—" }} {{ carrier.phone }}</td><td>{% if carrier.is_active %}Activo{% else %}Inactivo{% endif %}</td></tr>{% empty %}<tr><td colspan="3">Aún no hay transportistas.</td></tr>{% endfor %}</tbody></table></div></div></div></div></div>
+{% endblock %}

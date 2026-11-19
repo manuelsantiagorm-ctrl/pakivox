@@ -1,0 +1,778 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Configura PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Configuración inicial
+{% endblock %}
+
+{% block page_subtitle %}
+Completa los pasos esenciales para comenzar a operar.
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+  .setup-page {
+    --setup-panel: #0c192b;
+    --setup-panel-soft: #101f35;
+    --setup-line: rgba(126, 163, 208, 0.15);
+    --setup-text: #f3f8ff;
+    --setup-muted: #8298b3;
+    --setup-blue: #278cff;
+    --setup-cyan: #20d4ce;
+    --setup-green: #2bd99d;
+    --setup-purple: #9064ff;
+
+    width: 100%;
+    display: grid;
+    gap: 20px;
+  }
+
+  .setup-hero {
+    position: relative;
+    overflow: hidden;
+
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 30px;
+
+    padding: 28px 30px;
+
+    border-radius: 21px;
+
+    border: 1px solid rgba(48, 145, 255, 0.18);
+
+    background:
+      radial-gradient(
+        circle at 80% 0%,
+        rgba(133, 80, 255, 0.15),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 10% 0%,
+        rgba(29, 198, 204, 0.1),
+        transparent 35%
+      ),
+      linear-gradient(145deg, rgba(13, 31, 55, 0.98), rgba(7, 19, 34, 0.98));
+  }
+
+  .setup-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 8px;
+
+    color: #55c5ee;
+
+    font-size: 10px;
+    font-weight: 950;
+
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  .setup-eyebrow-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: var(--setup-green);
+
+    box-shadow: 0 0 12px rgba(43, 217, 157, 0.75);
+  }
+
+  .setup-hero h1 {
+    margin: 0;
+
+    color: white;
+
+    font-size: clamp(28px, 3vw, 44px);
+
+    line-height: 1.05;
+
+    font-weight: 950;
+
+    letter-spacing: -1.3px;
+  }
+
+  .setup-company {
+    background: linear-gradient(90deg, #29ddcd, #2d9cff);
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+  }
+
+  .setup-hero p {
+    max-width: 720px;
+
+    margin: 10px 0 0;
+
+    color: #8aa0ba;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+  }
+
+  .setup-progress-card {
+    width: 280px;
+
+    padding: 18px;
+
+    border-radius: 16px;
+
+    background: rgba(5, 17, 31, 0.56);
+
+    border: 1px solid rgba(122, 164, 212, 0.14);
+  }
+
+  .setup-progress-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 11px;
+  }
+
+  .setup-progress-top span {
+    color: #7086a1;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+  }
+
+  .setup-progress-top strong {
+    color: white;
+
+    font-size: 20px;
+  }
+
+  .setup-progress-track {
+    width: 100%;
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .setup-progress-track span {
+    display: block;
+
+    height: 100%;
+
+    border-radius: inherit;
+
+    background: linear-gradient(90deg, #6849ff, #278cff, #22d4c9);
+  }
+
+  .setup-progress-card small {
+    display: block;
+
+    margin-top: 9px;
+
+    color: #667d98;
+
+    font-size: 9px;
+  }
+
+  .setup-layout {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(280px, 340px);
+
+    gap: 18px;
+
+    align-items: start;
+  }
+
+  .setup-panel {
+    padding: 20px;
+
+    border-radius: 18px;
+
+    border: 1px solid var(--setup-line);
+
+    background: linear-gradient(
+      145deg,
+      rgba(13, 29, 50, 0.98),
+      rgba(8, 20, 35, 0.98)
+    );
+  }
+
+  .setup-panel-header {
+    margin-bottom: 16px;
+  }
+
+  .setup-panel-header span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #5d7693;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.8px;
+
+    text-transform: uppercase;
+  }
+
+  .setup-panel-header h2 {
+    margin: 0;
+
+    color: #eef6ff;
+
+    font-size: 17px;
+  }
+
+  .setup-step-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .setup-step {
+    display: grid;
+
+    grid-template-columns:
+      46px
+      minmax(0, 1fr)
+      auto;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 14px;
+
+    border-radius: 14px;
+
+    border: 1px solid rgba(126, 163, 207, 0.11);
+
+    background: rgba(255, 255, 255, 0.021);
+  }
+
+  .setup-step.complete {
+    border-color: rgba(43, 217, 157, 0.17);
+
+    background: rgba(43, 217, 157, 0.03);
+  }
+
+  .setup-step-icon {
+    width: 46px;
+    height: 46px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 13px;
+
+    color: #68b8ff;
+
+    background: rgba(39, 140, 255, 0.08);
+
+    border: 1px solid rgba(39, 140, 255, 0.16);
+
+    font-size: 18px;
+  }
+
+  .setup-step.complete .setup-step-icon {
+    color: #4ce3ae;
+
+    background: rgba(43, 217, 157, 0.07);
+
+    border-color: rgba(43, 217, 157, 0.17);
+  }
+
+  .setup-step-content strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #e7f2ff;
+
+    font-size: 12px;
+  }
+
+  .setup-step-content span {
+    display: block;
+
+    color: #7188a3;
+
+    font-size: 10px;
+
+    line-height: 1.45;
+  }
+
+  .setup-status {
+    min-width: 88px;
+
+    text-align: right;
+  }
+
+  .setup-status-badge {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 5px 8px;
+
+    border-radius: 999px;
+
+    color: #7f95ad;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    font-size: 8.5px;
+
+    font-weight: 900;
+  }
+
+  .setup-step.complete .setup-status-badge {
+    color: #54e8b2;
+
+    background: rgba(43, 217, 157, 0.07);
+  }
+
+  .setup-step-link {
+    display: inline-flex;
+
+    margin-top: 7px;
+
+    color: #66b9ff;
+
+    text-decoration: none;
+
+    font-size: 9px;
+
+    font-weight: 900;
+  }
+
+  .setup-step-link:hover {
+    color: #a4d8ff;
+  }
+
+  .setup-side-stack {
+    display: grid;
+    gap: 18px;
+  }
+
+  .setup-summary {
+    display: grid;
+    gap: 10px;
+  }
+
+  .setup-summary-box {
+    padding: 13px;
+
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.022);
+
+    border: 1px solid rgba(126, 163, 207, 0.1);
+  }
+
+  .setup-summary-box span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #637d99;
+
+    font-size: 9px;
+  }
+
+  .setup-summary-box strong {
+    color: #eaf4ff;
+
+    font-size: 13px;
+  }
+
+  .setup-ready {
+    padding: 18px;
+
+    border-radius: 15px;
+
+    border: 1px solid rgba(43, 217, 157, 0.2);
+
+    background: linear-gradient(
+      145deg,
+      rgba(43, 217, 157, 0.07),
+      rgba(7, 21, 36, 0.96)
+    );
+  }
+
+  .setup-ready-icon {
+    width: 46px;
+    height: 46px;
+
+    display: grid;
+    place-items: center;
+
+    margin-bottom: 11px;
+
+    border-radius: 13px;
+
+    color: #4ee5b0;
+
+    background: rgba(43, 217, 157, 0.08);
+
+    border: 1px solid rgba(43, 217, 157, 0.18);
+
+    font-size: 20px;
+  }
+
+  .setup-ready strong {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: white;
+
+    font-size: 14px;
+  }
+
+  .setup-ready p {
+    margin: 0 0 13px;
+
+    color: #7390aa;
+
+    font-size: 10px;
+
+    line-height: 1.5;
+  }
+
+  .setup-primary-button {
+    width: 100%;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 12px 16px;
+
+    border-radius: 11px;
+
+    color: white;
+
+    text-decoration: none;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    background: linear-gradient(110deg, #6547ff, #2688ff, #1dd4c7);
+  }
+
+  .setup-primary-button:hover {
+    filter: brightness(1.07);
+    color: white;
+  }
+
+  @media (max-width: 980px) {
+    .setup-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .setup-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .setup-progress-card {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .setup-step {
+      grid-template-columns:
+        42px
+        minmax(0, 1fr);
+    }
+
+    .setup-status {
+      grid-column: 2 / 3;
+
+      text-align: left;
+    }
+  }
+  .setup-go-button {
+    min-width: 76px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    padding: 8px 12px;
+
+    border-radius: 9px;
+
+    color: #ffffff !important;
+
+    text-decoration: none !important;
+
+    font-size: 9px;
+
+    font-weight: 950;
+
+    background: linear-gradient(110deg, #2688ff, #20b7e8);
+
+    border: 1px solid rgba(75, 169, 255, 0.28);
+
+    box-shadow: 0 7px 18px rgba(38, 136, 255, 0.12);
+
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .setup-go-button:hover {
+    transform: translateY(-1px);
+
+    filter: brightness(1.08);
+
+    box-shadow: 0 9px 22px rgba(38, 136, 255, 0.18);
+  }
+
+  .setup-go-button span {
+    font-size: 11px;
+
+    transition: transform 0.18s ease;
+  }
+
+  .setup-go-button:hover span {
+    transform: translateX(2px);
+  }
+</style>
+
+<section class="setup-page">
+  <section class="setup-hero">
+    <div>
+      <div class="setup-eyebrow">
+        <span class="setup-eyebrow-dot"></span>
+
+        Puesta en marcha
+      </div>
+
+      <h1>
+        Configura
+
+        <span class="setup-company"> {{ setup_company.name }} </span>
+
+        para comenzar.
+      </h1>
+
+      <p>
+        PAKIVOX revisa automáticamente tu configuración. Completa los pasos
+        esenciales para preparar una operación segura de inventario y almacén.
+      </p>
+    </div>
+
+    <div class="setup-progress-card">
+      <div class="setup-progress-top">
+        <span> Progreso </span>
+
+        <strong> {{ progress_percent }}% </strong>
+      </div>
+
+      <div class="setup-progress-track">
+        <span style="width: {{ progress_percent }}%;"></span>
+      </div>
+
+      <small>
+        {{ essential_completed }} de {{ essential_total }} pasos esenciales
+        completados.
+      </small>
+    </div>
+  </section>
+
+  <section class="setup-layout">
+    <div class="setup-panel">
+      <div class="setup-panel-header">
+        <span> Esenciales </span>
+
+        <h2>Prepara tu operación</h2>
+      </div>
+
+      <div class="setup-step-list">
+    {% for step in essential_steps %}
+
+<article
+    class="setup-step{% if step.complete %} complete{% endif %}"
+>
+
+    <div class="setup-step-icon">
+
+        {% if step.complete %}
+
+            <i class="bi bi-check-lg"></i>
+
+        {% else %}
+
+            <i class="bi {{ step.icon }}"></i>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="setup-step-content">
+
+        <strong>
+            {{ step.title }}
+        </strong>
+
+        <span>
+            {{ step.description }}
+        </span>
+
+    </div>
+
+
+    <div class="setup-status">
+
+        {% if step.complete %}
+
+            <span class="setup-status-badge">
+                ✓ Completado
+            </span>
+
+        {% else %}
+
+            {% if step.url_name %}
+
+                <a
+                    href="{% url step.url_name %}"
+                    class="setup-go-button"
+                >
+                    Ir
+                    <span aria-hidden="true">→</span>
+                </a>
+
+            {% else %}
+
+                <span class="setup-status-badge">
+                    Pendiente
+                </span>
+
+            {% endif %}
+
+        {% endif %}
+
+    </div>
+
+</article>
+
+{% endfor %}    
+    </div>
+    </div>
+
+    <aside class="setup-side-stack">
+      <section class="setup-panel">
+        <div class="setup-panel-header">
+          <span> Recomendados </span>
+
+          <h2>Lleva PAKIVOX más lejos</h2>
+        </div>
+
+        <div class="setup-step-list">
+          {% for step in optional_steps %}
+
+          <article
+            class="setup-step {% if step.complete %} complete {% endif %}"
+          >
+            <div class="setup-step-icon">
+              {% if step.complete %}
+
+              <i class="bi bi-check-lg"></i>
+
+              {% else %}
+
+              <i class="bi {{ step.icon }}"></i>
+
+              {% endif %}
+            </div>
+
+            <div class="setup-step-content">
+              <strong> {{ step.title }} </strong>
+
+              <span> {{ step.description }} </span>
+
+              {% if step.url_name %}
+
+              <a href="{% url step.url_name %}" class="setup-step-link">
+                Configurar →
+              </a>
+
+              {% endif %}
+            </div>
+          </article>
+
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="setup-ready">
+        <div class="setup-ready-icon">
+          {% if ready_to_operate %}
+
+          <i class="bi bi-check-circle"></i>
+
+          {% else %}
+
+          <i class="bi bi-lightning-charge"></i>
+
+          {% endif %}
+        </div>
+
+        {% if ready_to_operate %}
+
+        <strong> PAKIVOX está listo para operar </strong>
+
+        <p>
+          Ya completaste la configuración esencial. Puedes comenzar a trabajar
+          desde el Dashboard.
+        </p>
+
+        <a href="/" class="setup-primary-button"> Ir al Dashboard → </a>
+
+        {% else %}
+
+        <strong> Continúa con la configuración </strong>
+
+        <p>
+          Completa los pasos esenciales para aprovechar correctamente inventario
+          y almacén.
+        </p>
+
+        {% endif %}
+      </section>
+    </aside>
+  </section>
+</section>
+
+{% endblock %}

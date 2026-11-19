@@ -1,0 +1,207 @@
+<section class="founder-section" id="portafolio">
+
+  <div class="founder-section-head">
+
+    <div>
+      <span class="founder-section-number">02</span>
+
+      <div>
+        <h2>Client Portfolio Health</h2>
+
+        <p>
+          Tenancy, consumo, adopción y riesgo futuro de churn.
+        </p>
+      </div>
+    </div>
+
+    <span class="founder-chip warn">
+      Health Score · próxima fase
+    </span>
+
+  </div>
+
+
+  <div class="founder-grid">
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        Empresas registradas
+      </span>
+
+      <strong>
+        {{ founder.portfolio.companies_total }}
+      </strong>
+
+      <small>
+        {{ founder.portfolio.companies_active }} activas ·
+        {{ founder.portfolio.companies_inactive }} inactivas.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        Bodegas
+      </span>
+
+      <strong>
+        {{ founder.portfolio.warehouses_total }}
+      </strong>
+
+      <small>
+        Total global actualmente registrado.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        Usuarios tenant
+      </span>
+
+      <strong>
+        {{ founder.portfolio.tenant_users_total }}
+      </strong>
+
+      <small>
+        Perfiles asociados a empresas cliente.
+      </small>
+
+    </article>
+
+
+    <article class="founder-metric">
+
+      <span class="founder-metric-label">
+        SKUs / variantes
+      </span>
+
+      <strong>
+        {{ founder.portfolio.sku_variants_total }}
+      </strong>
+
+      <small>
+        Consumo agregado del portafolio.
+      </small>
+
+    </article>
+
+  </div>
+
+
+  <div class="owner-card founder-panel">
+
+    <div class="owner-card-header">
+
+      <div>
+        <h2>
+          Portafolio SaaS reciente
+        </h2>
+
+        <p>
+          Vista ejecutiva del consumo por tenant.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="owner-card-body founder-table-wrap">
+
+      <table class="founder-table">
+
+        <thead>
+
+          <tr>
+            <th>Empresa</th>
+            <th>Estado</th>
+            <th>Plan</th>
+            <th>Suscripción</th>
+            <th>Bodegas</th>
+            <th>Usuarios</th>
+            <th>SKUs</th>
+            <th>Health</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          {% for row in founder.portfolio.rows %}
+
+            <tr>
+
+              <td>
+                <strong>{{ row.name }}</strong>
+              </td>
+
+              <td>
+
+                {% if row.is_active %}
+
+                  <span class="founder-chip ok">
+                    Activa
+                  </span>
+
+                {% else %}
+
+                  <span class="founder-chip bad">
+                    Inactiva
+                  </span>
+
+                {% endif %}
+
+              </td>
+
+              <td>
+                {{ row.plan_name }}
+              </td>
+
+              <td>
+                {{ row.subscription_status }}
+              </td>
+
+              <td>
+                {{ row.warehouses }}
+              </td>
+
+              <td>
+                {{ row.users }}
+              </td>
+
+              <td>
+                {{ row.skus }}
+              </td>
+
+              <td>
+                <span class="founder-health-pending">
+                  Por instrumentar
+                </span>
+              </td>
+
+            </tr>
+
+          {% empty %}
+
+            <tr>
+              <td colspan="8">
+                No hay empresas registradas.
+              </td>
+            </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</section>

@@ -1,0 +1,201 @@
+﻿<section class="fv3b-section" id="arquitectura">
+
+  <div class="fv3b-head">
+    <div>
+      <span class="fv3b-kicker">PLATFORM TOPOLOGY</span>
+      <h2>Arquitectura viva de PAKIVOX</h2>
+      <p>
+        Vista ejecutiva de los componentes que mantienen operativa la plataforma.
+      </p>
+    </div>
+
+    <span class="fv3b-head-badge">
+      LIVE ARCHITECTURE
+    </span>
+  </div>
+
+
+  <div class="fv3b-topology">
+
+    <!-- APP -->
+    <article class="fv3b-node fv3b-node-main">
+      <span class="fv3b-node-icon">
+        <i class="bi bi-grid-1x2-fill"></i>
+      </span>
+
+      <div>
+        <small>APPLICATION CORE</small>
+        <strong>PAKIVOX Django</strong>
+        <span class="fv3b-node-status good">
+          ● Online
+        </span>
+      </div>
+    </article>
+
+
+    <div class="fv3b-connector vertical"></div>
+
+
+    <div class="fv3b-topology-row">
+
+      <!-- DB -->
+      <article class="fv3b-node">
+        <span class="fv3b-node-icon">
+          <i class="bi bi-database"></i>
+        </span>
+
+        <div>
+          <small>DATABASE</small>
+          <strong>PostgreSQL</strong>
+
+          {% if founder.system.database.ok %}
+            <span class="fv3b-node-status good">
+              ● {{ founder.system.database.latency_ms }} ms
+            </span>
+          {% else %}
+            <span class="fv3b-node-status bad">
+              ● Sin respuesta
+            </span>
+          {% endif %}
+        </div>
+      </article>
+
+
+      <!-- WORKER -->
+      <article class="fv3b-node">
+        <span class="fv3b-node-icon">
+          <i class="bi bi-cpu-fill"></i>
+        </span>
+
+        <div>
+          <small>BACKGROUND PROCESS</small>
+          <strong>Shipping Worker</strong>
+
+          {% if founder.system.shipping_worker.online %}
+            <span class="fv3b-node-status good">
+              ● Online
+            </span>
+          {% else %}
+            <span class="fv3b-node-status bad">
+              ● Offline
+            </span>
+          {% endif %}
+        </div>
+      </article>
+
+
+      <!-- EVENTS -->
+      <article class="fv3b-node">
+        <span class="fv3b-node-icon">
+          <i class="bi bi-arrow-repeat"></i>
+        </span>
+
+        <div>
+          <small>EVENT ENGINE</small>
+          <strong>Shipping Events</strong>
+
+          {% if founder.system.shipping_events.dead_letter %}
+            <span class="fv3b-node-status bad">
+              ● {{ founder.system.shipping_events.dead_letter }}
+              dead-letter
+            </span>
+          {% else %}
+            <span class="fv3b-node-status good">
+              ● Sin dead-letters
+            </span>
+          {% endif %}
+        </div>
+      </article>
+
+    </div>
+
+
+    <div class="fv3b-connector vertical"></div>
+
+
+    <div class="fv3b-topology-row integrations">
+
+      <article class="fv3b-node unknown">
+        <span class="fv3b-node-icon purple">
+          <i class="bi bi-whatsapp"></i>
+        </span>
+
+        <div>
+          <small>MESSAGING</small>
+          <strong>WhatsApp</strong>
+          <span class="fv3b-node-status unknown">
+            ● Health pendiente
+          </span>
+        </div>
+      </article>
+
+
+      <article class="fv3b-node unknown">
+        <span class="fv3b-node-icon purple">
+          <i class="bi bi-credit-card-fill"></i>
+        </span>
+
+        <div>
+          <small>PAYMENTS</small>
+          <strong>Stripe</strong>
+          <span class="fv3b-node-status unknown">
+            ● Health pendiente
+          </span>
+        </div>
+      </article>
+
+
+      <article class="fv3b-node unknown">
+        <span class="fv3b-node-icon orange">
+          <i class="bi bi-truck"></i>
+        </span>
+
+        <div>
+          <small>SHIPPING PROVIDERS</small>
+          <strong>Carrier APIs</strong>
+          <span class="fv3b-node-status unknown">
+            ● Health pendiente
+          </span>
+        </div>
+      </article>
+
+
+      <article class="fv3b-node unknown">
+        <span class="fv3b-node-icon purple">
+          <i class="bi bi-stars"></i>
+        </span>
+
+        <div>
+          <small>AI</small>
+          <strong>Gemini</strong>
+          <span class="fv3b-node-status unknown">
+            ● Health pendiente
+          </span>
+        </div>
+      </article>
+
+    </div>
+
+  </div>
+
+
+  <div class="fv3b-legend">
+
+    <span>
+      <i class="fv3b-dot good"></i>
+      Salud comprobada
+    </span>
+
+    <span>
+      <i class="fv3b-dot bad"></i>
+      Incidente real
+    </span>
+
+    <span>
+      <i class="fv3b-dot unknown"></i>
+      Sin observabilidad todavía
+    </span>
+
+  </div>
+
+</section>

@@ -1,0 +1,173 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Borradores IA | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Borradores Premium de WhatsApp
+{% endblock %}
+
+{% block page_subtitle %}
+Ofertas generadas desde el Copiloto CEO pendientes de revisión
+{% endblock %}
+
+{% block content %}
+<style>
+  .draft-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .draft-toolbar,
+  .draft-card {
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    background: #0f172a;
+  }
+
+  .draft-toolbar {
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .draft-toolbar h2 {
+    margin: 0;
+    color: #f8fafc;
+  }
+
+  .draft-toolbar p {
+    margin: 5px 0 0;
+    color: #94a3b8;
+  }
+
+  .draft-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .draft-card {
+    padding: 17px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 15px;
+  }
+
+  .draft-card h3 {
+    margin: 0 0 6px;
+    color: #f8fafc;
+  }
+
+  .draft-card p {
+    margin: 7px 0;
+    color: #cbd5e1;
+  }
+
+  .draft-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .draft-status {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #fde68a;
+    background: rgba(245, 158, 11, .16);
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .draft-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 13px;
+    border-radius: 9px;
+    border: 1px solid rgba(56, 189, 248, .35);
+    color: #bae6fd;
+    background: rgba(14, 116, 144, .14);
+    text-decoration: none;
+    font-weight: 900;
+  }
+</style>
+
+<section class="draft-page">
+  <header class="draft-toolbar">
+    <div>
+      <h2>Ofertas preparadas por IA</h2>
+      <p>
+        Ninguno de estos mensajes se envía sin revisión y confirmación.
+      </p>
+    </div>
+
+    <a
+      class="draft-button"
+      href="{% url 'dashboard:ceo_dashboard' %}"
+    >
+      Volver al Dashboard CEO
+    </a>
+  </header>
+
+  <div class="draft-grid">
+    {% for draft in drafts %}
+      <article class="draft-card">
+        <div>
+          <span class="draft-status">
+            {{ draft.get_status_display }}
+          </span>
+
+          <h3>
+            {{ draft.crm_customer.full_name }}
+          </h3>
+
+          <p>
+            {{ draft.message|truncatechars:220 }}
+          </p>
+
+          <div class="draft-meta">
+            <span>
+              Canal:
+              {{ draft.whatsapp_number.channel_name|default:"Sin canal" }}
+            </span>
+
+            <span>
+              Teléfono:
+              {{ draft.messaging_customer.phone|default:"Sin teléfono" }}
+            </span>
+
+            <span>
+              {{ draft.created_at|date:"d/m/Y H:i" }}
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <a
+            class="draft-button"
+            href="{% url 'messaging:ai_offer_draft_detail' draft.pk %}"
+          >
+            Revisar
+          </a>
+        </div>
+      </article>
+    {% empty %}
+      <article class="draft-card">
+        <div>
+          <h3>No hay borradores</h3>
+          <p>
+            Genera una alerta de clientes en riesgo desde el Dashboard CEO.
+          </p>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

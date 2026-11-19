@@ -1,0 +1,509 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Pagos del pedido {{ order.folio }} | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Pagos del pedido {{ order.folio }}
+{% endblock %}
+
+{% block page_subtitle %}
+Historial financiero y registro de pagos por pedido
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/order_chat_widget.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="order-payments-page">
+
+  <div class="top-actions">
+    <a href="{% url 'payments:lista_pagos' %}" class="btn-soft">
+      <i class="bi bi-arrow-left"></i>
+      Volver a pagos
+    </a>
+
+    <a href="{% url 'sales:detalle_pedido' order.id %}" class="btn-soft">
+      Ver pedido
+    </a>
+
+    <a
+      href="{% url 'payments:abrir_chat_flotante_pago' order.id %}"
+      class="btn-whatsapp"
+    >
+      <i class="bi bi-whatsapp"></i>
+      Abrir chat WhatsApp
+    </a>
+  </div>
+
+  <section class="order-summary-grid">
+    <div class="summary-card">
+      <span>Total</span>
+      <strong>${{ order.total|floatformat:2 }}</strong>
+    </div>
+
+    <div class="summary-card success">
+      <span>Pagado</span>
+      <strong>${{ order.amount_paid|floatformat:2 }}</strong>
+    </div>
+
+    <div class="summary-card warning">
+      <span>Saldo</span>
+      <strong>${{ order.balance_due|floatformat:2 }}</strong>
+    </div>
+
+    <div class="summary-card">
+      <span>Estado</span>
+      <strong>{{ order.get_status_display }}</strong>
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Historial de pagos</h3>
+      </div>
+
+      <div class="payment-list">
+        {% for payment in payments %}
+          <div class="payment-row">
+            <div>
+              <strong>{{ payment.folio }}</strong>
+              <small>
+                {{ payment.get_payment_method_display }} ·
+                {{ payment.get_status_display }} ·
+                {{ payment.created_at|date:"d/m/Y H:i" }}
+              </small>
+            </div>
+
+            <div class="payment-row-actions">
+              <strong>${{ payment.amount|floatformat:2 }}</strong>
+              <a href="{% url 'payments:detalle_pago' payment.id %}">
+                Ver
+              </a>
+            </div>
+          </div>
+        {% empty %}
+          <p class="empty-text">
+            Este pedido todavía no tiene pagos registrados.
+          </p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Registrar pago</h3>
+      </div>
+
+      {% if order.status == "cancelled" or order.status == "delivered" %}
+        <div class="locked-box">
+          No puedes registrar pagos en un pedido cancelado o entregado.
+        </div>
+      {% elif order.balance_due <= 0 %}
+        <div class="locked-box success">
+          Este pedido ya está cubierto.
+        </div>
+      {% else %}
+        <form
+          method="post"
+          action="{% url 'payments:registrar_pago' %}"
+          enctype="multipart/form-data"
+          class="payment-form"
+        >
+          {% csrf_token %}
+
+          <input type="hidden" name="order" value="{{ order.id }}" />
+
+          <label>
+            Monto
+            <input
+              type="number"
+              name="amount"
+              step="0.01"
+              min="0.01"
+              max="{{ order.balance_due }}"
+              required
+            />
+          </label>
+
+          <label>
+            Estado inicial
+            <select name="status" required>
+              <option value="pending">Pendiente</option>
+              <option value="under_review">En revisión</option>
+            </select>
+          </label>
+
+          <label>
+            Método
+            <select name="payment_method" required>
+              {% for value, label in method_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>
+            Referencia / ID de transacción
+            <input type="text" name="transaction_id" />
+          </label>
+
+          <label>
+            Comprobante
+            <input type="file" name="proof_file" />
+          </label>
+
+          <label>
+            Notas
+            <textarea name="notes" rows="3"></textarea>
+          </label>
+
+          <button type="submit">
+            Registrar pago
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if chat_conversation %}
+    <aside
+      class="wms-order-chat-widget"
+      id="wmsOrderChatWidget"
+      data-storage-key="wms360_payment_chat_{{ order.id }}_{{ chat_conversation.id }}"
+    >
+      <div class="wms-order-chat-header" id="wmsOrderChatDragHandle">
+        <div>
+          <span class="wms-order-chat-mini-label">
+            WhatsApp conectado
+          </span>
+
+          <h4>
+            {{ chat_conversation.customer.name|default:chat_conversation.customer.phone }}
+          </h4>
+
+          <p>
+            {{ chat_conversation.customer.phone }} ·
+            {{ chat_conversation.whatsapp_number.channel_name }}
+          </p>
+        </div>
+
+        <div class="wms-order-chat-actions">
+          <a
+            href="{% url 'messaging:chat_detail' chat_conversation.pk %}"
+            title="Abrir chat completo"
+          >
+            Abrir
+          </a>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatToggleSize"
+            title="Agrandar / restaurar"
+          >
+            ⛶
+          </button>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatReset"
+            title="Restaurar posición"
+          >
+            ↺
+          </button>
+
+          <button
+            type="button"
+            class="wms-order-chat-action-btn"
+            id="wmsOrderChatMinimize"
+            title="Minimizar"
+          >
+            —
+          </button>
+        </div>
+      </div>
+
+      <div class="wms-order-chat-body">
+        <div class="wms-order-chat-messages" id="wmsOrderChatMessages">
+          {% for chat_message in chat_messages %}
+            <div
+              class="wms-order-chat-bubble {% if chat_message.direction == 'inbound' %}inbound{% elif chat_message.direction == 'outbound' %}outbound{% else %}system{% endif %}"
+            >
+              {{ chat_message.body|default:chat_message.message_type }}
+
+              <small>
+                {% if chat_message.direction == "inbound" %}
+                  Cliente
+                {% elif chat_message.agent %}
+                  {{ chat_message.agent.username }}
+                {% else %}
+                  Sistema
+                {% endif %}
+                · {{ chat_message.created_at|date:"d/m/Y H:i" }}
+              </small>
+            </div>
+          {% empty %}
+            <div class="wms-order-chat-bubble system">
+              Sin mensajes todavía.
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="wms-order-chat-product-box">
+          <div class="wms-order-chat-product-title">
+            <strong>Comprobantes de pago</strong>
+            <small>
+              Usa este chat para revisar capturas de transferencia,
+              referencias bancarias y dudas del cliente.
+            </small>
+          </div>
+        </div>
+                <div class="wms-order-chat-reply">
+          {% if can_reply_whatsapp %}
+            <form
+              method="post"
+              action="{% url 'messaging:chat_reply' chat_conversation.pk %}"
+            >
+              {% csrf_token %}
+              <input
+                type="hidden"
+                name="next"
+                value="{{ chat_return_url }}"
+              />
+              <textarea
+                name="body"
+                rows="3"
+                required
+                placeholder="Escribe una respuesta al cliente..."
+              ></textarea>
+              <button type="submit">
+                Responder desde pagos
+              </button>
+            </form>
+          {% else %}
+            <p class="wms-order-chat-readonly-note">
+              Solo puedes ver esta conversación. No tienes permiso para responder desde aquí.
+            </p>
+          {% endif %}
+        </div>
+
+      <div
+        class="wms-order-chat-resize-handle"
+        id="wmsOrderChatResizeHandle"
+      ></div>
+    </aside>
+
+    <button
+      type="button"
+      class="wms-order-chat-minimized"
+      id="wmsOrderChatMinimized"
+    >
+      <i class="bi bi-whatsapp"></i>
+      WhatsApp
+    </button>
+  {% endif %}
+
+</section>
+
+<style>
+  .order-payments-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-soft,
+  .btn-whatsapp {
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 900;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-soft {
+    background: rgba(56, 189, 248, .12);
+    color: #7dd3fc;
+  }
+
+  .btn-whatsapp {
+    background: linear-gradient(135deg, #25d366, #16a34a);
+    color: #052e16;
+  }
+
+  .order-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .summary-card,
+  .panel {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .summary-card span {
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .summary-card strong {
+    color: #f8fafc;
+    font-size: 26px;
+  }
+
+  .summary-card.success strong {
+    color: #22c55e;
+  }
+
+  .summary-card.warning strong {
+    color: #f59e0b;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1.3fr .8fr;
+    gap: 18px;
+  }
+
+  .panel-header {
+    border-bottom: 1px solid rgba(148, 163, 184, .14);
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .panel-header h3 {
+    color: #f8fafc;
+    margin: 0;
+  }
+
+  .payment-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .payment-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, .75);
+    border: 1px solid rgba(148, 163, 184, .12);
+  }
+
+  .payment-row strong {
+    color: #f8fafc;
+  }
+
+  .payment-row small {
+    display: block;
+    color: #94a3b8;
+    margin-top: 5px;
+  }
+
+  .payment-row-actions {
+    text-align: right;
+    display: grid;
+    gap: 8px;
+  }
+
+  .payment-row-actions a {
+    color: #7dd3fc;
+    text-decoration: none;
+    font-weight: 900;
+  }
+
+  .payment-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .payment-form label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-weight: 800;
+  }
+
+  .payment-form input,
+  .payment-form select,
+  .payment-form textarea {
+    width: 100%;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 12px;
+    padding: 11px 12px;
+  }
+
+  .payment-form button {
+    background: #2563eb;
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .locked-box {
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, .10);
+    border: 1px solid rgba(239, 68, 68, .25);
+    color: #fca5a5;
+    font-weight: 800;
+  }
+
+  .locked-box.success {
+    background: rgba(34, 197, 94, .10);
+    border-color: rgba(34, 197, 94, .25);
+    color: #86efac;
+  }
+
+  .empty-text {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1100px) {
+    .order-summary-grid,
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .payment-row {
+      display: grid;
+    }
+
+    .payment-row-actions {
+      text-align: left;
+    }
+  }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/order_chat_widget.js' %}"></script>
+{% endblock %}

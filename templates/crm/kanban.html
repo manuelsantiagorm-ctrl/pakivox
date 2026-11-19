@@ -1,0 +1,350 @@
+﻿{% extends "base.html" %}
+{% load crm_extras %}
+
+{% block title %}Kanban CRM | PAKIVOX{% endblock %}
+
+{% block page_title %}CRM Kanban{% endblock %}
+
+{% block page_subtitle %}
+Pipeline comercial premium con forecast, drag & drop y métricas ejecutivas
+{% endblock %}
+
+{% block content %}
+
+<div id="toast" class="toast-wms">
+    <strong>Oportunidad actualizada</strong>
+    <span id="toast-message">La etapa cambió correctamente.</span>
+</div>
+
+<div id="deal-modal" class="deal-modal-overlay">
+    <div id="deal-modal-content"></div>
+</div>
+
+<section class="kpi-grid crm-premium-kpis">
+    <div class="kpi-card">
+        <span>Pipeline</span>
+        <strong>${{ pipeline_total|floatformat:0 }}</strong>
+        <small>Total de oportunidades abiertas</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Forecast</span>
+        <strong>${{ forecast|floatformat:0 }}</strong>
+        <small>Valor ponderado por probabilidad</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Ganados</span>
+        <strong>${{ won_total|floatformat:0 }}</strong>
+        <small>Ingresos cerrados</small>
+    </div>
+
+    <div class="kpi-card">
+        <span>Conversión</span>
+        <strong>{{ conversion }}%</strong>
+        <small>Tasa general de cierre</small>
+    </div>
+</section>
+
+<section class="crm-command-row">
+    <div class="panel crm-mini-chart-panel">
+        <div class="crm-mini-chart-header">
+            <div>
+                <h3>Pipeline por etapa</h3>
+                <p>Monto estimado por etapa comercial</p>
+            </div>
+        </div>
+
+        <div class="crm-chart-shell">
+            <canvas id="crmPipelineChart"></canvas>
+        </div>
+    </div>
+</section>
+
+{{ chart_stage_labels|json_script:"chart-stage-labels" }}
+{{ chart_stage_amounts|json_script:"chart-stage-amounts" }}
+
+<form
+    method="get"
+    class="crm-filter-bar"
+    id="crmFilterForm"
+    hx-get="{% url 'crm_kanban' %}"
+    hx-target="#kanban-board-shell"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-trigger="keyup changed delay:400ms from:input, change from:select, submit"
+>
+    <div class="crm-filter-main">
+        <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            placeholder="Buscar oportunidad, cliente, correo o teléfono..."
+            class="crm-search-input"
+        >
+    </div>
+
+    <select name="stage" class="crm-filter-select">
+        <option value="">Todas las etapas</option>
+        {% for stage in stages %}
+            <option value="{{ stage.id }}" {% if stage_filter == stage.id|stringformat:"s" %}selected{% endif %}>
+                {{ stage.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="assigned_to" class="crm-filter-select">
+        <option value="">Todos los ejecutivos</option>
+        {% for executive in executives %}
+            <option value="{{ executive.id }}" {% if assigned_filter == executive.id|stringformat:"s" %}selected{% endif %}>
+                {{ executive.username }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="probability" class="crm-filter-select">
+        <option value="">Cualquier probabilidad</option>
+        <option value="25" {% if probability_filter == "25" %}selected{% endif %}>25% o más</option>
+        <option value="50" {% if probability_filter == "50" %}selected{% endif %}>50% o más</option>
+        <option value="75" {% if probability_filter == "75" %}selected{% endif %}>75% o más</option>
+    </select>
+
+    <button type="submit" class="btn btn-sm btn-primary">
+        Filtrar
+    </button>
+
+    <a href="{% url 'crm_kanban' %}" class="btn btn-sm btn-outline-light">
+        Limpiar
+    </a>
+</form>
+
+<div class="kanban-toolbar premium-toolbar">
+    <div>
+        <a href="/crm/" class="btn btn-sm btn-outline-light">Volver al CRM</a>
+    </div>
+
+    <div>
+        <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            hx-get="{% url 'create_deal_modal' %}"
+            hx-target="#deal-modal-content"
+            hx-swap="innerHTML"
+            onclick="openDealModal()"
+        >
+            Nueva oportunidad
+        </button>
+
+        {% if request.user.is_staff %}
+        <a href="/admin/crm/pipelinestage/add/" class="btn btn-sm btn-outline-light">
+            Nueva etapa
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div id="kanban-board-shell">
+    {% include "crm/partials/kanban_board.html" %}
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = "{{ csrf_token }}";
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toast-message");
+    const chartCanvas = document.getElementById("crmPipelineChart");
+
+    window.openDealModal = function () {
+        document.getElementById("deal-modal").classList.add("show");
+    };
+
+    window.closeDealModal = function () {
+        document.getElementById("deal-modal").classList.remove("show");
+    };
+
+    window.showToast = function (message) {
+        toastMessage.innerText = message;
+        toast.classList.add("show");
+
+        setTimeout(function () {
+            toast.classList.remove("show");
+        }, 4000);
+    };
+
+    window.markWon = function (id) {
+        fetch(`/crm/deal/${id}/won/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+            },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                showToast("Oportunidad marcada como ganada: $" + data.amount);
+                closeDealModal();
+                refreshKanbanBoard();
+            }
+        });
+    };
+
+    window.markLost = function (id) {
+        fetch(`/crm/deal/${id}/lost/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+            },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                showToast("Oportunidad marcada como perdida: $" + data.amount);
+                closeDealModal();
+                refreshKanbanBoard();
+            }
+        });
+    };
+
+    function initKanbanDragDrop() {
+        document.querySelectorAll(".kanban-dropzone").forEach(function (zone) {
+            if (zone.dataset.sortableReady === "true") {
+                return;
+            }
+
+            zone.dataset.sortableReady = "true";
+
+            new Sortable(zone, {
+                group: "crm-kanban",
+                animation: 220,
+                ghostClass: "deal-ghost",
+
+                onAdd: function (event) {
+                    const dealId = event.item.dataset.dealId;
+                    const stageId = event.to.dataset.stageId;
+                    const stageName = event.to.dataset.stageName;
+
+                    fetch("{% url 'update_deal_stage' %}", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": csrfToken,
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: new URLSearchParams({
+                            "deal_id": dealId,
+                            "stage_id": stageId,
+                        }),
+                    })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            showToast("Movida a: " + stageName);
+                            refreshKanbanBoard();
+                        } else {
+                            alert("No se pudo actualizar la oportunidad.");
+                        }
+                    })
+                    .catch(() => {
+                        alert("Error al actualizar la oportunidad.");
+                    });
+                },
+            });
+        });
+    }
+
+    function refreshKanbanBoard() {
+        fetch(window.location.href, {
+            headers: {
+                "HX-Request": "true",
+            },
+        })
+        .then((response) => response.text())
+        .then((html) => {
+            const boardShell = document.getElementById("kanban-board-shell");
+
+            if (boardShell) {
+                boardShell.innerHTML = html;
+                initKanbanDragDrop();
+            }
+        });
+    }
+
+    window.refreshKanbanBoard = refreshKanbanBoard;
+
+    initKanbanDragDrop();
+
+    document.body.addEventListener("htmx:afterSwap", function () {
+        initKanbanDragDrop();
+    });
+
+    document.body.addEventListener("dealUpdated", function () {
+        refreshKanbanBoard();
+        showToast("Oportunidad actualizada correctamente");
+    });
+
+    if (chartCanvas) {
+        const labels = JSON.parse(
+            document.getElementById("chart-stage-labels").textContent || "[]"
+        );
+
+        const amounts = JSON.parse(
+            document.getElementById("chart-stage-amounts").textContent || "[]"
+        );
+
+        new Chart(chartCanvas, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Monto por etapa",
+                        data: amounts,
+                        backgroundColor: "rgba(34, 197, 94, 0.65)",
+                        borderColor: "rgba(74, 222, 128, 1)",
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barThickness: 18,
+                    },
+                ],
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return "$" + Number(context.raw).toLocaleString("es-MX");
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "#94a3b8",
+                            callback: function (value) {
+                                return "$" + Number(value).toLocaleString("es-MX");
+                            },
+                        },
+                        grid: {
+                            color: "rgba(255, 255, 255, 0.06)",
+                        },
+                    },
+                    y: {
+                        ticks: {
+                            color: "#cbd5e1",
+                        },
+                        grid: {
+                            display: false,
+                        },
+                    },
+                },
+            },
+        });
+    }
+});
+</script>
+{% endblock %}

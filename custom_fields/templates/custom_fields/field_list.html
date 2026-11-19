@@ -1,0 +1,327 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Campos personalizados | PAKIVOX{% endblock %}
+{% block page_title %}Campos personalizados{% endblock %}
+{% block page_subtitle %}
+    Adapta Clientes a las necesidades de {{ company.name }}
+{% endblock %}
+
+{% block content %}
+<section class="cf-page">
+
+    <header class="cf-hero">
+        <div class="cf-hero-info">
+            <span>Configuración / Clientes</span>
+            <h2>Campos personalizados</h2>
+            <p>
+                Cada campo pertenece únicamente a
+                <strong>{{ company.name }}</strong>.
+            </p>
+        </div>
+
+        <div class="cf-hero-actions">
+            <button type="button"
+                    class="cf-btn cf-btn-secondary"
+                    onclick="regresarCamposPersonalizados()">
+                ← Regresar
+            </button>
+
+            <a href="{% url 'custom_fields:field_create' %}"
+               class="cf-btn cf-btn-primary">
+                + Crear campo
+            </a>
+        </div>
+    </header>
+
+    <div class="cf-card">
+        {% for field in fields %}
+            <article class="cf-field">
+                <div class="cf-field-info">
+                    <strong>{{ field.name }}</strong>
+
+                    <small>
+                        {{ field.get_field_type_display }}
+                        ·
+                        {% if field.required %}
+                            Obligatorio
+                        {% else %}
+                            Opcional
+                        {% endif %}
+                    </small>
+                </div>
+
+                <div class="cf-badges">
+                    {% if field.allow_import %}
+                        <span>Excel</span>
+                    {% endif %}
+
+                    <span class="{% if not field.is_active %}off{% endif %}">
+                        {% if field.is_active %}
+                            Activo
+                        {% else %}
+                            Inactivo
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="cf-actions">
+                    <a href="{% url 'custom_fields:field_edit' field.pk %}"
+                       class="cf-action-edit">
+                        Editar
+                    </a>
+
+                    <form method="post"
+                          action="{% url 'custom_fields:field_toggle' field.pk %}">
+                        {% csrf_token %}
+
+                        <button type="submit" class="cf-action-toggle">
+                            {% if field.is_active %}
+                                Desactivar
+                            {% else %}
+                                Activar
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </article>
+
+        {% empty %}
+            <div class="cf-empty">
+                <h3>Aún no hay campos personalizados</h3>
+
+                <p>
+                    Crea “Municipio”, “Ruta de reparto” o cualquier
+                    dato propio de tu operación.
+                </p>
+
+                <a href="{% url 'custom_fields:field_create' %}"
+                   class="cf-btn cf-btn-primary">
+                    + Crear primer campo
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+<script>
+    function regresarCamposPersonalizados() {
+        if (window.opener && !window.opener.closed) {
+            window.opener.focus();
+            window.close();
+            return;
+        }
+
+        window.location.href = document.referrer || "/importaciones/proveedores/";
+    }
+</script>
+
+<style>
+    .cf-page {
+        display: grid;
+        gap: 16px;
+    }
+
+    .cf-hero,
+    .cf-card {
+        background: #0f172a;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 18px;
+    }
+
+    .cf-hero {
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .cf-hero-info > span {
+        color: #67e8f9;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .cf-hero h2 {
+        color: #f8fafc;
+        margin: 7px 0;
+    }
+
+    .cf-hero p {
+        color: #94a3b8;
+        margin: 0;
+    }
+
+    .cf-hero p strong {
+        color: #cbd5e1;
+    }
+
+    .cf-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .cf-btn,
+    .cf-actions a,
+    .cf-actions button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #ffffff;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.2;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+            transform 0.15s ease,
+            background-color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .cf-btn:hover,
+    .cf-actions a:hover,
+    .cf-actions button:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .cf-btn-primary,
+    .cf-action-edit {
+        background: #0891b2;
+    }
+
+    .cf-btn-primary:hover,
+    .cf-action-edit:hover {
+        background: #0e7490;
+    }
+
+    .cf-btn-secondary {
+        background: #334155;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    .cf-btn-secondary:hover {
+        background: #475569;
+    }
+
+    .cf-card {
+        padding: 12px;
+    }
+
+    .cf-field {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 14px;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .cf-field:last-child {
+        border-bottom: 0;
+    }
+
+    .cf-field-info strong,
+    .cf-empty h3 {
+        display: block;
+        color: #f8fafc;
+    }
+
+    .cf-field-info small,
+    .cf-empty p {
+        color: #94a3b8;
+    }
+
+    .cf-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .cf-badges span {
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(34, 211, 238, 0.12);
+        color: #67e8f9;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .cf-badges span.off {
+        background: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+    }
+
+    .cf-actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .cf-actions form {
+        margin: 0;
+    }
+
+    .cf-actions .cf-action-toggle {
+        background: #334155;
+    }
+
+    .cf-actions .cf-action-toggle:hover {
+        background: #475569;
+    }
+
+    .cf-empty {
+        padding: 38px;
+        text-align: center;
+    }
+
+    .cf-empty h3 {
+        margin: 0 0 8px;
+    }
+
+    .cf-empty p {
+        margin: 0 0 18px;
+    }
+
+    @media (max-width: 750px) {
+        .cf-hero {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cf-hero-actions {
+            width: 100%;
+        }
+
+        .cf-hero-actions .cf-btn {
+            flex: 1;
+        }
+
+        .cf-field {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cf-actions {
+            width: 100%;
+        }
+
+        .cf-actions a,
+        .cf-actions form,
+        .cf-actions button {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

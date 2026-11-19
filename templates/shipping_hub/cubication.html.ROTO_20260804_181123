@@ -1,0 +1,1673 @@
+{% extends "base.html" %} 
+{% block title %} 
+Mesa de Cubicación | WMS360 
+{%endblock %} 
+{% block page_title %} 
+Shipping Hub 
+{% endblock %}
+{% block page_subtitle %}
+Cubicación, origen, destino y preparación de cotización 
+{%endblock %} 
+{% block content %}
+
+<style>
+  /* =========================================================
+     PÁGINA
+  ========================================================= */
+
+  .cube-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+  }
+
+  .cube-page *,
+  .cube-page *::before,
+  .cube-page *::after {
+    box-sizing: border-box;
+  }
+
+  .cube-page h1,
+  .cube-page h2,
+  .cube-page h3,
+  .cube-page p {
+    margin: 0;
+  }
+
+  .cube-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #38bdf8;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* =========================================================
+     ERROR FATAL
+  ========================================================= */
+
+  .cube-fatal {
+    padding: 24px;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 16px;
+    background: rgba(127, 29, 29, 0.18);
+    color: #fecaca;
+  }
+
+  .cube-fatal strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+  }
+
+  .cube-fatal p {
+    margin-bottom: 16px;
+    color: #fca5a5;
+  }
+
+  .cube-fatal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    background: #ef4444;
+    color: #ffffff;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  /* =========================================================
+     HERO
+  ========================================================= */
+
+  .cube-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 24px;
+    border: 1px solid rgba(71, 85, 105, 0.42);
+    border-radius: 16px;
+    background: linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.98),
+      rgba(15, 23, 42, 0.82)
+    );
+  }
+
+  .cube-hero h1 {
+    color: #f8fafc;
+    font-size: clamp(1.45rem, 2vw, 2rem);
+    font-weight: 850;
+  }
+
+  .cube-hero p {
+    margin-top: 8px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .cube-status {
+    flex-shrink: 0;
+    padding: 8px 13px;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  /* =========================================================
+     DIRECCIONES
+  ========================================================= */
+
+  .address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .address-card {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid rgba(71, 85, 105, 0.42);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .address-card h2 {
+    color: #f8fafc;
+    font-size: 1.3rem;
+    font-weight: 820;
+  }
+
+  .address-card strong {
+    display: block;
+    margin-top: 8px;
+    color: #e2e8f0;
+    font-size: 0.88rem;
+  }
+
+  .address-card p {
+    margin-top: 7px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .address-card small {
+    display: block;
+    margin-top: 12px;
+    color: #64748b;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  /* =========================================================
+     FORMULARIO
+  ========================================================= */
+
+  .cube-form,
+  .quote-section,
+  .selected-shipping-rate {
+    padding: 22px;
+    border: 1px solid rgba(71, 85, 105, 0.42);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .cube-section-header,
+  .quote-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .cube-section-header h2,
+  .quote-section-header h2 {
+    color: #f8fafc;
+    font-size: 1.35rem;
+    font-weight: 820;
+  }
+
+  .cube-section-header p,
+  .quote-section-header p {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.82rem;
+  }
+
+  .cube-add-button,
+  .save-cube-button,
+  .quote-button,
+  .quote-select-button,
+  .generate-label-button,
+  .open-label-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 17px;
+    border: 0;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 850;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease,
+      opacity 0.18s ease;
+  }
+
+  .cube-add-button,
+  .quote-button,
+  .quote-select-button,
+  .open-label-button {
+    background: #38bdf8;
+    color: #02131f;
+  }
+
+  .save-cube-button,
+  .generate-label-button {
+    background: #22c55e;
+    color: #03130a;
+  }
+
+  .cube-add-button:hover,
+  .save-cube-button:hover,
+  .quote-button:hover,
+  .quote-select-button:hover,
+  .generate-label-button:hover,
+  .open-label-button:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .generate-label-button:disabled,
+  .quote-button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.45);
+    opacity: 0.48;
+    transform: none;
+  }
+
+  .cube-form-errors,
+  .package-errors {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(239, 68, 68, 0.38);
+    border-radius: 10px;
+    background: rgba(127, 29, 29, 0.18);
+    color: #fca5a5;
+    font-size: 0.78rem;
+  }
+
+  /* =========================================================
+     BULTOS
+  ========================================================= */
+
+  .package-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .package-card {
+    padding: 17px;
+    border: 1px solid rgba(51, 65, 85, 0.72);
+    border-radius: 13px;
+    background: rgba(2, 6, 23, 0.52);
+  }
+
+  .package-card.is-deleted {
+    display: none;
+  }
+
+  .package-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .package-heading h3 {
+    color: #f8fafc;
+    font-size: 1.05rem;
+    font-weight: 820;
+  }
+
+  .remove-package-button {
+    min-height: 36px;
+    padding: 0 13px;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 9px;
+    background: rgba(127, 29, 29, 0.18);
+    color: #fca5a5;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .package-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .package-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .package-full {
+    grid-column: 1 / -1;
+  }
+
+  .package-field > span {
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .package-field input,
+  .package-field select,
+  .package-field textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid rgba(51, 65, 85, 0.9);
+    border-radius: 8px;
+    outline: none;
+    background: rgba(2, 6, 23, 0.84);
+    color: #f8fafc;
+    font-family: inherit;
+    font-size: 0.78rem;
+  }
+
+  .package-field input:focus,
+  .package-field select:focus,
+  .package-field textarea:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+  }
+
+  .input-unit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    border: 1px solid rgba(51, 65, 85, 0.9);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(2, 6, 23, 0.84);
+  }
+
+  .input-unit input {
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .input-unit input:focus {
+    box-shadow: none;
+  }
+
+  .input-unit b {
+    padding: 0 10px;
+    color: #64748b;
+    font-size: 0.68rem;
+  }
+
+  .package-field .errorlist {
+    margin: 0;
+    padding: 0;
+    color: #fca5a5;
+    font-size: 0.7rem;
+    list-style: none;
+  }
+
+  .delete-field {
+    display: none;
+  }
+
+  /* =========================================================
+     RESUMEN
+  ========================================================= */
+
+  .cube-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .cube-summary article {
+    padding: 14px;
+    border: 1px solid rgba(51, 65, 85, 0.55);
+    border-radius: 11px;
+    background: rgba(2, 6, 23, 0.65);
+  }
+
+  .cube-summary span {
+    display: block;
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 0.68rem;
+  }
+
+  .cube-summary strong {
+    color: #f8fafc;
+    font-size: 0.92rem;
+  }
+
+  /* =========================================================
+     ACCIONES
+  ========================================================= */
+
+  .cube-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 17px;
+  }
+
+  .provider-note {
+    margin-right: auto;
+    color: #64748b;
+    font-size: 0.74rem;
+  }
+
+  .provider-note strong {
+    color: #cbd5e1;
+  }
+
+  /* =========================================================
+     COTIZACIONES
+  ========================================================= */
+
+  .quote-count {
+    padding: 7px 11px;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #7dd3fc;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .quote-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .quote-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid rgba(51, 65, 85, 0.72);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.64);
+  }
+
+  .quote-card-selected {
+    border-color: rgba(34, 197, 94, 0.65);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.08);
+  }
+
+  .quote-card-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .quote-card-heading strong {
+    color: #f8fafc;
+    font-size: 0.86rem;
+  }
+
+  .quote-card-heading span {
+    color: #64748b;
+    font-size: 0.62rem;
+    font-weight: 800;
+  }
+
+  .quote-service {
+    margin-top: 6px !important;
+    color: #94a3b8;
+    font-size: 0.75rem;
+  }
+
+  .quote-card h3 {
+    margin-top: 14px;
+    color: #22c55e;
+    font-size: 1.35rem;
+    font-weight: 850;
+  }
+
+  .quote-delivery {
+    min-height: 33px;
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 0.72rem;
+  }
+
+  .quote-select-form {
+    margin-top: auto;
+    padding-top: 13px;
+  }
+
+  .quote-select-button,
+  .quote-selected-button {
+    width: 100%;
+  }
+
+  .quote-selected-button {
+    min-height: 42px;
+    border: 1px solid rgba(34, 197, 94, 0.22);
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.13);
+    color: #86efac;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 850;
+  }
+
+  /* =========================================================
+     TARIFA SELECCIONADA
+  ========================================================= */
+
+  .selected-shipping-rate {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto
+      minmax(220px, auto);
+    align-items: center;
+    gap: 22px;
+    border-color: rgba(34, 197, 94, 0.35);
+    background: linear-gradient(
+      135deg,
+      rgba(20, 83, 45, 0.17),
+      rgba(15, 23, 42, 0.92)
+    );
+  }
+
+  .selected-rate-info h2 {
+    color: #f8fafc;
+    font-size: 1.25rem;
+  }
+
+  .selected-rate-info p {
+    margin-top: 5px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+  }
+
+  .selected-rate-info small {
+    display: block;
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 0.72rem;
+  }
+
+  .selected-rate-price {
+    text-align: right;
+  }
+
+  .selected-rate-price strong {
+    display: block;
+    color: #22c55e;
+    font-size: 1.65rem;
+    font-weight: 900;
+  }
+
+  .selected-rate-price span {
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 800;
+  }
+
+  .selected-rate-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+  }
+
+  .label-ready-badge,
+  .label-processing-badge {
+    display: inline-flex;
+    justify-content: center;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-size: 0.73rem;
+    font-weight: 850;
+  }
+
+  .label-ready-badge {
+    border: 1px solid rgba(34, 197, 94, 0.34);
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+  }
+
+  .label-processing-badge {
+    border: 1px solid rgba(245, 158, 11, 0.34);
+    background: rgba(245, 158, 11, 0.11);
+    color: #fcd34d;
+  }
+
+  .tracking-number {
+    color: #e2e8f0;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .label-block-reason {
+    color: #fca5a5;
+    font-size: 0.7rem;
+    line-height: 1.45;
+  }
+  /* =========================================================
+     MÉTODOS ALTERNATIVOS DE ENVÍO
+  ========================================================= */
+
+  .shipping-methods {
+    padding: 22px;
+    border: 1px solid rgba(71, 85, 105, 0.42);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .shipping-methods-header {
+    margin-bottom: 16px;
+  }
+
+  .shipping-methods-header h2 {
+    color: #f8fafc;
+    font-size: 1.35rem;
+    font-weight: 820;
+  }
+
+  .shipping-methods-header p {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.82rem;
+  }
+
+  .shipping-method-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .shipping-method-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 17px;
+    border: 1px solid rgba(51, 65, 85, 0.72);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.64);
+  }
+
+  .shipping-method-card h3 {
+    color: #f8fafc;
+    font-size: 0.95rem;
+    font-weight: 820;
+  }
+
+  .shipping-method-card p {
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .shipping-method-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 850;
+    text-decoration: none;
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  .shipping-method-button:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .shipping-method-external {
+    background: #2563eb;
+  }
+
+  .shipping-method-local {
+    background: #7c3aed;
+  }
+
+  .shipping-method-active {
+    border-color: rgba(34, 197, 94, 0.42);
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  .shipping-method-badge {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border: 1px solid rgba(34, 197, 94, 0.34);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .shipping-method-tracking {
+    display: block;
+    margin-top: 6px;
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
+  .shipping-method-download {
+    display: inline-flex;
+    margin-top: 9px;
+    color: #7dd3fc;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  @media (max-width: 820px) {
+    .shipping-method-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .shipping-methods {
+      padding: 16px;
+    }
+
+    .shipping-method-card {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .shipping-method-button {
+      width: 100%;
+    }
+
+    .shipping-method-badge {
+      align-self: flex-start;
+    }
+  }
+  /* =========================================================
+     RESPONSIVE
+  ========================================================= */
+
+  @media (max-width: 1100px) {
+    .quote-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .selected-shipping-rate {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .selected-rate-actions {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .address-grid,
+    .cube-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .package-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .quote-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .cube-hero,
+    .cube-section-header,
+    .quote-section-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .cube-status {
+      align-self: flex-start;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .cube-hero,
+    .address-card,
+    .cube-form,
+    .quote-section,
+    .selected-shipping-rate {
+      padding: 16px;
+    }
+
+    .package-grid,
+    .selected-shipping-rate {
+      grid-template-columns: 1fr;
+    }
+
+    .package-full {
+      grid-column: auto;
+    }
+
+    .selected-rate-price {
+      text-align: left;
+    }
+
+    .cube-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .provider-note {
+      margin-right: 0;
+    }
+
+    .save-cube-button,
+    .quote-button {
+      width: 100%;
+    }
+  }
+</style>
+
+<section class="cube-page">
+  {% if fatal_error %}
+
+  <div class="cube-fatal">
+    <strong> No se puede preparar este envío </strong>
+
+    <p>{{ fatal_error }}</p>
+
+    <a href="{% url 'shipping_hub:integrations_list' %}">
+      Volver a Shipping Hub
+    </a>
+  </div>
+
+  {% else %}
+
+  <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
+
+  <header class="cube-hero">
+    <div>
+      <span class="cube-eyebrow"> WMS360 SHIPPING HUB </span>
+
+      <h1>Mesa de Cubicación</h1>
+
+      <p>
+        Pedido {{ shipping_order.order.folio }} · Envío #{{ shipping_order.id }}
+      </p>
+    </div>
+
+    <span class="cube-status"> {{ shipping_order.get_status_display }} </span>
+  </header>
+
+  <!-- =====================================================
+         ORIGEN Y DESTINO
+    ====================================================== -->
+
+  <section class="address-grid">
+    <article class="address-card">
+      <span class="cube-eyebrow"> ORIGEN AUTOMÁTICO </span>
+
+      <h2>{{ origin_data.label|default:"Bodega de origen" }}</h2>
+
+      <strong> {{ origin_data.contact_name }} </strong>
+
+      <p>{{ origin_data.complete_address }}</p>
+
+      <small>
+        {{ origin_data.phone }} {% if origin_data.email %} · {{
+        origin_data.email }} {% endif %}
+      </small>
+    </article>
+
+    <article class="address-card">
+      <span class="cube-eyebrow"> DESTINO DEL PEDIDO </span>
+
+      <h2>{{ destination_data.label|default:"Dirección de entrega" }}</h2>
+
+      <strong> {{ destination_data.contact_name }} </strong>
+
+      <p>{{ destination_data.complete_address }}</p>
+
+      <small>
+        {{ destination_data.phone }} {% if destination_data.email %} · {{
+        destination_data.email }} {% endif %}
+      </small>
+    </article>
+  </section>
+  <!-- =====================================================
+         MÉTODOS ALTERNATIVOS DE ENVÍO
+    ====================================================== -->
+
+  <section class="shipping-methods">
+    <div class="shipping-methods-header">
+      <span class="cube-eyebrow"> MÉTODO DE ENVÍO </span>
+
+      <h2>Opciones de preparación</h2>
+
+      <p>
+        Puedes cotizar automáticamente, registrar una guía comprada externamente
+        o utilizar entrega propia.
+      </p>
+    </div>
+
+    <div class="shipping-method-grid">
+      {% if carrier_shipment.source == "external" %}
+
+      <article class="shipping-method-card shipping-method-active">
+        <div>
+          <h3>Guía externa registrada</h3>
+
+          <p>{{ carrier_shipment.carrier_name }}</p>
+
+          <strong class="shipping-method-tracking">
+            Guía: {{ carrier_shipment.master_tracking_number }}
+          </strong>
+
+          {% if carrier_shipment.request_data.external_label_storage_name %}
+
+          <a
+            href="{% url 'shipping_hub:shipping_external_label_download' shipping_order.id %}"
+            class="shipping-method-download"
+          >
+            Descargar etiqueta PDF
+          </a>
+
+          {% endif %}
+        </div>
+
+        <span class="shipping-method-badge"> ✓ Registrada </span>
+      </article>
+
+      {% elif carrier_shipment.source == "local" %}
+
+      <article class="shipping-method-card shipping-method-active">
+        <div>
+          <h3>Entrega propia configurada</h3>
+
+          <p>{{ carrier_shipment.carrier_name }}</p>
+        </div>
+
+        <span class="shipping-method-badge"> ✓ Lista </span>
+      </article>
+
+      {% elif carrier_shipment.status == "draft" or carrier_shipment.status ==
+      "failed" %}
+
+      <article class="shipping-method-card">
+        <div>
+          <h3>Comprar por fuera</h3>
+
+          <p>
+            Compra directamente con la paquetería y registra aquí el tracking y
+            la etiqueta.
+          </p>
+        </div>
+
+        <a
+          href="{% url 'shipping_hub:shipping_external_label' shipping_order.id %}"
+          class="shipping-method-button shipping-method-external"
+        >
+          Registrar guía
+        </a>
+      </article>
+
+      <article class="shipping-method-card">
+        <div>
+          <h3>Conectar mi propia API</h3>
+
+          <p>
+            Usa la cuenta, contrato y saldo de tu empresa. WMS360 nunca cobra la
+            guía en su cuenta maestra.
+          </p>
+        </div>
+
+        <a
+          href="{% url 'shipping_hub:integrations_list' %}"
+          class="shipping-method-button shipping-method-external"
+        >
+          Configurar API
+        </a>
+      </article>
+
+      <article class="shipping-method-card">
+        <div>
+          <h3>Entrega propia/local</h3>
+
+          <p>
+            Prepara el pedido para repartidor propio, recolección o entrega
+            directa.
+          </p>
+        </div>
+
+        <a
+          href="{% url 'shipping_hub:shipping_local_delivery' shipping_order.id %}"
+          class="shipping-method-button shipping-method-local"
+        >
+          Configurar entrega
+        </a>
+      </article>
+
+      {% else %}
+
+      <article class="shipping-method-card shipping-method-active">
+        <div>
+          <h3>Método automático activo</h3>
+
+          <p>El envío ya tiene una tarifa, guía o proceso logístico activo.</p>
+        </div>
+
+        <span class="shipping-method-badge">
+          {{ carrier_shipment.get_status_display }}
+        </span>
+      </article>
+
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- =====================================================
+         FORMULARIO DE BULTOS
+    ====================================================== -->
+
+  <form method="post" id="cubicationForm" class="cube-form">
+    {% csrf_token %} {{ formset.management_form }} {% if formset.non_form_errors
+    %}
+
+    <div class="cube-form-errors">{{ formset.non_form_errors }}</div>
+
+    {% endif %}
+
+    <div class="cube-section-header">
+      <div>
+        <span class="cube-eyebrow"> BULTOS </span>
+
+        <h2>Paquetes del envío</h2>
+
+        <p>Captura peso en kilogramos y medidas en centímetros.</p>
+      </div>
+
+      <button type="button" id="addPackageButton" class="cube-add-button">
+        + Agregar bulto
+      </button>
+    </div>
+
+    <div id="packageForms" class="package-list">
+      {% for form in formset %}
+
+      <article class="package-card">
+        {% for hidden_field in form.hidden_fields %} {{ hidden_field }} {%
+        endfor %}
+
+        <div class="package-heading">
+          <div>
+            <span class="cube-eyebrow"> BULTO </span>
+
+            <h3>
+              Paquete
+              <span class="package-number"> {{ forloop.counter }} </span>
+            </h3>
+          </div>
+
+          <button type="button" class="remove-package-button">Eliminar</button>
+        </div>
+
+        {% if form.non_field_errors %}
+
+        <div class="package-errors">{{ form.non_field_errors }}</div>
+
+        {% endif %}
+
+        <div class="package-grid">
+          <label class="package-field package-full">
+            <span> Contenido </span>
+
+            {{ form.description }} {{ form.description.errors }}
+          </label>
+
+          <label class="package-field">
+            <span> Peso </span>
+
+            <div class="input-unit">
+              {{ form.weight_kg }}
+              <b>kg</b>
+            </div>
+
+            {{ form.weight_kg.errors }}
+          </label>
+
+          <label class="package-field">
+            <span> Largo </span>
+
+            <div class="input-unit">
+              {{ form.length_cm }}
+              <b>cm</b>
+            </div>
+
+            {{ form.length_cm.errors }}
+          </label>
+
+          <label class="package-field">
+            <span> Ancho </span>
+
+            <div class="input-unit">
+              {{ form.width_cm }}
+              <b>cm</b>
+            </div>
+
+            {{ form.width_cm.errors }}
+          </label>
+
+          <label class="package-field">
+            <span> Alto </span>
+
+            <div class="input-unit">
+              {{ form.height_cm }}
+              <b>cm</b>
+            </div>
+
+            {{ form.height_cm.errors }}
+          </label>
+        </div>
+
+        <div class="delete-field">{{ form.DELETE }}</div>
+      </article>
+
+      {% empty %}
+
+      <div class="cube-form-errors">
+        No existe ningún formulario de bulto disponible.
+      </div>
+
+      {% endfor %}
+    </div>
+
+    <!-- ===================================================
+           PLANTILLA JAVASCRIPT
+      ==================================================== -->
+
+    <template id="emptyPackageTemplate">
+      <article class="package-card">
+        {% for hidden_field in formset.empty_form.hidden_fields %} {{
+        hidden_field }} {% endfor %}
+
+        <div class="package-heading">
+          <div>
+            <span class="cube-eyebrow"> BULTO </span>
+
+            <h3>
+              Paquete
+              <span class="package-number"></span>
+            </h3>
+          </div>
+
+          <button type="button" class="remove-package-button">Eliminar</button>
+        </div>
+
+        <div class="package-grid">
+          <label class="package-field package-full">
+            <span> Contenido </span>
+
+            {{ formset.empty_form.description }}
+          </label>
+
+          <label class="package-field">
+            <span> Peso </span>
+
+            <div class="input-unit">
+              {{ formset.empty_form.weight_kg }}
+              <b>kg</b>
+            </div>
+          </label>
+
+          <label class="package-field">
+            <span> Largo </span>
+
+            <div class="input-unit">
+              {{ formset.empty_form.length_cm }}
+              <b>cm</b>
+            </div>
+          </label>
+
+          <label class="package-field">
+            <span> Ancho </span>
+
+            <div class="input-unit">
+              {{ formset.empty_form.width_cm }}
+              <b>cm</b>
+            </div>
+          </label>
+
+          <label class="package-field">
+            <span> Alto </span>
+
+            <div class="input-unit">
+              {{ formset.empty_form.height_cm }}
+              <b>cm</b>
+            </div>
+          </label>
+        </div>
+
+        <div class="delete-field">{{ formset.empty_form.DELETE }}</div>
+      </article>
+    </template>
+
+    <!-- ===================================================
+           RESUMEN
+      ==================================================== -->
+
+    <section class="cube-summary">
+      <article>
+        <span> Bultos guardados </span>
+
+        <strong> {{ package_count }} </strong>
+      </article>
+
+      <article>
+        <span> Peso total </span>
+
+        <strong> {{ total_weight|floatformat:3 }} kg </strong>
+      </article>
+
+      <article>
+        <span> Volumen total </span>
+
+        <strong> {{ total_volume_m3|floatformat:4 }} m³ </strong>
+      </article>
+    </section>
+
+    <!-- ===================================================
+           ACCIONES
+      ==================================================== -->
+
+    <div class="cube-actions">
+      {% if shipping_integration %}
+
+      <span class="provider-note">
+        Proveedor activo:
+        <strong> {{ shipping_integration.get_provider_display }} </strong>
+
+        · {{ shipping_integration.get_account_mode_display }}
+      </span>
+
+      {% endif %}
+
+      <button type="submit" class="save-cube-button">Guardar cubicación</button>
+
+      {% if can_quote %}
+
+      <button
+        type="submit"
+        class="quote-button"
+        formaction="{% url 'shipping_hub:shipping_quote_rates' shipping_order.id %}"
+        formmethod="post"
+        formnovalidate
+        onclick="
+          return confirm(
+            'Se guardará la cubicación y se solicitarán tarifas al proveedor logístico activo. ¿Continuar?',
+          );
+        "
+      >
+        Cotizar envío
+      </button>
+
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- =====================================================
+         COTIZACIONES
+    ====================================================== -->
+
+  {% if quotes %}
+
+  <section class="quote-section">
+    <div class="quote-section-header">
+      <div>
+        <span class="cube-eyebrow"> TARIFAS </span>
+
+        <h2>Comparador de precios</h2>
+
+        <p>
+          Precios informativos para comparar. Consultar o seleccionar una tarifa
+          no compra una guía ni modifica el total del pedido.
+        </p>
+      </div>
+
+      <span class="quote-count"> {{ quotes|length }} opción(es) </span>
+    </div>
+
+    <div class="quote-grid">
+      {% for quote in quotes %}
+
+      <article
+        class="quote-card{% if quote.is_selected %} quote-card-selected{% endif %}"
+      >
+        <div class="quote-card-heading">
+          <strong> {{ quote.carrier_name }} </strong>
+
+          <small>{{ quote.get_provider_display }}</small>
+
+          <span> {{ quote.currency }} </span>
+        </div>
+
+        <p class="quote-service">{{ quote.service_name }}</p>
+
+        <h3>${{ quote.amount|floatformat:2 }}</h3>
+
+        <div class="quote-delivery">
+          {% if quote.estimated_delivery_text %}
+
+          <small> Entrega estimada: {{ quote.estimated_delivery_text }} </small>
+
+          {% elif quote.estimated_delivery_days %}
+
+          <small>
+            Entrega estimada: {{ quote.estimated_delivery_days }} día(s)
+          </small>
+
+          {% else %}
+
+          <small> Tiempo de entrega no especificado </small>
+
+          {% endif %}
+        </div>
+        <form
+          method="post"
+          action="{% url 'shipping_hub:shipping_quote_select' shipping_order.id quote.id %}"
+          class="quote-select-form"
+          data-quote-select-form
+        >
+          {% csrf_token %} {% if quote.is_selected %}
+          <button type="button" class="quote-selected-button" disabled>
+            ✓ Tarifa de referencia
+          </button>
+          {% else %}
+          <button
+            type="submit"
+            class="quote-select-button"
+            data-quote-select-button
+          >
+            Usar como referencia
+          </button>
+          {% endif %}
+        </form>
+      </article>
+
+      {% endfor %}
+    </div>
+  </section>
+
+  {% endif %}
+
+  <!-- =====================================================
+         TARIFA SELECCIONADA
+    ====================================================== -->
+
+  {% if carrier_shipment.selected_quote %}
+
+  <section class="selected-shipping-rate">
+    <div class="selected-rate-info">
+      <span class="cube-eyebrow"> TARIFA DE REFERENCIA </span>
+
+      <h2>{{ carrier_shipment.carrier_name }}</h2>
+
+      <p>{{ carrier_shipment.service_name }}</p>
+
+      {% if carrier_shipment.selected_quote.estimated_delivery_text %}
+
+      <small>
+        Entrega estimada: {{
+        carrier_shipment.selected_quote.estimated_delivery_text }}
+      </small>
+
+      {% elif carrier_shipment.selected_quote.estimated_delivery_days %}
+
+      <small>
+        Entrega estimada: {{
+        carrier_shipment.selected_quote.estimated_delivery_days }} día(s)
+      </small>
+
+      {% endif %}
+    </div>
+
+    <div class="selected-rate-price">
+      <strong> ${{ carrier_shipment.total_cost|floatformat:2 }} </strong>
+
+      <span> {{ carrier_shipment.currency }} </span>
+    </div>
+
+    <div class="selected-rate-actions">
+      {% if carrier_shipment.status == "label_ready" %}
+
+      <span class="label-ready-badge"> ✓ Guía generada </span>
+
+      {% if primary_package.label_url %}
+
+      <a
+        href="{{ primary_package.label_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="open-label-button"
+      >
+        Abrir etiqueta
+      </a>
+
+      {% endif %} {% if carrier_shipment.master_tracking_number %}
+
+      <strong class="tracking-number">
+        Tracking: {{ carrier_shipment.master_tracking_number }}
+      </strong>
+
+      {% endif %} {% elif carrier_shipment.status == "generating" or
+      carrier_shipment.status == "reconciling" %}
+
+      <span class="label-processing-badge">
+        Guía en proceso o conciliación
+      </span>
+
+      {% elif uses_company_api %}
+
+      <form
+        method="post"
+        action="{% url 'shipping_hub:shipping_generate_label' shipping_order.id %}"
+        onsubmit="
+          if (
+            !confirm(
+              'Esta compra se cargará exclusivamente a la cuenta logística conectada por tu empresa. ¿Confirmas que deseas continuar?',
+            )
+          )
+            return false;
+          this.querySelector('button[type=submit]').disabled = true;
+          return true;
+        "
+      >
+        {% csrf_token %}
+
+        <input
+          type="hidden"
+          name="purchase_confirmation"
+          value="{{ purchase_confirmation_token }}"
+        />
+
+        <button
+          type="submit"
+          class="generate-label-button"
+          {%
+          if
+          not
+          can_generate_label
+          %}
+          disabled
+          {%
+          endif
+          %}
+        >
+          Comprar guía y generar PDF
+        </button>
+      </form>
+
+      {% if label_generation_block_reason %}
+
+      <small class="label-block-reason">
+        {{ label_generation_block_reason }}
+      </small>
+
+      {% endif %} {% else %}
+
+      <span class="label-processing-badge"> Cotización informativa </span>
+
+      <small class="label-block-reason">
+        Compra la guía directamente con la paquetería y regístrala en WMS360, o
+        conecta la API propia de tu empresa.
+      </small>
+
+      {% endif %}
+    </div>
+  </section>
+
+  {% endif %} 
+  {% endif %}
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const packageContainer = document.getElementById("packageForms");
+
+    const addPackageButton = document.getElementById("addPackageButton");
+
+    const emptyPackageTemplate = document.getElementById(
+      "emptyPackageTemplate",
+    );
+
+    const totalFormsInput = document.querySelector(
+      'input[name$="-TOTAL_FORMS"]',
+    );
+
+    if (
+      !packageContainer ||
+      !addPackageButton ||
+      !emptyPackageTemplate ||
+      !totalFormsInput
+    ) {
+      return;
+    }
+
+    function getVisiblePackageCards() {
+      return Array.from(
+        packageContainer.querySelectorAll(".package-card"),
+      ).filter(function (card) {
+        return !card.classList.contains("is-deleted");
+      });
+    }
+
+    function updatePackageNumbers() {
+      const cards = getVisiblePackageCards();
+
+      cards.forEach(function (card, index) {
+        const numberElement = card.querySelector(".package-number");
+
+        if (numberElement) {
+          numberElement.textContent = String(index + 1);
+        }
+      });
+    }
+
+    function markPackageAsDeleted(card) {
+      const deleteInput = card.querySelector('input[name$="-DELETE"]');
+
+      if (deleteInput) {
+        deleteInput.checked = true;
+        card.classList.add("is-deleted");
+      } else {
+        card.remove();
+      }
+
+      updatePackageNumbers();
+    }
+
+    function registerRemoveButton(card) {
+      const removeButton = card.querySelector(".remove-package-button");
+
+      if (!removeButton) {
+        return;
+      }
+
+      removeButton.addEventListener("click", function () {
+        const visibleCards = getVisiblePackageCards();
+
+        if (visibleCards.length <= 1) {
+          window.alert("El envío debe conservar al menos un bulto.");
+
+          return;
+        }
+
+        markPackageAsDeleted(card);
+      });
+    }
+
+    packageContainer.querySelectorAll(".package-card").forEach(function (card) {
+      registerRemoveButton(card);
+    });
+
+    addPackageButton.addEventListener("click", function () {
+      const formIndex = Number(totalFormsInput.value);
+
+      const newFormHtml = emptyPackageTemplate.innerHTML.replace(
+        /__prefix__/g,
+        String(formIndex),
+      );
+
+      const temporaryContainer = document.createElement("div");
+
+      temporaryContainer.innerHTML = newFormHtml.trim();
+
+      const newCard = temporaryContainer.firstElementChild;
+
+      if (!newCard) {
+        return;
+      }
+
+      packageContainer.appendChild(newCard);
+
+      totalFormsInput.value = String(formIndex + 1);
+
+      registerRemoveButton(newCard);
+
+      updatePackageNumbers();
+
+      const firstInput = newCard.querySelector("input, textarea, select");
+
+      if (firstInput) {
+        firstInput.focus();
+      }
+    });
+
+    updatePackageNumbers();
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .querySelectorAll("[data-quote-select-form]")
+      .forEach(function (form) {
+        form.addEventListener("submit", function () {
+          const button = form.querySelector(
+            "[data-quote-select-button]"
+          );
+
+          if (!button || button.disabled) {
+            return;
+          }
+
+          button.disabled = true;
+          button.textContent = "Seleccionando tarifa...";
+        });
+      });
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,43 @@
+﻿{% extends "base.html" %}
+{% block title %}Duplicados de proveedores | PAKIVOX{% endblock %}
+{% block page_title %}Resolver proveedores duplicados{% endblock %}
+{% block page_subtitle %}Decide qué hacer con cada coincidencia antes de importar{% endblock %}
+{% block content %}
+<section style="display:grid;gap:18px;">
+  <div style="padding:22px;border-radius:18px;background:#0f172a;border:1px solid rgba(148,163,184,.18);">
+    <h2 style="margin:0;color:#f8fafc;">{{ job.folio }}</h2>
+    <p style="color:#94a3b8;margin:8px 0 0;">Las coincidencias se buscaron únicamente dentro de {{ company.name }}.</p>
+  </div>
+  <form method="post" action="{% url 'data_imports:save_supplier_duplicates' job.pk %}" style="display:grid;gap:14px;">
+    {% csrf_token %}
+    {% for row in rows %}
+      <article style="padding:18px;border-radius:16px;background:#0f172a;border:1px solid rgba(148,163,184,.18);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <small style="color:#38bdf8;">FILA {{ row.row_number }} DEL ARCHIVO</small>
+            <h3 style="color:#f8fafc;">{{ row.normalized_data.supplier.name }}</h3>
+            <p style="color:#cbd5e1;">RFC: {{ row.normalized_data.supplier.rfc|default:"—" }} · {{ row.normalized_data.supplier.email|default:"Sin correo" }}</p>
+          </div>
+          <div>
+            <small style="color:#f59e0b;">PROVEEDOR EXISTENTE</small>
+            <h3 style="color:#f8fafc;">{{ row.duplicate_match_data.name }}</h3>
+            <p style="color:#cbd5e1;">RFC: {{ row.duplicate_match_data.rfc|default:"—" }} · {{ row.duplicate_match_data.email|default:"Sin correo" }}</p>
+          </div>
+        </div>
+        <select name="resolution_{{ row.pk }}" required style="width:100%;padding:12px;border-radius:10px;background:#020617;color:#f8fafc;border:1px solid #334155;">
+          <option value="">Selecciona una decisión</option>
+          <option value="skip" {% if row.duplicate_resolution == "skip" %}selected{% endif %}>Mantener existente y omitir esta fila</option>
+          <option value="update_address" {% if row.duplicate_resolution == "update_address" %}selected{% endif %}>Actualizar el proveedor existente</option>
+          <option value="create_new" {% if row.duplicate_resolution == "create_new" %}selected{% endif %}>Crear como proveedor independiente</option>
+        </select>
+      </article>
+    {% empty %}
+      <div style="padding:24px;background:#0f172a;color:#94a3b8;border-radius:16px;">No hay duplicados pendientes.</div>
+    {% endfor %}
+    <div style="display:flex;justify-content:space-between;gap:12px;">
+      <a href="{% url 'data_imports:job_detail' job.pk %}" style="color:#e2e8f0;padding:12px;">Volver al análisis</a>
+      {% if rows %}<button type="submit" style="border:0;border-radius:12px;padding:13px 18px;background:#22c55e;color:#052e16;font-weight:900;">Guardar decisiones</button>{% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

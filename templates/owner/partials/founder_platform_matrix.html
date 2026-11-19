@@ -1,0 +1,254 @@
+﻿<section class="fv3-section" id="platform-matrix">
+
+  <div class="fv3-section-head">
+
+    <div>
+      <h2>Platform & Integration Matrix</h2>
+
+      <p>
+        Salud conocida de componentes internos y proveedores externos.
+      </p>
+    </div>
+
+    <span class="fv3-badge">
+      LIVE / OBSERVABILITY
+    </span>
+
+  </div>
+
+
+  <div class="fv3-matrix">
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-globe2"></i>
+      </span>
+
+      <div>
+        <small>Django</small>
+        <strong>Aplicación respondiendo</strong>
+      </div>
+
+      <span class="fv3-light good"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-database"></i>
+      </span>
+
+      <div>
+        <small>PostgreSQL</small>
+
+        <strong>
+          {% if founder.system.database.ok %}
+            {{ founder.system.database.latency_ms }} ms
+          {% else %}
+            Sin respuesta
+          {% endif %}
+        </strong>
+      </div>
+
+      <span class="
+        fv3-light
+        {% if founder.system.database.ok %}good{% else %}bad{% endif %}
+      "></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-cpu"></i>
+      </span>
+
+      <div>
+        <small>Shipping Worker</small>
+        <strong>{{ founder.system.shipping_worker.status }}</strong>
+      </div>
+
+      <span class="
+        fv3-light
+        {% if founder.system.shipping_worker.online %}good{% else %}bad{% endif %}
+      "></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-heart-pulse"></i>
+      </span>
+
+      <div>
+        <small>Worker Heartbeat</small>
+
+        <strong>
+          {% if founder.system.shipping_worker.age_seconds != None %}
+            {{ founder.system.shipping_worker.age_seconds }} s
+          {% else %}
+            No disponible
+          {% endif %}
+        </strong>
+      </div>
+
+      <span class="
+        fv3-light
+        {% if founder.system.shipping_worker.online %}good{% else %}warn{% endif %}
+      "></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-inboxes"></i>
+      </span>
+
+      <div>
+        <small>Shipping Events</small>
+
+        <strong>
+          Dead letter:
+          {{ founder.system.shipping_events.dead_letter }}
+        </strong>
+      </div>
+
+      <span class="
+        fv3-light
+        {% if founder.system.shipping_events.dead_letter %}bad{% else %}good{% endif %}
+      "></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-whatsapp"></i>
+      </span>
+
+      <div>
+        <small>WhatsApp</small>
+        <strong>{{ whatsapp_consumption }} mensajes / mes</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-credit-card"></i>
+      </span>
+
+      <div>
+        <small>Stripe</small>
+        <strong>Health check pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-truck"></i>
+      </span>
+
+      <div>
+        <small>Shipping Providers</small>
+        <strong>Health check pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-stars"></i>
+      </span>
+
+      <div>
+        <small>IA / Gemini</small>
+        <strong>Health check pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-memory"></i>
+      </span>
+
+      <div>
+        <small>Redis / Cache</small>
+        <strong>Observabilidad pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-envelope"></i>
+      </span>
+
+      <div>
+        <small>Email / SMTP</small>
+        <strong>Health check pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+
+    <article class="fv3-service">
+
+      <span class="fv3-service-icon">
+        <i class="bi bi-cloud"></i>
+      </span>
+
+      <div>
+        <small>Storage</small>
+        <strong>Observabilidad pendiente</strong>
+      </div>
+
+      <span class="fv3-light unknown"></span>
+
+    </article>
+
+  </div>
+
+
+  <div class="fv3-note">
+
+    Gris significa que PAKIVOX todavía no tiene un health-check real para
+    ese servicio. No se marca verde únicamente porque exista una configuración.
+
+  </div>
+
+</section>

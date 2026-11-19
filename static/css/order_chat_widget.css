@@ -1,0 +1,783 @@
+/* ============================================================
+   PAKIVOX - WhatsApp flotante en detalle de pedido
+   Archivo: static/sales/css/order_chat_widget.css
+============================================================ */
+
+.wms-order-chat-widget {
+    position: fixed;
+    top: 96px;
+    right: 24px;
+    width: 460px;
+    height: min(700px, calc(100vh - 125px));
+    z-index: 9998;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) 18px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #020617;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    box-shadow:
+        0 26px 90px rgba(0, 0, 0, 0.62),
+        0 0 0 1px rgba(34, 197, 94, 0.08);
+}
+
+.wms-order-chat-widget.is-large {
+    width: min(880px, calc(100vw - 48px));
+    height: min(780px, calc(100vh - 48px));
+}
+
+.wms-order-chat-widget.is-dragging {
+    user-select: none;
+    cursor: grabbing;
+}
+
+.wms-order-chat-header {
+    padding: 14px 16px;
+    background:
+        linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(15, 23, 42, 1)),
+        #0f172a;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: grab;
+}
+
+.wms-order-chat-header h4 {
+    color: #f8fafc;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.wms-order-chat-header p {
+    color: #94a3b8;
+    margin: 4px 0 0;
+    font-size: 12px;
+}
+
+.wms-order-chat-mini-label {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+    font-size: 11px;
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.wms-order-chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wms-order-chat-actions a {
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 900;
+    text-decoration: none;
+    padding: 7px 9px;
+    border-radius: 10px;
+    background: rgba(2, 6, 23, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.wms-order-chat-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(2, 6, 23, 0.72);
+    color: #e2e8f0;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.wms-order-chat-actions a:hover,
+.wms-order-chat-action-btn:hover {
+    background: rgba(34, 197, 94, 0.16);
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.28);
+}
+
+.wms-order-chat-body {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    background: #020617;
+}
+
+.wms-order-chat-messages {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.wms-order-chat-messages::-webkit-scrollbar,
+.wms-chat-product-picker-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wms-order-chat-messages::-webkit-scrollbar-thumb,
+.wms-chat-product-picker-list::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+}
+
+.wms-order-chat-bubble {
+    max-width: 82%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    color: #f8fafc;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
+.wms-order-chat-bubble.inbound {
+    align-self: flex-start;
+    background: #1e293b;
+}
+
+.wms-order-chat-bubble.outbound {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.wms-order-chat-bubble.system {
+    align-self: center;
+    background: rgba(59, 130, 246, 0.16);
+    color: #bfdbfe;
+}
+
+.wms-order-chat-bubble small {
+    display: block;
+    margin-top: 5px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 10px;
+}
+
+.wms-order-chat-product-box {
+    padding: 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    background:
+        radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 40%),
+        #020617;
+}
+
+.wms-order-chat-product-title {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+}
+
+.wms-order-chat-product-title strong {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.wms-order-chat-product-title small {
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.wms-order-chat-product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.wms-order-chat-product-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.wms-chat-product-picker-button {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(34, 197, 94, 0.78);
+    background: #020617;
+    color: #f8fafc;
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    text-align: left;
+}
+
+.wms-chat-product-picker-button:hover {
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.wms-order-chat-product-grid {
+    display: grid;
+    grid-template-columns: 0.75fr 1fr;
+    gap: 8px;
+}
+
+.wms-order-chat-product-form input {
+    width: 100%;
+    min-height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #020617;
+    color: #f8fafc;
+    padding: 8px 10px;
+    font-size: 12px;
+    outline: none;
+}
+
+.wms-order-chat-product-form input:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.wms-order-chat-product-form button[type="submit"] {
+    width: 100%;
+    min-height: 40px;
+    border: 0;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 950;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(34, 197, 94, 0.22);
+}
+
+.wms-order-chat-product-form button[type="submit"]:hover {
+    filter: brightness(1.08);
+}
+
+.wms-order-chat-reply {
+    padding: 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+    background: #0f172a;
+}
+
+.wms-order-chat-reply textarea {
+    width: 100%;
+    min-height: 70px;
+    max-height: 160px;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 13px;
+    padding: 10px;
+    resize: vertical;
+    outline: none;
+}
+
+.wms-order-chat-reply textarea:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.wms-order-chat-reply button {
+    margin-top: 9px;
+    width: 100%;
+    border: 0;
+    border-radius: 13px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.wms-order-chat-resize-handle {
+    position: relative;
+    cursor: nwse-resize;
+    background: #020617;
+}
+
+.wms-order-chat-resize-handle::after {
+    content: "";
+    position: absolute;
+    right: 8px;
+    bottom: 7px;
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid rgba(148, 163, 184, 0.75);
+    border-bottom: 2px solid rgba(148, 163, 184, 0.75);
+    border-radius: 2px;
+}
+
+.wms-order-chat-minimized {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9999;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: white;
+    border-radius: 999px;
+    padding: 12px 16px;
+    font-weight: 900;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    display: none;
+    gap: 8px;
+    align-items: center;
+}
+
+.wms-order-chat-minimized.is-open {
+    display: inline-flex;
+}
+
+/* ============================================================
+   PAKIVOX - Product Picker Premium Chat Modal
+============================================================ */
+
+.wms-chat-product-modal[hidden] {
+    display: none !important;
+}
+
+.wms-chat-product-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.wms-chat-product-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(8px);
+}
+
+.wms-chat-product-panel {
+    position: relative;
+    z-index: 2;
+    width: min(980px, calc(100vw - 48px));
+    max-height: min(720px, calc(100vh - 70px));
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    background:
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 36%),
+        #0f172a;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 24px;
+    box-shadow: 0 32px 90px rgba(0, 0, 0, 0.65);
+}
+
+.wms-chat-product-head {
+    padding: 24px 24px 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.wms-chat-product-head span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+}
+
+.wms-chat-product-head h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 26px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+}
+
+.wms-chat-product-head p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.wms-chat-product-close {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(2, 6, 23, 0.7);
+    color: #e5e7eb;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.wms-chat-product-close:hover {
+    border-color: rgba(248, 113, 113, 0.55);
+    color: #fecaca;
+}
+
+.wms-chat-product-search {
+    margin: 18px 24px 14px;
+    position: relative;
+}
+
+.wms-chat-product-search i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #93c5fd;
+    font-size: 18px;
+}
+
+.wms-chat-product-search input {
+    width: 100%;
+    height: 48px;
+    background: rgba(2, 6, 23, 0.92);
+    border: 1px solid rgba(34, 197, 94, 0.65);
+    color: #f8fafc;
+    border-radius: 16px;
+    padding: 0 16px 0 46px;
+    outline: none;
+    font-size: 15px;
+    font-weight: 850;
+}
+
+.wms-chat-product-search input:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+.wms-chat-product-group-head {
+    padding: 0 24px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wms-chat-product-group-head strong {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.wms-chat-product-group-head small {
+    color: #93c5fd;
+    font-weight: 950;
+}
+
+.wms-chat-product-grid {
+    padding: 0 24px 24px;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.wms-chat-product-grid::-webkit-scrollbar {
+    width: 9px;
+}
+
+.wms-chat-product-grid::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+}
+
+.wms-chat-product-option {
+    width: 100%;
+    min-height: 150px;
+    text-align: left;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 22px;
+    background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.78));
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    cursor: pointer;
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease;
+}
+
+.wms-chat-product-option:hover {
+    transform: translateY(-2px);
+    border-color: rgba(34, 197, 94, 0.65);
+    box-shadow: 0 20px 38px rgba(0, 0, 0, 0.32);
+    background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 35%),
+        #111827;
+}
+
+.wms-chat-product-option[hidden] {
+    display: none !important;
+}
+
+.wms-chat-product-img {
+    width: 120px;
+    height: 120px;
+    background: #f8fafc;
+    border-radius: 18px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+}
+
+.wms-chat-product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wms-chat-product-img-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+    color: #0f172a;
+    font-size: 34px;
+}
+
+.wms-chat-product-info {
+    min-width: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.wms-chat-product-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.wms-chat-product-top strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 950;
+}
+
+.wms-chat-product-top h4 {
+    margin: 4px 0 0;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.wms-chat-product-stock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 950;
+    text-align: center;
+}
+
+.wms-chat-product-stock.danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+}
+
+.wms-chat-product-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.wms-chat-product-tags span {
+    display: inline-flex;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.wms-chat-volume-chip,
+.wms-chat-unit-chip {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.wms-chat-volume-chip {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #facc15;
+}
+
+.wms-chat-unit-chip {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #bfdbfe;
+}
+
+.wms-chat-product-bottom {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.wms-chat-product-bottom small {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.wms-chat-product-prices {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.wms-chat-product-prices span {
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fde68a;
+    border-radius: 999px;
+    padding: 4px 7px;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.wms-chat-product-prices b {
+    color: #f8fafc;
+    font-size: 20px;
+    font-weight: 950;
+}
+
+.wms-chat-product-empty,
+.wms-chat-product-empty-static {
+    margin: 0 24px 24px;
+    border: 1px dashed rgba(148, 163, 184, 0.28);
+    border-radius: 18px;
+    padding: 22px;
+    text-align: center;
+    color: #94a3b8;
+    font-weight: 850;
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+    .wms-chat-product-panel {
+        width: calc(100vw - 24px);
+        max-height: calc(100vh - 24px);
+        border-radius: 20px;
+    }
+
+    .wms-chat-product-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wms-chat-product-option {
+        grid-template-columns: 92px 1fr;
+    }
+
+    .wms-chat-product-img {
+        width: 92px;
+        height: 92px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wms-order-chat-widget {
+        top: 82px;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto;
+        height: min(680px, calc(100vh - 105px));
+    }
+
+    .wms-order-chat-product-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wms-chat-product-option.out-of-stock {
+    opacity: 0.68;
+    cursor: not-allowed;
+}
+
+.wms-chat-product-stock.warning {
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.14);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.wms-chat-product-panel .unlocated-stock-panel {
+    margin: 0 18px 14px;
+}
+
+
+/* AF-MC-V5: aviso inline del selector del chat. */
+.wms-chat-product-option .unlocated-inline-wrap {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+}
+
+.wms-chat-product-option .unlocated-inline-card {
+    position: static;
+    inset: auto;
+    transform: none;
+}
+
+
+/* ============================================================
+   PAKIVOX - reduced motion contract
+============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    .wms-order-chat-widget,
+    .wms-order-chat-widget *,
+    .wms-order-chat-minimized,
+    .wms-chat-product-modal,
+    .wms-chat-product-modal * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}

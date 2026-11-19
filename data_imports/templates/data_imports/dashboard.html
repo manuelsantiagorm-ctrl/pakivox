@@ -1,0 +1,2037 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Centro de importaciones | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Centro de importaciones
+{% endblock %}
+
+{% block page_subtitle %}
+Migra, valida y actualiza información de tu operación de forma segura
+{% endblock %}
+
+{% block content %}
+
+<section class="import-page">
+
+  <!-- =========================================================
+       CENTRO DE IMPORTACIONES
+  ========================================================== -->
+
+  <section class="import-command-center">
+
+    <!-- =======================================================
+         COLUMNA IZQUIERDA
+    ======================================================== -->
+
+    <div class="import-intro">
+
+      <span class="import-eyebrow">
+        <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+        Migración de información
+      </span>
+
+      <h2>
+        Importa tus datos a PAKIVOX
+      </h2>
+
+      <p class="import-intro-description">
+        Centraliza la carga de clientes, productos, proveedores
+        e inventario desde archivos Excel o CSV sin capturar
+        registro por registro.
+      </p>
+
+
+      <!-- =====================================================
+           PASOS
+      ====================================================== -->
+
+      <div class="import-process">
+
+        <article class="process-step">
+
+          <span class="process-number">
+            01
+          </span>
+
+          <div>
+            <strong>
+              Elige qué deseas importar
+            </strong>
+
+            <p>
+              Selecciona clientes, productos, proveedores
+              o inventario por bodega.
+            </p>
+          </div>
+
+        </article>
+
+
+        <article class="process-step">
+
+          <span class="process-number">
+            02
+          </span>
+
+          <div>
+            <strong>
+              Carga y valida tu archivo
+            </strong>
+
+            <p>
+              PAKIVOX detecta encabezados, relaciona columnas
+              y encuentra errores antes de guardar.
+            </p>
+          </div>
+
+        </article>
+
+
+        <article class="process-step">
+
+          <span class="process-number">
+            03
+          </span>
+
+          <div>
+            <strong>
+              Revisa y confirma
+            </strong>
+
+            <p>
+              Ningún dato se modifica hasta que confirmes
+              expresamente la importación.
+            </p>
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- =====================================================
+           PLANTILLA / IMPORTAR
+      ====================================================== -->
+
+      <div class="import-help-strip">
+
+        <div>
+
+          <i class="bi bi-file-earmark-arrow-down"></i>
+
+          <span>
+            <strong>Plantilla</strong>
+            Descarga el formato recomendado por PAKIVOX.
+          </span>
+
+        </div>
+
+
+        <div>
+
+          <i class="bi bi-cloud-arrow-up-fill"></i>
+
+          <span>
+            <strong>Importar</strong>
+            Sube tu propio Excel o CSV.
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =======================================================
+         ESTADO DEL CENTRO
+    ======================================================== -->
+
+    <aside class="import-health-panel">
+
+      <div class="health-header">
+
+        <div>
+
+          <span>
+            Estado del centro
+          </span>
+
+          <h3>
+            Importaciones
+          </h3>
+
+        </div>
+
+        <div class="health-icon">
+          <i class="bi bi-shield-check"></i>
+        </div>
+
+      </div>
+
+
+      <div class="health-main">
+
+        <div class="health-score">
+
+          <strong>
+            {% if failed_jobs %}
+              Atención
+            {% else %}
+              Operación estable
+            {% endif %}
+          </strong>
+
+          <span>
+            {% if failed_jobs %}
+              Hay lotes que requieren revisión.
+            {% else %}
+              No hay errores pendientes registrados.
+            {% endif %}
+          </span>
+
+        </div>
+
+
+        <div class="health-bar">
+          <span
+            {% if failed_jobs %}
+              style="width: 72%;"
+            {% else %}
+              style="width: 100%;"
+            {% endif %}
+          ></span>
+        </div>
+
+      </div>
+
+
+      <div class="health-grid">
+
+        <article>
+          <i class="bi bi-layers-fill"></i>
+
+          <div>
+            <strong>
+              {{ total_jobs }}
+            </strong>
+
+            <span>
+              Lotes
+            </span>
+          </div>
+        </article>
+
+
+        <article>
+          <i class="bi bi-clipboard-check-fill"></i>
+
+          <div>
+            <strong>
+              {{ ready_jobs }}
+            </strong>
+
+            <span>
+              Listos
+            </span>
+          </div>
+        </article>
+
+
+        <article>
+          <i class="bi bi-check-circle-fill"></i>
+
+          <div>
+            <strong>
+              {{ completed_jobs }}
+            </strong>
+
+            <span>
+              Completados
+            </span>
+          </div>
+        </article>
+
+
+        <article class="{% if failed_jobs %}has-errors{% endif %}">
+
+          <i class="bi bi-exclamation-triangle-fill"></i>
+
+          <div>
+            <strong>
+              {{ failed_jobs }}
+            </strong>
+
+            <span>
+              Con error
+            </span>
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- =====================================================
+           BODEGA ACTIVA
+      ====================================================== -->
+
+      <div class="health-warehouse">
+
+        <i class="bi bi-building-check"></i>
+
+        <div>
+
+          <small>
+            Bodega activa
+          </small>
+
+          <strong>
+
+            {% if active_warehouse %}
+              {{ active_warehouse.name }}
+
+            {% elif active_warehouse_is_all %}
+              Todas las bodegas
+
+            {% else %}
+              Sin bodega seleccionada
+            {% endif %}
+
+          </strong>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </section>
+
+
+  <!-- =========================================================
+       QUÉ DESEAS IMPORTAR
+  ========================================================== -->
+
+  <section class="import-modules-section">
+
+    <header class="section-heading">
+
+      <div>
+
+        <span>
+          Tipos de importación
+        </span>
+
+        <h2>
+          ¿Qué deseas importar?
+        </h2>
+
+        <p>
+          Cada módulo utiliza validaciones específicas antes
+          de modificar información de tu empresa.
+        </p>
+
+      </div>
+
+    </header>
+
+
+    <div class="import-modules-grid">
+
+
+      <!-- =====================================================
+           CLIENTES
+      ====================================================== -->
+
+      <article class="import-module-card">
+
+        <div class="module-top">
+
+          <div class="module-icon">
+            <i class="bi bi-people-fill"></i>
+          </div>
+
+          <span class="module-badge">
+            CRM
+          </span>
+
+        </div>
+
+
+        <div class="module-content">
+
+          <h3>
+            Clientes
+          </h3>
+
+          <small>
+            CRM y contactos
+          </small>
+
+          <p>
+            Importa o actualiza nombres, RFC, correo,
+            teléfono, WhatsApp, direcciones y datos comerciales.
+          </p>
+
+        </div>
+
+
+        <div class="module-features">
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Detecta duplicados
+          </span>
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Valida contactos
+          </span>
+
+        </div>
+
+
+        <div class="module-actions">
+
+          <a
+            href="{% url 'data_imports:download_customer_template' %}"
+            class="module-secondary"
+          >
+            <i class="bi bi-download"></i>
+            Plantilla
+          </a>
+
+          <a
+            href="{% url 'data_imports:upload_customers' %}"
+            class="module-primary"
+          >
+            <i class="bi bi-upload"></i>
+            Importar
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- =====================================================
+           PRODUCTOS
+      ====================================================== -->
+
+      <article class="import-module-card">
+
+        <div class="module-top">
+
+          <div class="module-icon">
+            <i class="bi bi-box-seam-fill"></i>
+          </div>
+
+          <span class="module-badge">
+            Catálogo
+          </span>
+
+        </div>
+
+
+        <div class="module-content">
+
+          <h3>
+            Productos
+          </h3>
+
+          <small>
+            Catálogo y variantes
+          </small>
+
+          <p>
+            Importa productos, SKUs, variantes,
+            categorías, marcas, precios y datos del catálogo.
+          </p>
+
+        </div>
+
+
+        <div class="module-features">
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Productos y variantes
+          </span>
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Validación de SKU
+          </span>
+
+        </div>
+
+
+        <div class="module-actions">
+
+          <a
+            href="{% url 'data_imports:download_product_template' %}"
+            class="module-secondary"
+          >
+            <i class="bi bi-download"></i>
+            Plantilla
+          </a>
+
+          <a
+            href="{% url 'data_imports:upload_products' %}"
+            class="module-primary"
+          >
+            <i class="bi bi-upload"></i>
+            Importar
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- =====================================================
+           PROVEEDORES
+      ====================================================== -->
+
+      <article class="import-module-card">
+
+        <div class="module-top">
+
+          <div class="module-icon">
+            <i class="bi bi-truck-front-fill"></i>
+          </div>
+
+          <span class="module-badge">
+            Compras
+          </span>
+
+        </div>
+
+
+        <div class="module-content">
+
+          <h3>
+            Proveedores
+          </h3>
+
+          <small>
+            Compras y abastecimiento
+          </small>
+
+          <p>
+            Importa proveedores, RFC, razón social,
+            contactos, condiciones de pago y direcciones.
+          </p>
+
+        </div>
+
+
+        <div class="module-features">
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Datos fiscales
+          </span>
+
+          <span>
+            <i class="bi bi-check2"></i>
+            Contactos y crédito
+          </span>
+
+        </div>
+
+
+        <div class="module-actions">
+
+          <a
+            href="{% url 'data_imports:download_supplier_template' %}"
+            class="module-secondary"
+          >
+            <i class="bi bi-download"></i>
+            Plantilla
+          </a>
+
+          <a
+            href="{% url 'data_imports:upload_suppliers' %}"
+            class="module-primary"
+          >
+            <i class="bi bi-upload"></i>
+            Importar
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- =====================================================
+           INVENTARIO
+      ====================================================== -->
+
+      <article class="import-module-card inventory-card">
+
+        <div class="module-top">
+
+          <div class="module-icon inventory">
+            <i class="bi bi-boxes"></i>
+          </div>
+
+          <span class="module-badge inventory">
+            Por bodega
+          </span>
+
+        </div>
+
+
+        <div class="module-content">
+
+          <h3>
+            Inventario inicial
+          </h3>
+
+          <small>
+            Existencias físicas
+          </small>
+
+          <p>
+            Registra cantidades para SKUs que ya existen
+            dentro del catálogo de esta empresa.
+          </p>
+
+        </div>
+
+
+        <div class="inventory-destination">
+
+          <i class="bi bi-building-check"></i>
+
+          <div>
+
+            <small>
+              Bodega destino
+            </small>
+
+            <strong>
+
+              {% if active_warehouse %}
+                {{ active_warehouse.name }}
+
+              {% elif active_warehouse_is_all %}
+                Selecciona una bodega específica
+
+              {% else %}
+                Selecciona una bodega
+              {% endif %}
+
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="module-actions">
+
+          <a
+            href="{% url 'data_imports:download_inventory_template' %}"
+            class="module-secondary"
+          >
+            <i class="bi bi-download"></i>
+            Plantilla
+          </a>
+
+          <a
+            href="{% url 'data_imports:upload_inventory' %}"
+            class="module-primary"
+          >
+            <i class="bi bi-upload"></i>
+            Importar
+          </a>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================================
+       KPIs
+  ========================================================== -->
+
+  <section class="import-kpis">
+
+    <article>
+
+      <div class="kpi-icon">
+        <i class="bi bi-layers-fill"></i>
+      </div>
+
+      <div>
+
+        <span>
+          Importaciones
+        </span>
+
+        <strong>
+          {{ total_jobs }}
+        </strong>
+
+        <small>
+          Lotes registrados
+        </small>
+
+      </div>
+
+    </article>
+
+
+    <article>
+
+      <div class="kpi-icon ready">
+        <i class="bi bi-clipboard-check-fill"></i>
+      </div>
+
+      <div>
+
+        <span>
+          Listas
+        </span>
+
+        <strong>
+          {{ ready_jobs }}
+        </strong>
+
+        <small>
+          Preparadas para continuar
+        </small>
+
+      </div>
+
+    </article>
+
+
+    <article>
+
+      <div class="kpi-icon completed">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+
+      <div>
+
+        <span>
+          Completadas
+        </span>
+
+        <strong>
+          {{ completed_jobs }}
+        </strong>
+
+        <small>
+          Procesadas correctamente
+        </small>
+
+      </div>
+
+    </article>
+
+
+    <article>
+
+      <div class="kpi-icon errors">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+
+      <div>
+
+        <span>
+          Con error
+        </span>
+
+        <strong>
+          {{ failed_jobs }}
+        </strong>
+
+        <small>
+          Requieren atención
+        </small>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =========================================================
+       HISTORIAL
+  ========================================================== -->
+
+  <section class="import-history">
+
+    <header class="history-header">
+
+      <div>
+
+        <span>
+          Auditoría
+        </span>
+
+        <h2>
+          Historial de importaciones
+        </h2>
+
+        <p>
+          Cada lote queda aislado por empresa y conserva
+          el resultado de su procesamiento.
+        </p>
+
+      </div>
+
+
+      <div class="history-tools">
+
+        <label class="history-search">
+
+          <i class="bi bi-search"></i>
+
+          <input
+            type="search"
+            id="import-history-search"
+            placeholder="Buscar folio, archivo o usuario..."
+            autocomplete="off"
+          >
+
+        </label>
+
+
+        <select
+          id="import-history-status"
+          class="history-status-filter"
+        >
+          <option value="">
+            Todos los estados
+          </option>
+
+          <option value="uploaded">
+            Archivo cargado
+          </option>
+
+          <option value="mapping">
+            Relacionando columnas
+          </option>
+
+          <option value="validating">
+            Validando
+          </option>
+
+          <option value="ready">
+            Listo para importar
+          </option>
+
+          <option value="processing">
+            Procesando
+          </option>
+
+          <option value="completed">
+            Completado
+          </option>
+
+          <option value="failed">
+            Fallido
+          </option>
+        </select>
+
+      </div>
+
+    </header>
+
+
+    <div class="import-table-wrap">
+
+      <table
+        class="import-table"
+        id="import-history-table"
+      >
+
+        <thead>
+
+          <tr>
+            <th>Folio</th>
+            <th>Tipo</th>
+            <th>Archivo</th>
+            <th>Estado</th>
+            <th>Filas</th>
+            <th>Resultado</th>
+            <th>Creado por</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {% for job in jobs %}
+
+            <tr
+              class="history-row"
+              data-status="{{ job.status }}"
+              data-search="{{ job.folio }} {{ job.get_entity_type_display }} {{ job.original_filename }} {{ job.created_by }}"
+            >
+
+              <td>
+
+                <strong class="history-folio">
+                  {{ job.folio }}
+                </strong>
+
+              </td>
+
+
+              <td>
+                {{ job.get_entity_type_display }}
+              </td>
+
+
+              <td>
+
+                <span class="history-file">
+                  <i class="bi bi-file-earmark-spreadsheet"></i>
+
+                  {{ job.original_filename|default:"Sin archivo" }}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span class="import-status status-{{ job.status }}">
+                  {{ job.get_status_display }}
+                </span>
+
+              </td>
+
+
+              <td>
+                {{ job.total_rows }}
+              </td>
+
+
+              <td>
+
+                <div class="history-result">
+
+                  <span class="result-valid">
+                    {{ job.valid_rows }} válidos
+                  </span>
+
+                  <span>
+                    {{ job.duplicate_rows }} duplicados
+                  </span>
+
+                  <span class="{% if job.error_rows %}result-error{% endif %}">
+                    {{ job.error_rows }} errores
+                  </span>
+
+                </div>
+
+              </td>
+
+
+              <td>
+                {{ job.created_by }}
+              </td>
+
+
+              <td>
+
+                <span class="history-date">
+                  {{ job.created_at|date:"d/m/Y" }}
+
+                  <small>
+                    {{ job.created_at|date:"H:i" }}
+                  </small>
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <a
+                  href="{% url 'data_imports:job_detail' job.pk %}"
+                  class="import-table-action"
+                >
+                  Revisar
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+
+              </td>
+
+            </tr>
+
+
+          {% empty %}
+
+            <tr>
+
+              <td colspan="9">
+
+                <div class="import-empty">
+
+                  <i class="bi bi-inboxes"></i>
+
+                  <strong>
+                    Aún no hay importaciones
+                  </strong>
+
+                  <p>
+                    Descarga una plantilla o importa el archivo
+                    actual de la empresa para comenzar.
+                  </p>
+
+                </div>
+
+              </td>
+
+            </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+
+      <div
+        id="history-filter-empty"
+        class="history-filter-empty"
+        hidden
+      >
+        <i class="bi bi-search"></i>
+
+        <strong>
+          No encontramos importaciones
+        </strong>
+
+        <p>
+          Prueba con otro término o cambia el filtro de estado.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+</section>
+
+
+<style>
+
+  /* ==========================================================
+     PÁGINA
+  ========================================================== */
+
+  .import-page {
+    display: grid;
+    gap: 18px;
+  }
+
+
+  /* ==========================================================
+     CENTRO SUPERIOR
+  ========================================================== */
+
+  .import-command-center {
+    padding: 26px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(330px, 0.8fr);
+    gap: 28px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 22px;
+    background:
+      radial-gradient(
+        circle at 15% 0%,
+        rgba(14, 165, 233, 0.06),
+        transparent 34%
+      ),
+      #0f172a;
+  }
+
+
+  /* ==========================================================
+     INTRO
+  ========================================================== */
+
+  .import-intro {
+    max-width: 720px;
+  }
+
+  .import-eyebrow,
+  .section-heading span,
+  .history-header > div:first-child > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .import-intro h2 {
+    margin: 9px 0 8px;
+    color: #f8fafc;
+    font-size: 30px;
+    line-height: 1.08;
+  }
+
+  .import-intro-description {
+    max-width: 650px;
+    margin: 0;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+
+  /* ==========================================================
+     PROCESO
+  ========================================================== */
+
+  .import-process {
+    margin-top: 23px;
+    display: grid;
+    gap: 9px;
+  }
+
+  .process-step {
+    max-width: 650px;
+    padding: 11px 13px;
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 11px;
+    align-items: start;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.24);
+  }
+
+  .process-number {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: rgba(14, 165, 233, 0.09);
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .process-step strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #e2e8f0;
+    font-size: 11px;
+  }
+
+  .process-step p {
+    margin: 0;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+
+  /* ==========================================================
+     AYUDA
+  ========================================================== */
+
+  .import-help-strip {
+    max-width: 650px;
+    margin-top: 13px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .import-help-strip > div {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-radius: 11px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .import-help-strip i {
+    color: #38bdf8;
+    font-size: 15px;
+  }
+
+  .import-help-strip span {
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+
+  .import-help-strip strong {
+    display: block;
+    color: #cbd5e1;
+    font-size: 10px;
+  }
+
+
+  /* ==========================================================
+     PANEL ESTADO
+  ========================================================== */
+
+  .import-health-panel {
+    padding: 18px;
+    align-self: stretch;
+    border: 1px solid rgba(56, 189, 248, 0.14);
+    border-radius: 18px;
+    background:
+      linear-gradient(
+        155deg,
+        rgba(14, 116, 144, 0.08),
+        rgba(2, 6, 23, 0.35)
+      );
+  }
+
+  .health-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .health-header span {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .health-header h3 {
+    margin: 4px 0 0;
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  .health-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    font-size: 18px;
+  }
+
+  .health-main {
+    margin-top: 22px;
+  }
+
+  .health-score strong {
+    display: block;
+    color: #dcfce7;
+    font-size: 15px;
+  }
+
+  .health-score span {
+    display: block;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 10px;
+  }
+
+  .health-bar {
+    height: 7px;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(51, 65, 85, 0.7);
+  }
+
+  .health-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background:
+      linear-gradient(
+        90deg,
+        #22c55e,
+        #38bdf8
+      );
+  }
+
+  .health-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .health-grid article {
+    padding: 11px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 11px;
+    background: rgba(2, 6, 23, 0.28);
+    border: 1px solid rgba(148, 163, 184, 0.09);
+  }
+
+  .health-grid article > i {
+    color: #67e8f9;
+    font-size: 15px;
+  }
+
+  .health-grid article.has-errors > i {
+    color: #f87171;
+  }
+
+  .health-grid strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  .health-grid span {
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .health-warehouse {
+    margin-top: 15px;
+    padding: 11px;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    border-radius: 11px;
+    background: rgba(34, 197, 94, 0.06);
+    color: #86efac;
+  }
+
+  .health-warehouse small {
+    display: block;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .health-warehouse strong {
+    display: block;
+    margin-top: 2px;
+    color: #dcfce7;
+    font-size: 10px;
+  }
+
+
+  /* ==========================================================
+     SECCIÓN MÓDULOS
+  ========================================================== */
+
+  .import-modules-section {
+    padding: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 20px;
+    background: #0f172a;
+  }
+
+  .section-heading h2,
+  .history-header h2 {
+    margin: 5px 0;
+    color: #f8fafc;
+    font-size: 20px;
+  }
+
+  .section-heading p,
+  .history-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .import-modules-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+
+  /* ==========================================================
+     TARJETAS
+  ========================================================== */
+
+  .import-module-card {
+    min-width: 0;
+    min-height: 265px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.13);
+    border-radius: 16px;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(30, 41, 59, 0.25),
+        rgba(2, 6, 23, 0.28)
+      );
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .import-module-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.2);
+  }
+
+  .inventory-card {
+    border-color: rgba(34, 197, 94, 0.22);
+  }
+
+  .module-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .module-icon {
+    width: 41px;
+    height: 41px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.09);
+    color: #38bdf8;
+    font-size: 18px;
+  }
+
+  .module-icon.inventory {
+    background: rgba(34, 197, 94, 0.09);
+    color: #4ade80;
+  }
+
+  .module-badge {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .module-badge.inventory {
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+  }
+
+  .module-content h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 17px;
+  }
+
+  .module-content small {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  .module-content p {
+    margin: 9px 0 0;
+    color: #94a3b8;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .module-features {
+    display: grid;
+    gap: 5px;
+  }
+
+  .module-features span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .module-features i {
+    color: #4ade80;
+  }
+
+
+  /* ==========================================================
+     INVENTARIO DESTINO
+  ========================================================== */
+
+  .inventory-destination {
+    padding: 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.07);
+    color: #86efac;
+  }
+
+  .inventory-destination small {
+    display: block;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .inventory-destination strong {
+    display: block;
+    margin-top: 2px;
+    color: #dcfce7;
+    font-size: 9px;
+  }
+
+
+  /* ==========================================================
+     BOTONES TARJETAS
+  ========================================================== */
+
+  .module-actions {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .module-primary,
+  .module-secondary {
+    min-height: 40px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 900;
+    transition:
+      transform 0.15s ease,
+      filter 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .module-secondary {
+    color: #bae6fd;
+    border: 1px solid rgba(56, 189, 248, 0.27);
+    background: rgba(14, 116, 144, 0.09);
+  }
+
+  .module-primary {
+    color: #052e16;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: #22c55e;
+  }
+
+  .module-primary:hover,
+  .module-secondary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+
+
+  /* ==========================================================
+     KPIS
+  ========================================================== */
+
+  .import-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .import-kpis article {
+    padding: 17px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 16px;
+    background: #0f172a;
+  }
+
+  .kpi-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(56, 189, 248, 0.09);
+    color: #38bdf8;
+    font-size: 17px;
+  }
+
+  .kpi-icon.ready {
+    background: rgba(250, 204, 21, 0.08);
+    color: #fde047;
+  }
+
+  .kpi-icon.completed {
+    background: rgba(34, 197, 94, 0.08);
+    color: #4ade80;
+  }
+
+  .kpi-icon.errors {
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+  }
+
+  .import-kpis span,
+  .import-kpis small {
+    display: block;
+  }
+
+  .import-kpis span {
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .import-kpis strong {
+    display: block;
+    margin: 2px 0;
+    color: #f8fafc;
+    font-size: 24px;
+  }
+
+  .import-kpis small {
+    color: #64748b;
+    font-size: 9px;
+  }
+
+
+  /* ==========================================================
+     HISTORIAL
+  ========================================================== */
+
+  .import-history {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 20px;
+    background: #0f172a;
+  }
+
+  .history-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .history-tools {
+    display: flex;
+    gap: 8px;
+  }
+
+  .history-search {
+    min-width: 285px;
+    min-height: 39px;
+    padding: 0 11px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, 0.36);
+    color: #64748b;
+  }
+
+  .history-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 10px;
+  }
+
+  .history-status-filter {
+    min-height: 39px;
+    padding: 0 10px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 10px;
+    background: #020617;
+    color: #cbd5e1;
+    font-size: 10px;
+  }
+
+
+  /* ==========================================================
+     TABLA
+  ========================================================== */
+
+  .import-table-wrap {
+    overflow-x: auto;
+  }
+
+  .import-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .import-table th,
+  .import-table td {
+    padding: 13px 15px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    color: #cbd5e1;
+    vertical-align: middle;
+  }
+
+  .import-table th {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .import-table td {
+    font-size: 10px;
+  }
+
+  .history-folio {
+    color: #e2e8f0;
+  }
+
+  .history-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 250px;
+  }
+
+  .history-file i {
+    color: #4ade80;
+  }
+
+  .history-result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .result-valid {
+    color: #86efac;
+  }
+
+  .result-error {
+    color: #fca5a5;
+  }
+
+  .history-date {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .history-date small {
+    display: block;
+    margin-top: 2px;
+    color: #64748b;
+  }
+
+
+  /* ==========================================================
+     ESTADOS
+  ========================================================== */
+
+  .import-status {
+    display: inline-flex;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #bae6fd;
+    font-size: 8px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .import-status.status-ready,
+  .import-status.status-completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #bbf7d0;
+  }
+
+  .import-status.status-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fecaca;
+  }
+
+  .import-status.status-validating,
+  .import-status.status-processing {
+    background: rgba(250, 204, 21, 0.08);
+    color: #fde68a;
+  }
+
+
+  /* ==========================================================
+     REVISAR
+  ========================================================== */
+
+  .import-table-action {
+    min-height: 32px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 9px;
+    background: rgba(14, 116, 144, 0.08);
+    color: #bae6fd;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+
+  /* ==========================================================
+     VACÍOS
+  ========================================================== */
+
+  .import-empty,
+  .history-filter-empty {
+    min-height: 210px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 7px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .import-empty i,
+  .history-filter-empty i {
+    font-size: 28px;
+  }
+
+  .import-empty strong,
+  .history-filter-empty strong {
+    color: #cbd5e1;
+  }
+
+  .import-empty p,
+  .history-filter-empty p {
+    margin: 0;
+    font-size: 10px;
+  }
+
+
+  /* ==========================================================
+     RESPONSIVE
+  ========================================================== */
+
+  @media (max-width: 1250px) {
+
+    .import-command-center {
+      grid-template-columns: 1fr;
+    }
+
+    .import-health-panel {
+      max-width: none;
+    }
+
+    .import-modules-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+  }
+
+
+  @media (max-width: 950px) {
+
+    .import-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .history-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .history-tools {
+      width: 100%;
+    }
+
+    .history-search {
+      min-width: 0;
+      flex: 1;
+    }
+
+  }
+
+
+  @media (max-width: 650px) {
+
+    .import-command-center,
+    .import-modules-section {
+      padding: 17px;
+    }
+
+    .import-modules-grid,
+    .import-kpis,
+    .import-help-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .history-tools {
+      flex-direction: column;
+    }
+
+    .history-status-filter {
+      width: 100%;
+    }
+
+  }
+
+</style>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById(
+      "import-history-search"
+    );
+
+    const statusSelect = document.getElementById(
+      "import-history-status"
+    );
+
+    const rows = Array.from(
+      document.querySelectorAll(
+        "#import-history-table tbody .history-row"
+      )
+    );
+
+    const emptyState = document.getElementById(
+      "history-filter-empty"
+    );
+
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLocaleLowerCase("es")
+        .trim();
+    }
+
+
+    function filterHistory() {
+
+      const searchValue = normalizeText(
+        searchInput ? searchInput.value : ""
+      );
+
+      const statusValue = String(
+        statusSelect ? statusSelect.value : ""
+      ).trim();
+
+      let visibleCount = 0;
+
+
+      rows.forEach(function (row) {
+
+        const rowSearch = normalizeText(
+          row.dataset.search
+        );
+
+        const rowStatus = String(
+          row.dataset.status || ""
+        ).trim();
+
+        const matchesSearch = (
+          !searchValue ||
+          rowSearch.includes(searchValue)
+        );
+
+        const matchesStatus = (
+          !statusValue ||
+          rowStatus === statusValue
+        );
+
+        const visible = (
+          matchesSearch &&
+          matchesStatus
+        );
+
+        row.hidden = !visible;
+
+        if (visible) {
+          visibleCount += 1;
+        }
+
+      });
+
+
+      if (emptyState) {
+        emptyState.hidden = (
+          visibleCount > 0 ||
+          rows.length === 0
+        );
+      }
+
+    }
+
+
+    if (searchInput) {
+      searchInput.addEventListener(
+        "input",
+        filterHistory
+      );
+    }
+
+
+    if (statusSelect) {
+      statusSelect.addEventListener(
+        "change",
+        filterHistory
+      );
+    }
+
+  });
+</script>
+
+{% endblock %}

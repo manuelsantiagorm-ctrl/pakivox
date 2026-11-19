@@ -1,0 +1,720 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Importar inventario inicial | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Nueva importación de inventario
+{% endblock %}
+
+{% block page_subtitle %}
+Carga existencias físicas para una bodega específica
+{% endblock %}
+
+{% block content %}
+
+<section class="upload-layout">
+
+  <!-- =========================================================
+       TARJETA PRINCIPAL
+  ========================================================== -->
+
+  <article class="upload-card">
+
+    <div class="upload-heading">
+
+      <span>
+        <i class="bi bi-cloud-arrow-up"></i>
+        Inventario inicial · Paso 1 de 3
+      </span>
+
+      <h2>
+        Selecciona el archivo
+      </h2>
+
+      <p>
+        Todavía no se modificará ninguna existencia.
+        Primero detectaremos las columnas, validaremos los SKU
+        y revisaremos las cantidades.
+      </p>
+
+    </div>
+
+
+    <!-- =======================================================
+         BODEGA DESTINO
+    ======================================================== -->
+
+    <div class="warehouse-box">
+
+      <div class="warehouse-box-icon">
+        <i class="bi bi-building"></i>
+      </div>
+
+      <div>
+
+        <small>
+          Bodega destino
+        </small>
+
+        <strong>
+          {{ warehouse.name }}
+        </strong>
+
+        <p>
+          Todo el inventario válido de este lote quedará registrado
+          únicamente en esta bodega.
+        </p>
+
+      </div>
+
+      <span class="warehouse-badge">
+        <i class="bi bi-shield-check"></i>
+        Protegida
+      </span>
+
+    </div>
+
+
+    <!-- =======================================================
+         FORMULARIO
+    ======================================================== -->
+
+    <form
+      method="post"
+      enctype="multipart/form-data"
+    >
+
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+
+        <div class="upload-errors">
+          {{ form.non_field_errors }}
+        </div>
+
+      {% endif %}
+
+
+      <!-- =====================================================
+           ARCHIVO
+      ====================================================== -->
+
+      <label class="upload-dropzone">
+
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+
+        <strong>
+          Excel o CSV de inventario
+        </strong>
+
+        <small>
+          .xlsx o .csv · máximo 15 MB
+        </small>
+
+        {{ form.original_file }}
+
+      </label>
+
+
+      {% if form.original_file.errors %}
+
+        <div class="upload-errors">
+          {{ form.original_file.errors }}
+        </div>
+
+      {% endif %}
+
+
+      <!-- =====================================================
+           POLÍTICA SI YA EXISTE STOCK EN ESA BODEGA
+      ====================================================== -->
+
+      <label class="upload-field">
+
+        <span>
+          Qué hacer si el SKU ya tiene existencias en esta bodega
+        </span>
+
+        {{ form.duplicate_policy }}
+
+        <small>
+          Esta regla solo aplica a la bodega
+          <strong>{{ warehouse.name }}</strong>.
+          Que el SKU tenga stock en otra bodega no se considera duplicado.
+        </small>
+
+      </label>
+
+
+      {% if form.duplicate_policy.errors %}
+
+        <div class="upload-errors">
+          {{ form.duplicate_policy.errors }}
+        </div>
+
+      {% endif %}
+
+
+      <!-- =====================================================
+           REGLA MULTIBODEGA
+      ====================================================== -->
+
+      <div class="multiwarehouse-note">
+
+        <i class="bi bi-diagram-3"></i>
+
+        <div>
+
+          <strong>
+            Un mismo SKU puede existir en varias bodegas
+          </strong>
+
+          <p>
+            El producto y su SKU pertenecen al catálogo de
+            <strong>{{ company.name }}</strong>.
+            Esta importación únicamente registra existencias
+            para <strong>{{ warehouse.name }}</strong>.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           ACCIONES
+      ====================================================== -->
+
+      <div class="upload-actions">
+
+        <a
+          href="{% url 'data_imports:dashboard' %}"
+          class="upload-secondary"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="upload-primary"
+        >
+          Analizar archivo
+          <i class="bi bi-arrow-right"></i>
+        </button>
+
+      </div>
+
+    </form>
+
+  </article>
+
+
+  <!-- =========================================================
+       GUÍA LATERAL
+  ========================================================== -->
+
+  <aside class="upload-guide">
+
+    <h3>
+      Dos formas de comenzar
+    </h3>
+
+
+    <!-- =======================================================
+         PLANTILLA
+    ======================================================== -->
+
+    <section>
+
+      <i class="bi bi-file-earmark-arrow-down"></i>
+
+      <div>
+
+        <strong>
+          Usar la plantilla PAKIVOX
+        </strong>
+
+        <p>
+          Ideal para registrar inventario inicial de forma
+          rápida y controlada.
+        </p>
+
+        <a href="{% url 'data_imports:download_inventory_template' %}">
+          Descargar plantilla
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         ARCHIVO PROPIO
+    ======================================================== -->
+
+    <section>
+
+      <i class="bi bi-magic"></i>
+
+      <div>
+
+        <strong>
+          Subir mi archivo actual
+        </strong>
+
+        <p>
+          PAKIVOX intentará reconocer columnas como
+          SKU, Cantidad, Referencia y Notas.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         CAMPOS OBLIGATORIOS
+    ======================================================== -->
+
+    <section>
+
+      <i class="bi bi-list-check"></i>
+
+      <div>
+
+        <strong>
+          Solo dos campos son obligatorios
+        </strong>
+
+        <p>
+          El archivo debe contener una columna que podamos relacionar
+          con SKU y otra con Cantidad.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         SEGURIDAD
+    ======================================================== -->
+
+    <div class="upload-security">
+
+      <i class="bi bi-shield-check"></i>
+
+      <p>
+        El archivo, los SKU encontrados y las existencias
+        quedan aislados únicamente a
+        <strong>{{ company.name }}</strong>
+        y a la bodega
+        <strong>{{ warehouse.name }}</strong>.
+      </p>
+
+    </div>
+
+
+    <!-- =======================================================
+         IMPORTANTE
+    ======================================================== -->
+
+    <div class="upload-warning">
+
+      <i class="bi bi-exclamation-triangle"></i>
+
+      <div>
+
+        <strong>
+          La cantidad se registra como entrada
+        </strong>
+
+        <p>
+          Si un SKU ya tiene 20 unidades y cargas 30,
+          el resultado será 50 unidades.
+          PAKIVOX registrará el movimiento de inventario.
+        </p>
+
+      </div>
+
+    </div>
+
+  </aside>
+
+</section>
+
+
+<style>
+
+  /* =========================================================
+     LAYOUT
+  ========================================================== */
+
+  .upload-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
+  }
+
+  .upload-card,
+  .upload-guide {
+    padding: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 20px;
+    background: #0f172a;
+  }
+
+
+  /* =========================================================
+     ENCABEZADO
+  ========================================================== */
+
+  .upload-heading span {
+    color: #67e8f9;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .upload-heading h2,
+  .upload-guide h3 {
+    color: #f8fafc;
+  }
+
+  .upload-heading h2 {
+    margin: 8px 0 5px;
+  }
+
+  .upload-heading p,
+  .upload-guide p {
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+
+  /* =========================================================
+     BODEGA DESTINO
+  ========================================================== */
+
+  .warehouse-box {
+    margin-top: 20px;
+    padding: 16px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 15px;
+    background: rgba(22, 101, 52, 0.08);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .warehouse-box-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+    font-size: 20px;
+  }
+
+  .warehouse-box small {
+    display: block;
+    margin-bottom: 3px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .warehouse-box strong {
+    color: #f8fafc;
+  }
+
+  .warehouse-box p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  .warehouse-badge {
+    padding: 6px 9px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.12);
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+
+  /* =========================================================
+     DROPZONE
+  ========================================================== */
+
+  .upload-dropzone {
+    margin-top: 22px;
+    min-height: 230px;
+    padding: 24px;
+    border: 1px dashed rgba(34, 197, 94, 0.42);
+    border-radius: 17px;
+    background: rgba(22, 101, 52, 0.08);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .upload-dropzone > i {
+    font-size: 38px;
+    color: #4ade80;
+  }
+
+  .upload-dropzone strong {
+    color: #f8fafc;
+    font-size: 18px;
+  }
+
+  .upload-dropzone small {
+    color: #94a3b8;
+  }
+
+  .upload-dropzone input {
+    margin-top: 12px;
+    color: #cbd5e1;
+  }
+
+
+  /* =========================================================
+     CAMPO
+  ========================================================== */
+
+  .upload-field {
+    display: grid;
+    gap: 7px;
+    margin-top: 18px;
+    color: #e2e8f0;
+    font-weight: 800;
+  }
+
+  .upload-field small {
+    color: #64748b;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .upload-field small strong {
+    color: #cbd5e1;
+  }
+
+  .import-select {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 11px;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+
+  /* =========================================================
+     MULTIBODEGA
+  ========================================================== */
+
+  .multiwarehouse-note {
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 13px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: rgba(30, 64, 175, 0.08);
+  }
+
+  .multiwarehouse-note > i {
+    color: #60a5fa;
+    font-size: 19px;
+  }
+
+  .multiwarehouse-note strong {
+    color: #dbeafe;
+  }
+
+  .multiwarehouse-note p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+    line-height: 1.55;
+  }
+
+
+  /* =========================================================
+     ACCIONES
+  ========================================================== */
+
+  .upload-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 22px;
+  }
+
+  .upload-primary,
+  .upload-secondary {
+    min-height: 43px;
+    padding: 0 16px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    font-weight: 900;
+  }
+
+  .upload-primary {
+    border: 0;
+    background: #22c55e;
+    color: #052e16;
+    cursor: pointer;
+  }
+
+  .upload-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: #cbd5e1;
+  }
+
+
+  /* =========================================================
+     GUÍA
+  ========================================================== */
+
+  .upload-guide {
+    display: grid;
+    align-content: start;
+    gap: 13px;
+  }
+
+  .upload-guide h3 {
+    margin: 0;
+  }
+
+  .upload-guide section {
+    padding: 15px;
+    border: 1px solid rgba(148, 163, 184, 0.13);
+    border-radius: 14px;
+    display: flex;
+    gap: 12px;
+    background: rgba(2, 6, 23, 0.34);
+  }
+
+  .upload-guide section > i {
+    color: #a78bfa;
+    font-size: 20px;
+  }
+
+  .upload-guide section strong {
+    color: #f8fafc;
+  }
+
+  .upload-guide section p {
+    margin: 4px 0;
+  }
+
+  .upload-guide section a {
+    color: #67e8f9;
+    font-weight: 900;
+  }
+
+
+  /* =========================================================
+     SEGURIDAD / WARNING
+  ========================================================== */
+
+  .upload-security,
+  .upload-warning,
+  .upload-errors {
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .upload-security {
+    display: flex;
+    gap: 9px;
+    color: #bae6fd;
+    background: rgba(14, 116, 144, 0.1);
+  }
+
+  .upload-security p {
+    margin: 0;
+  }
+
+  .upload-warning {
+    display: flex;
+    gap: 9px;
+    color: #fde68a;
+    background: rgba(120, 53, 15, 0.16);
+  }
+
+  .upload-warning strong {
+    color: #fef3c7;
+  }
+
+  .upload-warning p {
+    margin: 4px 0 0;
+    color: #d6d3d1;
+    line-height: 1.5;
+  }
+
+  .upload-errors {
+    margin-top: 13px;
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.24);
+  }
+
+
+  /* =========================================================
+     RESPONSIVE
+  ========================================================== */
+
+  @media (max-width: 900px) {
+
+    .upload-layout {
+      grid-template-columns: 1fr;
+    }
+
+  }
+
+  @media (max-width: 620px) {
+
+    .warehouse-box {
+      grid-template-columns: auto 1fr;
+    }
+
+    .warehouse-badge {
+      grid-column: 1 / -1;
+      width: fit-content;
+    }
+
+    .upload-actions {
+      flex-direction: column;
+    }
+
+    .upload-actions > * {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+  }
+
+</style>
+
+{% endblock %}

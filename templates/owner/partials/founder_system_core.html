@@ -1,0 +1,301 @@
+﻿<section class="founder-section" id="infraestructura">
+
+  <div class="founder-section-head">
+
+    <div>
+      <span class="founder-section-number">03</span>
+
+      <div>
+        <h2>System Core & Workers</h2>
+
+        <p>
+          Estado técnico del núcleo que mantiene PAKIVOX funcionando.
+        </p>
+      </div>
+    </div>
+
+    <span class="
+      founder-chip
+      {% if founder.system.shipping_health.status == 'healthy' %}
+        ok
+      {% elif founder.system.shipping_health.status == 'warning' %}
+        warn
+      {% else %}
+        bad
+      {% endif %}
+    ">
+      {{ founder.system.shipping_health.status|upper }}
+    </span>
+
+  </div>
+
+
+  <div class="founder-wide-grid">
+
+
+    <div class="owner-card founder-panel">
+
+      <div class="owner-card-header">
+
+        <div>
+          <h2>
+            Shipping Operations
+          </h2>
+
+          <p>
+            Compra, recuperación y conciliación de guías.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="owner-card-body">
+
+        <div class="founder-grid founder-grid-system">
+
+          <article class="founder-metric">
+
+            <span class="founder-metric-label">
+              Operaciones
+            </span>
+
+            <strong>
+              {{ founder.system.shipping_purchases.total }}
+            </strong>
+
+            <small>
+              Total observado por el Operations Center.
+            </small>
+
+          </article>
+
+
+          <article class="
+            founder-metric
+            {% if founder.system.shipping_purchases.manual_review %}
+              bad
+            {% else %}
+              good
+            {% endif %}
+          ">
+
+            <span class="founder-metric-label">
+              Revisión manual
+            </span>
+
+            <strong>
+              {{ founder.system.shipping_purchases.manual_review }}
+            </strong>
+
+            <small>
+              Casos que necesitan intervención.
+            </small>
+
+          </article>
+
+
+          <article class="
+            founder-metric
+            {% if founder.system.shipping_purchases.possible_charge %}
+              warn
+            {% else %}
+              good
+            {% endif %}
+          ">
+
+            <span class="founder-metric-label">
+              Posible cobro
+            </span>
+
+            <strong>
+              {{ founder.system.shipping_purchases.possible_charge }}
+            </strong>
+
+            <small>
+              Nunca deben recomprarse automáticamente.
+            </small>
+
+          </article>
+
+
+          <article class="
+            founder-metric
+            {% if founder.system.shipping_events.dead_letter %}
+              bad
+            {% else %}
+              good
+            {% endif %}
+          ">
+
+            <span class="founder-metric-label">
+              Dead Letter
+            </span>
+
+            <strong>
+              {{ founder.system.shipping_events.dead_letter }}
+            </strong>
+
+            <small>
+              Eventos externos que agotaron procesamiento.
+            </small>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <aside class="owner-card founder-panel">
+
+      <div class="owner-card-header">
+
+        <div>
+          <h2>
+            Core Health
+          </h2>
+
+          <p>
+            Comprobaciones internas de solo lectura.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="owner-card-body founder-status-list">
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Django
+          </span>
+
+          <strong class="text-good">
+            Online
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            PostgreSQL
+          </span>
+
+          <strong>
+
+            {% if founder.system.database.ok %}
+
+              {{ founder.system.database.latency_ms }} ms
+
+            {% else %}
+
+              No disponible
+
+            {% endif %}
+
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Motor DB
+          </span>
+
+          <strong>
+            {{ founder.system.database.vendor|upper }}
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Shipping Worker
+          </span>
+
+          <strong>
+            {{ founder.system.shipping_worker.status }}
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Heartbeat
+          </span>
+
+          <strong>
+
+            {% if founder.system.shipping_worker.age_seconds != None %}
+
+              {{ founder.system.shipping_worker.age_seconds }} segundos
+
+            {% else %}
+
+              —
+
+            {% endif %}
+
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            API Error Rate
+          </span>
+
+          <strong>
+            Por instrumentar
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Redis / Cache
+          </span>
+
+          <strong>
+            Por instrumentar
+          </strong>
+
+        </div>
+
+
+        <div class="founder-status-row">
+
+          <span>
+            Uptime
+          </span>
+
+          <strong>
+            Por instrumentar
+          </strong>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+</section>

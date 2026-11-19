@@ -1,0 +1,1398 @@
+﻿{% extends "base.html" %} {% block title %}Ubicaciones QR | PAKIVOX{% endblock %}
+{% block content %}
+<section class="qr-map-page">
+  <div class="qr-map-header">
+    <div>
+      <span class="eyebrow">Almacén</span>
+      <h1>Mapa de Bodega</h1>
+      <p>Ubicaciones físicas con QR para imprimir y pegar en anaqueles.</p>
+    </div>
+
+    <div class="qr-map-actions">
+      <a
+        href="{% url 'warehouse:layout_designer' %}"
+        style="
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 16px;
+          border-radius: 13px;
+          background: linear-gradient(135deg, #2563eb, #38bdf8);
+          color: #020617;
+          text-decoration: none;
+          font-weight: 950;
+          border: 1px solid rgba(56, 189, 248, 0.45);
+          box-shadow: 0 10px 24px rgba(56, 189, 248, 0.18);
+        "
+      >
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+        Mapa Visual
+      </a>
+
+      <a href="{% url 'warehouse:crear_ubicacion' %}" class="new-location-btn">
+        <i class="bi bi-plus-circle-fill"></i>
+        Nueva ubicación
+      </a>
+
+      {% if ubicaciones %}
+      <button
+        type="button"
+        onclick="printSelectedQrs()"
+        class="print-selected-btn"
+      >
+        <i class="bi bi-check2-square"></i>
+        Imprimir seleccionados
+      </button>
+
+      <button type="button" onclick="printAllQrs()" class="print-btn">
+        <i class="bi bi-printer-fill"></i>
+        Imprimir todos
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if ubicaciones %}
+  <section class="print-settings-panel">
+    <div class="settings-left">
+      <span class="settings-badge">
+        <i class="bi bi-sliders"></i>
+        Configuración de impresión
+      </span>
+
+      <div>
+        <h2>Prepara tus etiquetas QR</h2>
+        <p>
+          Ajusta el tamaño del QR y la cantidad de columnas antes de imprimir.
+          Estos cambios se aplican directamente a la hoja de impresión.
+        </p>
+      </div>
+    </div>
+
+    <div class="settings-controls">
+      <div class="setting-control">
+        <label for="qrSizeRange">
+          Tamaño QR
+          <strong><span id="qrSizeValue">42</span> mm</strong>
+        </label>
+
+        <input
+          id="qrSizeRange"
+          type="range"
+          min="28"
+          max="70"
+          step="2"
+          value="42"
+          oninput="updatePrintSettings()"
+        />
+      </div>
+
+      <div class="setting-control">
+        <label for="printColumns">
+          Columnas por hoja
+          <strong id="columnsValue">3</strong>
+        </label>
+
+        <select id="printColumns" onchange="updatePrintSettings()">
+          <option value="2">2 columnas</option>
+          <option value="3" selected>3 columnas</option>
+          <option value="4">4 columnas</option>
+        </select>
+      </div>
+
+      <div class="setting-control compact">
+        <label class="switch-label">
+          <input
+            id="showDetailsPrint"
+            type="checkbox"
+            checked
+            onchange="updatePrintSettings()"
+          />
+          <span>Mostrar detalles</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="qr-selection-toolbar">
+    <div>
+      <strong>Selecciona los QR que quieres imprimir</strong>
+      <span>
+        Marcados: <b id="selectedQrCount">0</b> de {{ ubicaciones|length }}
+      </span>
+    </div>
+
+    <div class="qr-selection-actions">
+      <button type="button" onclick="selectAllQrs()">
+        <i class="bi bi-check-all"></i>
+        Seleccionar todos
+      </button>
+
+      <button type="button" onclick="clearQrSelection()">
+        <i class="bi bi-x-circle"></i>
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div class="qr-grid">
+    {% for item in ubicaciones %}
+    <article class="qr-card" data-qr-card>
+      <label class="qr-select-box">
+        <input
+          type="checkbox"
+          class="qr-print-checkbox"
+          onchange="updateQrSelectionState()"
+        />
+        <span>
+          <i class="bi bi-check2"></i>
+        </span>
+        Seleccionar para imprimir
+      </label>
+
+      <div class="qr-image-wrap">
+        <img src="{{ item.qr_image }}" alt="QR {{ item.codigo }}" />
+      </div>
+
+      <div class="qr-info">
+        <span>{{ item.location.warehouse.name }}</span>
+
+        <h2>{{ item.location.bin_code }}</h2>
+
+        <p>
+          Pasillo {{ item.location.aisle }} · Anaquel {{ item.location.rack }} ·
+          Nivel {{ item.location.level }}
+        </p>
+
+        {% if item.location.zone %}
+        <small>Zona: {{ item.location.zone.name }}</small>
+        {% endif %}
+
+        <strong>{{ item.codigo }}</strong>
+
+        <div class="qr-card-actions">
+          <a
+            href="{% url 'warehouse:editar_ubicacion' item.location.id %}"
+            class="edit-qr-btn"
+          >
+            <i class="bi bi-pencil-square"></i>
+            Editar QR
+          </a>
+          <a
+            href="{% url 'warehouse:asignar_stock_ubicacion_location' item.location.id %}"
+            class="edit-qr-btn"
+          >
+            <i class="bi bi-box-seam-fill"></i>
+            Asignar producto
+          </a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="warehouse-empty-pro">
+    <div class="empty-left">
+      <div class="empty-badge">
+        <i class="bi bi-qr-code-scan"></i>
+        Layout pendiente
+      </div>
+
+      <h2>Tu bodega todavía no tiene ubicaciones configuradas</h2>
+
+      <p>
+        Antes de imprimir códigos QR, necesitas crear la estructura física de tu
+        almacén: pasillos, racks, niveles y posiciones. Con eso PAKIVOX puede
+        controlar stock por ubicación, generar rutas de picking y escanear
+        movimientos operativos.
+      </p>
+
+      <div class="empty-steps">
+        <div class="step-card">
+          <span>01</span>
+          <strong>Define pasillos</strong>
+          <small>Ejemplo: A, B, C o Pasillo 1, 2, 3.</small>
+        </div>
+
+        <div class="step-card">
+          <span>02</span>
+          <strong>Crea racks</strong>
+          <small>Organiza anaqueles y posiciones físicas.</small>
+        </div>
+
+        <div class="step-card">
+          <span>03</span>
+          <strong>Imprime QR</strong>
+          <small>Pega etiquetas para escaneo operativo.</small>
+        </div>
+      </div>
+
+      <div class="empty-actions">
+        <a
+          href="{% url 'warehouse:crear_ubicacion' %}"
+          class="btn-primary-empty"
+        >
+          <i class="bi bi-plus-circle-fill"></i>
+          Crear primera ubicación
+        </a>
+
+        <a
+          href="{% url 'warehouse:lista_ubicaciones' %}"
+          class="btn-secondary-empty"
+        >
+          <i class="bi bi-geo-alt-fill"></i>
+          Ver ubicaciones
+        </a>
+      </div>
+
+      <div class="client-notice">
+        <i class="bi bi-info-circle-fill"></i>
+        <div>
+          <strong>Configuración requerida</strong>
+          <span>
+            Crea la primera ubicación para habilitar el mapa QR y comenzar a
+            imprimir etiquetas operativas.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-right">
+      <div class="warehouse-visual">
+        <div class="visual-header">
+          <span>BODEGA · LAYOUT</span>
+          <strong>QR READY</strong>
+        </div>
+
+        <div class="rack-grid">
+          <div class="rack active">
+            <span>A1</span>
+            <i class="bi bi-qr-code"></i>
+          </div>
+
+          <div class="rack">
+            <span>A2</span>
+            <i class="bi bi-box-seam"></i>
+          </div>
+
+          <div class="rack active">
+            <span>B1</span>
+            <i class="bi bi-qr-code"></i>
+          </div>
+
+          <div class="rack">
+            <span>B2</span>
+            <i class="bi bi-box-seam"></i>
+          </div>
+
+          <div class="rack">
+            <span>C1</span>
+            <i class="bi bi-box-seam"></i>
+          </div>
+
+          <div class="rack active">
+            <span>C2</span>
+            <i class="bi bi-qr-code"></i>
+          </div>
+        </div>
+
+        <div class="visual-footer">
+          <div>
+            <small>Ubicaciones activas</small>
+            <strong>0</strong>
+          </div>
+
+          <div>
+            <small>QR generados</small>
+            <strong>0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</section>
+
+<style>
+  :root {
+    --qr-preview-size: 170px;
+    --qr-print-size: 42mm;
+  }
+
+  .qr-map-page {
+    min-height: calc(100vh - 170px);
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    gap: 24px;
+  }
+
+  .qr-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-right: 32px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    font-weight: 900;
+  }
+
+  .qr-map-header h1 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 34px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .qr-map-header p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .qr-map-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .new-location-btn,
+  .print-btn,
+  .print-selected-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 950;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.18s ease;
+  }
+
+  .new-location-btn {
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #facc15);
+    border-color: rgba(250, 204, 21, 0.35);
+    box-shadow: 0 14px 30px rgba(245, 158, 11, 0.2);
+  }
+
+  .new-location-btn:hover {
+    color: #111827;
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  .print-selected-btn {
+    color: #e0f2fe;
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.32);
+  }
+
+  .print-selected-btn:hover {
+    color: #020617;
+    background: #38bdf8;
+    transform: translateY(-1px);
+  }
+
+  .print-btn {
+    background: #22c55e;
+    color: #052e16;
+    box-shadow: 0 14px 30px rgba(34, 197, 94, 0.18);
+  }
+
+  .print-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+  }
+
+  .print-settings-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 18px;
+    padding: 20px;
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.08),
+        transparent 34%
+      ),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.72));
+  }
+
+  .settings-left {
+    display: grid;
+    gap: 12px;
+  }
+
+  .settings-badge {
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    color: #bfdbfe;
+    background: rgba(30, 64, 175, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.26);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .settings-left h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 24px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .settings-left p {
+    max-width: 680px;
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .settings-controls {
+    min-width: 440px;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .setting-control {
+    display: grid;
+    gap: 8px;
+  }
+
+  .setting-control label {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 900;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .setting-control label strong {
+    color: #f8fafc;
+  }
+
+  .setting-control input[type="range"] {
+    width: 100%;
+    accent-color: #f59e0b;
+  }
+
+  .setting-control select {
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: #020817;
+    color: #f8fafc;
+    outline: none;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .setting-control.compact {
+    grid-column: 1 / -1;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(2, 6, 23, 0.62);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .switch-label {
+    justify-content: flex-start !important;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .switch-label input {
+    width: 16px;
+    height: 16px;
+    accent-color: #22c55e;
+  }
+
+  .qr-selection-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.62);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .qr-selection-toolbar strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .qr-selection-toolbar span {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .qr-selection-toolbar b {
+    color: #facc15;
+  }
+
+  .qr-selection-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .qr-selection-actions button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 13px;
+    border-radius: 11px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020817;
+    color: #e5e7eb;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .qr-selection-actions button:hover {
+    color: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.36);
+  }
+
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .qr-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  }
+
+  .qr-card.is-selected-for-print {
+    border-color: rgba(250, 204, 21, 0.65);
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.22),
+      0 0 0 2px rgba(250, 204, 21, 0.18);
+  }
+
+  .qr-select-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px;
+    border-radius: 12px;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, 0.68);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .qr-select-box input {
+    display: none;
+  }
+
+  .qr-select-box span {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    color: transparent;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  .qr-select-box input:checked + span {
+    color: #052e16;
+    background: #22c55e;
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+
+  .qr-image-wrap {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 14px;
+    display: grid;
+    place-items: center;
+  }
+
+  .qr-image-wrap img {
+    width: var(--qr-preview-size);
+    height: var(--qr-preview-size);
+    object-fit: contain;
+  }
+
+  .qr-info span {
+    color: #38bdf8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 900;
+  }
+
+  .qr-info h2 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 28px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .qr-info p,
+  .qr-info small {
+    color: #94a3b8;
+    display: block;
+  }
+
+  .qr-info strong {
+    display: inline-block;
+    margin-top: 12px;
+    color: #f8fafc;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+
+  .qr-card-actions {
+    margin-top: 12px;
+    display: flex;
+  }
+
+  .edit-qr-btn {
+    width: 100%;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #f8fafc;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .edit-qr-btn:hover {
+    color: #020617;
+    background: #38bdf8;
+  }
+
+  .warehouse-empty-pro {
+    min-height: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+    gap: 28px;
+    align-items: stretch;
+    padding: 32px;
+    border-radius: 28px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(245, 158, 11, 0.13),
+        transparent 34%
+      ),
+      radial-gradient(
+        circle at bottom right,
+        rgba(34, 197, 94, 0.11),
+        transparent 34%
+      ),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94));
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+  }
+
+  .empty-left,
+  .empty-right {
+    border-radius: 24px;
+  }
+
+  .empty-left {
+    padding: 26px;
+    background: rgba(2, 6, 23, 0.32);
+    border: 1px solid rgba(148, 163, 184, 0.11);
+  }
+
+  .empty-badge {
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.26);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .empty-left h2 {
+    max-width: 780px;
+    margin: 22px 0 0;
+    color: #f8fafc;
+    font-size: 42px;
+    line-height: 1.05;
+    font-weight: 950;
+    letter-spacing: -0.06em;
+  }
+
+  .empty-left p {
+    max-width: 760px;
+    margin: 18px 0 0;
+    color: #cbd5e1;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .empty-steps {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .step-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.68);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .step-card span {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    color: #86efac;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .step-card strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .step-card small {
+    display: block;
+    margin-top: 6px;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .empty-actions {
+    margin-top: 28px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary-empty,
+  .btn-secondary-empty {
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 20px;
+    border-radius: 15px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 950;
+    transition: 0.18s ease;
+  }
+
+  .btn-primary-empty {
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #facc15);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    box-shadow: 0 16px 34px rgba(245, 158, 11, 0.24);
+  }
+
+  .btn-primary-empty:hover {
+    color: #111827;
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  .btn-secondary-empty {
+    color: #e5e7eb;
+    background: rgba(2, 6, 23, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .btn-secondary-empty:hover {
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.96);
+    border-color: rgba(148, 163, 184, 0.34);
+  }
+
+  .client-notice {
+    margin-top: 18px;
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 18px;
+    color: #bfdbfe;
+    background: rgba(30, 64, 175, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.28);
+  }
+
+  .client-notice i {
+    margin-top: 2px;
+    color: #38bdf8;
+    font-size: 18px;
+  }
+
+  .client-notice strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .client-notice span {
+    display: block;
+    margin-top: 4px;
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .empty-right {
+    display: grid;
+    place-items: center;
+  }
+
+  .warehouse-visual {
+    width: 100%;
+    min-height: 100%;
+    display: grid;
+    align-content: space-between;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 24px;
+    background: linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.78),
+      rgba(2, 6, 23, 0.92)
+    );
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    box-shadow: inset 0 0 50px rgba(56, 189, 248, 0.04);
+  }
+
+  .visual-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .visual-header span {
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+  }
+
+  .visual-header strong {
+    color: #86efac;
+    font-size: 11px;
+    font-weight: 950;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+  }
+
+  .rack-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .rack {
+    min-height: 86px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rack span {
+    color: #f8fafc;
+    font-size: 20px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .rack i {
+    color: #64748b;
+    font-size: 24px;
+  }
+
+  .rack.active {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.09);
+  }
+
+  .rack.active i {
+    color: #fbbf24;
+  }
+
+  .visual-footer {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .visual-footer div {
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .visual-footer small {
+    display: block;
+    color: #94a3b8;
+    font-size: 11px;
+  }
+
+  .visual-footer strong {
+    display: block;
+    margin-top: 6px;
+    color: #f8fafc;
+    font-size: 26px;
+    font-weight: 950;
+  }
+
+  @media (max-width: 1100px) {
+    .print-settings-panel {
+      flex-direction: column;
+    }
+
+    .settings-controls {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .warehouse-empty-pro {
+      grid-template-columns: 1fr;
+    }
+
+    .empty-left h2 {
+      font-size: 34px;
+    }
+  }
+
+  @media (max-width: 800px) {
+    .qr-map-header {
+      align-items: flex-start;
+      flex-direction: column;
+      padding-right: 0;
+    }
+
+    .qr-map-page {
+      min-height: auto;
+    }
+
+    .qr-map-header h1 {
+      font-size: 28px;
+    }
+
+    .qr-map-actions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .new-location-btn,
+    .print-btn,
+    .print-selected-btn {
+      width: 100%;
+    }
+
+    .settings-controls {
+      grid-template-columns: 1fr;
+    }
+
+    .qr-selection-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .qr-selection-actions {
+      flex-direction: column;
+    }
+
+    .qr-selection-actions button {
+      width: 100%;
+    }
+
+    .warehouse-empty-pro {
+      padding: 20px;
+    }
+
+    .empty-left {
+      padding: 20px;
+    }
+
+    .empty-left h2 {
+      font-size: 28px;
+    }
+
+    .empty-steps {
+      grid-template-columns: 1fr;
+    }
+
+    .rack-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .empty-actions {
+      flex-direction: column;
+    }
+
+    .btn-primary-empty,
+    .btn-secondary-empty {
+      width: 100%;
+    }
+  }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 8mm;
+    }
+
+    html,
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    aside,
+    nav,
+    .sidebar,
+    .qr-map-header,
+    header,
+    .topbar,
+    .warehouse-empty-pro,
+    .print-settings-panel,
+    .qr-selection-toolbar,
+    .qr-select-box,
+    .qr-card-actions,
+    .edit-qr-btn {
+      display: none !important;
+    }
+
+    .app-layout,
+    .main-content,
+    .qr-map-page {
+      display: block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      min-height: auto !important;
+    }
+
+    body.print-selected-only .qr-card:not(.is-selected-for-print) {
+      display: none !important;
+    }
+
+    .qr-grid {
+      display: grid !important;
+      gap: 6mm !important;
+    }
+
+    body.print-cols-2 .qr-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    body.print-cols-3 .qr-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    body.print-cols-4 .qr-grid {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .qr-card {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      background: #ffffff !important;
+      color: #000000 !important;
+      border: 1px solid #000000 !important;
+      border-radius: 4mm !important;
+      box-shadow: none !important;
+      padding: 4mm !important;
+      display: grid !important;
+      gap: 3mm !important;
+      text-align: center !important;
+    }
+
+    .qr-image-wrap {
+      background: #ffffff !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      display: grid !important;
+      place-items: center !important;
+    }
+
+    .qr-image-wrap img {
+      width: var(--qr-print-size) !important;
+      height: var(--qr-print-size) !important;
+      max-width: 100% !important;
+      object-fit: contain !important;
+    }
+
+    .qr-info h2,
+    .qr-info strong,
+    .qr-info p,
+    .qr-info small,
+    .qr-info span {
+      color: #000000 !important;
+    }
+
+    .qr-info span {
+      font-size: 8pt !important;
+      letter-spacing: 0.04em !important;
+    }
+
+    .qr-info h2 {
+      margin: 2mm 0 0 !important;
+      font-size: 18pt !important;
+      line-height: 1 !important;
+      font-weight: 900 !important;
+    }
+
+    .qr-info p,
+    .qr-info small {
+      font-size: 8pt !important;
+      line-height: 1.25 !important;
+      margin: 1mm 0 0 !important;
+    }
+
+    .qr-info strong {
+      display: inline-block !important;
+      margin-top: 2mm !important;
+      border: 1px solid #000000 !important;
+      background: #ffffff !important;
+      border-radius: 2mm !important;
+      padding: 1.5mm 2mm !important;
+      font-size: 8pt !important;
+    }
+
+    body.print-hide-details .qr-info p,
+    body.print-hide-details .qr-info small,
+    body.print-hide-details .qr-info span {
+      display: none !important;
+    }
+  }
+</style>
+<script>
+  function updatePrintSettings() {
+    const qrSizeRange = document.getElementById("qrSizeRange");
+    const qrSizeValue = document.getElementById("qrSizeValue");
+    const printColumns = document.getElementById("printColumns");
+    const columnsValue = document.getElementById("columnsValue");
+    const showDetailsPrint = document.getElementById("showDetailsPrint");
+
+    if (!qrSizeRange || !printColumns || !showDetailsPrint) {
+      return;
+    }
+
+    const sizeMm = qrSizeRange.value;
+    const columns = printColumns.value;
+
+    /*
+      Ahora el slider afecta DOS cosas:
+
+      1. Tamaño real al imprimir:
+         --qr-print-size en mm.
+
+      2. Vista previa en pantalla:
+         --qr-preview-size en px, pero controlado para que no rompa la tarjeta.
+    */
+    const previewPx = Math.round(Number(sizeMm) * 2.7);
+
+    document.documentElement.style.setProperty(
+      "--qr-print-size",
+      sizeMm + "mm",
+    );
+
+    document.documentElement.style.setProperty(
+      "--qr-preview-size",
+      previewPx + "px",
+    );
+
+    if (qrSizeValue) {
+      qrSizeValue.textContent = sizeMm;
+    }
+
+    if (columnsValue) {
+      columnsValue.textContent = columns;
+    }
+
+    document.body.classList.remove(
+      "print-cols-2",
+      "print-cols-3",
+      "print-cols-4",
+    );
+
+    document.body.classList.add("print-cols-" + columns);
+
+    if (showDetailsPrint.checked) {
+      document.body.classList.remove("print-hide-details");
+    } else {
+      document.body.classList.add("print-hide-details");
+    }
+  }
+
+  function updateQrSelectionState() {
+    const cards = document.querySelectorAll("[data-qr-card]");
+    const selectedCount = document.getElementById("selectedQrCount");
+
+    let count = 0;
+
+    cards.forEach(function (card) {
+      const checkbox = card.querySelector(".qr-print-checkbox");
+
+      if (checkbox && checkbox.checked) {
+        card.classList.add("is-selected-for-print");
+        count += 1;
+      } else {
+        card.classList.remove("is-selected-for-print");
+      }
+    });
+
+    if (selectedCount) {
+      selectedCount.textContent = count;
+    }
+  }
+
+  function selectAllQrs() {
+    document
+      .querySelectorAll(".qr-print-checkbox")
+      .forEach(function (checkbox) {
+        checkbox.checked = true;
+      });
+
+    updateQrSelectionState();
+  }
+
+  function clearQrSelection() {
+    document
+      .querySelectorAll(".qr-print-checkbox")
+      .forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+
+    updateQrSelectionState();
+  }
+
+  function printAllQrs() {
+    document.body.classList.remove("print-selected-only");
+
+    updatePrintSettings();
+    updateQrSelectionState();
+
+    window.print();
+  }
+
+  function printSelectedQrs() {
+    updateQrSelectionState();
+
+    const selected = document.querySelectorAll(
+      ".qr-card.is-selected-for-print",
+    );
+
+    if (!selected.length) {
+      alert("Selecciona al menos un QR para imprimir.");
+      return;
+    }
+
+    document.body.classList.add("print-selected-only");
+
+    updatePrintSettings();
+
+    window.print();
+  }
+
+  window.addEventListener("afterprint", function () {
+    document.body.classList.remove("print-selected-only");
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    updatePrintSettings();
+    updateQrSelectionState();
+  });
+</script>
+{% endblock %}

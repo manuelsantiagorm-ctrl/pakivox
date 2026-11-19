@@ -1,0 +1,83 @@
+/*
+  Paginas de error: 403 (dentro del marco del sistema), 404 y 500 (independientes).
+  Paleta PAKIVOX: #021024 #052659 #5483B3 #7DA0CA #C1E8FF.
+*/
+
+.error-pagina {
+  --err-navy-900: #021024;
+  --err-navy-700: #052659;
+  --err-blue-500: #5483B3;
+  --err-blue-300: #7DA0CA;
+  --err-blue-100: #C1E8FF;
+  --err-text: #EAF6FF;
+  --err-muted: #9DB6D2;
+  --err-line: rgba(125, 160, 202, .22);
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 200px);
+  padding: 32px 16px;
+  color: var(--err-text);
+}
+
+body.error-solo {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(900px 600px at 85% -10%, rgba(84, 131, 179, .35), transparent 60%),
+    linear-gradient(180deg, #03152f, #021024 60%);
+}
+
+body.error-solo .error-pagina { min-height: 100vh; }
+
+.error-tarjeta {
+  width: min(640px, 100%);
+  padding: 44px 32px;
+  border: 1px solid var(--err-line);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgba(84, 131, 179, .2), transparent 60%),
+    linear-gradient(170deg, rgba(5, 38, 89, .7), rgba(2, 16, 36, .94) 70%);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .85);
+  text-align: center;
+}
+
+.error-marca { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 26px; color: var(--err-text); font-weight: 700; letter-spacing: .02em; text-decoration: none; }
+.error-marca img { width: 34px; height: 34px; border-radius: 10px; }
+
+.error-icono {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: linear-gradient(150deg, var(--err-blue-100), var(--err-blue-500));
+  color: var(--err-navy-900);
+  font-size: 38px;
+  box-shadow: 0 16px 40px -12px rgba(125, 160, 202, .8);
+}
+
+.error-codigo { display: inline-block; margin-bottom: 12px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--err-line); color: var(--err-blue-100); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.error-tarjeta h1, .error-tarjeta h2 { margin: 0 0 12px; font-size: clamp(24px, 4vw, 34px); font-weight: 700; color: var(--err-text); }
+.error-tarjeta p { max-width: 520px; margin: 0 auto 26px; font-size: 16px; line-height: 1.65; color: var(--err-muted); }
+
+.error-acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+
+.error-acciones a, .error-acciones button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.error-acciones .es-principal { border: 0; background: var(--err-blue-100); color: var(--err-navy-900); }
+.error-acciones .es-secundaria { border: 1px solid var(--err-line); background: rgba(2, 16, 36, .5); color: var(--err-text); }
+.error-acciones a:focus-visible, .error-acciones button:focus-visible { outline: 3px solid var(--err-blue-100); outline-offset: 3px; }

@@ -1,0 +1,35 @@
+<div class="kpi-card ps6b-kpi purple">
+  <span class="ps6b-kpi-icon"><i class="bi bi-file-earmark-text"></i></span>
+  <div>
+    <span>Estado</span>
+    <strong>{{ order.get_status_display }}</strong>
+    <small>Estado actual del pedido</small>
+  </div>
+</div>
+
+<div class="kpi-card ps6b-kpi blue">
+  <span class="ps6b-kpi-icon"><i class="bi bi-wallet2"></i></span>
+  <div>
+    <span>Total del pedido</span>
+    <strong>${{ order.total|floatformat:2 }}</strong>
+    <small>Valor total estimado</small>
+  </div>
+</div>
+
+<div class="kpi-card ps6b-kpi green">
+  <span class="ps6b-kpi-icon"><i class="bi bi-check-circle"></i></span>
+  <div>
+    <span>Pagado</span>
+    <strong>${{ order.amount_paid|floatformat:2 }}</strong>
+    <small>Total recibido</small>
+  </div>
+</div>
+
+<div class="kpi-card ps6b-kpi amber">
+  <span class="ps6b-kpi-icon"><i class="bi bi-cash-coin"></i></span>
+  <div>
+    <span>Saldo</span>
+    <strong>${{ order.balance_due|floatformat:2 }}</strong>
+    <small>Pendiente por pagar</small>
+  </div>
+</div>

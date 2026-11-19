@@ -1,0 +1,133 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#021024">
+  <title>Pedido {{ folio }} · {{ company_name }}</title>
+  <link rel="icon" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{% static 'style/seguimiento_pedido.css' %}">
+</head>
+<body class="sp-body">
+  <header class="sp-header">
+    <div class="sp-wrap">
+      <span class="sp-company">{{ company_name }}</span>
+      <h1>Pedido {{ folio }}</h1>
+      <span class="sp-status sp-status-{{ status }}">{{ status_label }}</span>
+    </div>
+  </header>
+
+  <main class="sp-wrap sp-main">
+    {% if is_cancelled %}
+      <section class="sp-card sp-alert">
+        <i class="bi bi-x-circle" aria-hidden="true"></i>
+        <div>
+          <h2>Este pedido fue cancelado</h2>
+          <p>Si tienes dudas sobre la cancelación o un reembolso, comunícate con {{ company_name }}.</p>
+        </div>
+      </section>
+    {% else %}
+      <section class="sp-card" aria-label="Avance del pedido">
+        <ol class="sp-steps">
+          {% for step in steps %}
+            <li class="sp-step{% if step.done %} is-done{% endif %}{% if step.current %} is-current{% endif %}">
+              <span class="sp-dot" aria-hidden="true">
+                {% if step.done %}<i class="bi bi-check-lg"></i>{% else %}{{ forloop.counter }}{% endif %}
+              </span>
+              <span class="sp-step-label">{{ step.label }}</span>
+              {% if step.current %}<span class="sp-sr">(paso actual)</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    {% endif %}
+
+    {% if shipments %}
+      <section class="sp-card">
+        <h2><i class="bi bi-truck" aria-hidden="true"></i> Envío</h2>
+        {% for shipment in shipments %}
+          <div class="sp-shipment">
+            {% if shipments|length > 1 %}<span class="sp-muted">Paquete {{ shipment.index }}</span>{% endif %}
+            <div class="sp-row">
+              <span>Paquetería</span>
+              <strong>{{ shipment.carrier }}</strong>
+            </div>
+            {% if shipment.tracking_number %}
+              <div class="sp-row">
+                <span>Guía</span>
+                <strong class="sp-mono">{{ shipment.tracking_number }}</strong>
+              </div>
+            {% endif %}
+            <div class="sp-row">
+              <span>Estado</span>
+              <strong>{{ shipment.status_label }}</strong>
+            </div>
+            {% if shipment.shipped_at %}
+              <div class="sp-row"><span>Salió</span><strong>{{ shipment.shipped_at|date:"d/m/Y H:i" }}</strong></div>
+            {% endif %}
+            {% if shipment.delivered_at %}
+              <div class="sp-row"><span>Entregado</span><strong>{{ shipment.delivered_at|date:"d/m/Y H:i" }}</strong></div>
+            {% endif %}
+            {% if shipment.tracking_url %}
+              <a class="sp-button" href="{{ shipment.tracking_url }}" target="_blank" rel="noopener noreferrer">
+                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Rastrear en la paquetería
+              </a>
+            {% endif %}
+            {% if shipment.events %}
+              <ul class="sp-events">
+                {% for event in shipment.events %}
+                  <li>
+                    <strong>{{ event.event_name|default:event.description|default:"Actualización" }}</strong>
+                    <span>{{ event.occurred_at|date:"d/m/Y H:i" }}{% if event.location %} · {{ event.location }}{% endif %}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <section class="sp-card">
+      <h2><i class="bi bi-receipt" aria-hidden="true"></i> Resumen</h2>
+      {% if discount %}<div class="sp-row"><span>Descuento</span><strong>−${{ discount|floatformat:"2g" }}</strong></div>{% endif %}
+      {% if shipping_cost %}<div class="sp-row"><span>Envío</span><strong>${{ shipping_cost|floatformat:"2g" }}</strong></div>{% endif %}
+      <div class="sp-row sp-total"><span>Total</span><strong>${{ total|floatformat:"2g" }}</strong></div>
+      <div class="sp-row"><span>Pagado</span><strong>${{ amount_paid|floatformat:"2g" }}</strong></div>
+      {% if balance_due and not is_cancelled %}
+        <div class="sp-row sp-due"><span>Por pagar</span><strong>${{ balance_due|floatformat:"2g" }}</strong></div>
+      {% endif %}
+      {% if destination %}
+        <div class="sp-row"><span>Destino</span><strong>{{ destination }}</strong></div>
+      {% endif %}
+    </section>
+
+    {% if items %}
+      <section class="sp-card">
+        <h2><i class="bi bi-bag" aria-hidden="true"></i> Productos</h2>
+        <ul class="sp-items">
+          {% for item in items %}
+            <li>
+              <div>
+                <strong>{{ item.name }}</strong>
+                {% if item.details %}<span class="sp-muted">{{ item.details }}</span>{% endif %}
+              </div>
+              <span class="sp-qty">× {{ item.quantity }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        {% if items_truncated %}<p class="sp-muted">Se muestran los primeros productos del pedido.</p>{% endif %}
+      </section>
+    {% endif %}
+
+    <p class="sp-updated">Actualizado el {{ updated_at|date:"d/m/Y \a \l\a\s H:i" }}. ¿Dudas? Escríbele a {{ company_name }}.</p>
+  </main>
+
+  <footer class="sp-footer">
+    <span>Seguimiento con <a href="https://www.pakivox.com/" rel="noopener">PAKIVOX</a></span>
+  </footer>
+</body>
+</html>

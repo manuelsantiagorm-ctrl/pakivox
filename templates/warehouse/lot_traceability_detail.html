@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Lote {{ lot.lot_number }} | PAKIVOX{% endblock %}
+{% block page_title %}Trazabilidad de lote{% endblock %}
+{% block page_subtitle %}Inventario, movimientos operativos, pedidos y clientes vinculados{% endblock %}
+
+{% block content %}
+<section class="lt1d-page">
+  <div class="lt1d-head">
+    <div>
+      <span class="eyebrow">Lote</span>
+      <h2>{{ lot.lot_number }}</h2>
+      <p>
+        {{ lot.variant.sku }}
+        {% if lot.variant.product %}· {{ lot.variant.product.name }}{% endif %}
+      </p>
+    </div>
+    <div class="lt1d-actions">
+      <span class="lot-status status-{{ lot.status }}">
+        {{ lot.get_status_display }}
+      </span>
+      <a href="{% url 'warehouse:lot_traceability_list' %}">Volver al centro</a>
+    </div>
+  </div>
+
+  {% if lot.expiration_date and lot.expiry_severity %}
+    <div class="lt1d-alert {% if lot.expiry_severity == 'expired' or lot.expiry_severity == 'critical' %}danger{% else %}warning{% endif %}">
+      <strong>Caducidad · {{ lot.expiry_label }}</strong>
+      <p>
+        Vence: {{ lot.expiration_date|date:"d/m/Y" }} ·
+        {{ lot.days_to_expiry }} día(s).
+        {% if lot.is_expired %}Este lote no puede reservarse, enviarse ni liberarse a disponible.{% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if lot.status == "recalled" %}
+    <div class="lt1d-alert danger">
+      <strong>LOTE EN RECALL</strong>
+      <p>
+        Revisa inmediatamente los pedidos con asignaciones consumidas.
+        Esta vista es de trazabilidad; no altera inventario ni notifica clientes.
+      </p>
+    </div>
+  {% elif lot.status == "blocked" %}
+    <div class="lt1d-alert warning">
+      <strong>Lote bloqueado</strong>
+      <p>El motor FEFO no debe asignar nuevas unidades de este lote.</p>
+    </div>
+  {% endif %}
+
+  <section class="lt1d-card lt1e-controls">
+    <div class="section-title">
+      <div>
+        <span>LT-1E · control operativo</span>
+        <h3>Bloqueo, recall, cuarentena y devoluciones</h3>
+      </div>
+      <small>Acciones auditadas</small>
+    </div>
+
+    <form method="post" action="{% url 'warehouse:lot_status_update' lot.id %}" class="lt1e-form">
+      {% csrf_token %}
+      <input type="hidden" name="request_id" value="{{ lot_action_request_id }}">
+      <select name="status" required>
+        <option value="active" {% if lot.status == "active" %}selected{% endif %}>Activo</option>
+        <option value="blocked" {% if lot.status == "blocked" %}selected{% endif %}>Bloqueado</option>
+        <option value="recalled" {% if lot.status == "recalled" %}selected{% endif %}>Recall / retirado</option>
+      </select>
+      <input name="reason" placeholder="Motivo obligatorio" required>
+      <button type="submit">Actualizar estado global</button>
+    </form>
+
+    {% if active_warehouse %}
+      <p class="lt1e-context">
+        Operando en <strong>{{ active_warehouse.name }}</strong>. Las acciones locales
+        nunca afectan otra bodega.
+      </p>
+
+      {% for balance in balances %}
+        {% if balance.location.warehouse_id == active_warehouse.id and balance.status == "available" and balance.physical_quantity > 0 %}
+          <form method="post" action="{% url 'warehouse:lot_balance_quarantine' balance.id %}" class="lt1e-form">
+            {% csrf_token %}
+            <input type="hidden" name="request_id" value="{{ lot_action_request_id }}">
+            <span><b>{{ balance.location.bin_code }}</b> · disponible {{ balance.available_quantity }}</span>
+            <input type="number" min="1" max="{{ balance.available_quantity }}" name="quantity" placeholder="Cantidad" required>
+            <input name="reason" placeholder="Motivo de cuarentena" required>
+            <button type="submit">Enviar a cuarentena</button>
+          </form>
+        {% endif %}
+      {% endfor %}
+
+      {% for balance in balances %}
+        {% if balance.location.warehouse_id == active_warehouse.id and balance.status == "quarantine" and balance.physical_quantity > 0 %}
+          <div class="lt1e-quarantine">
+            <strong>Cuarentena · {{ balance.physical_quantity }} unidades</strong>
+
+            <form method="post" action="{% url 'warehouse:lot_quarantine_release' balance.id %}" class="lt1e-form">
+              {% csrf_token %}
+              <input type="hidden" name="request_id" value="{{ lot_action_request_id }}">
+              <input type="number" min="1" max="{{ balance.physical_quantity }}" name="quantity" placeholder="Cantidad" required>
+              <select name="destination_location_id" required>
+                <option value="">Ubicación destino</option>
+                {% for location in active_locations %}
+                  <option value="{{ location.id }}">{{ location.bin_code }}</option>
+                {% endfor %}
+              </select>
+              <input name="reason" placeholder="Motivo de liberación" required>
+              <button type="submit">Liberar cuarentena</button>
+            </form>
+
+            <form method="post" action="{% url 'warehouse:lot_quarantine_waste' balance.id %}" class="lt1e-form">
+              {% csrf_token %}
+              <input type="hidden" name="request_id" value="{{ lot_action_request_id }}">
+              <input type="number" min="1" max="{{ balance.physical_quantity }}" name="quantity" placeholder="Cantidad" required>
+              <input name="reason" placeholder="Motivo de desecho" required>
+              <button type="submit" class="danger-btn">Enviar a merma</button>
+            </form>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {% if affected_orders %}
+        <div class="lt1e-returns">
+          <h4>Registrar devolución de cliente a cuarentena</h4>
+          {% for order in affected_orders %}
+            <form method="post" action="{% url 'warehouse:lot_return_quarantine' lot.id %}" class="lt1e-form">
+              {% csrf_token %}
+              <input type="hidden" name="request_id" value="{{ lot_action_request_id }}">
+              <input type="hidden" name="order_id" value="{{ order.id }}">
+              <span>Pedido <b>{{ order.folio }}</b></span>
+              <input type="number" min="1" name="quantity" placeholder="Cantidad" required>
+              <input name="reason" placeholder="Motivo de devolución" required>
+              <button type="submit">Recibir en cuarentena</button>
+            </form>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="lt1e-context">
+        “Todas las bodegas” permanece en modo lectura para operaciones locales.
+        Selecciona una bodega concreta para cuarentena, devolución, liberación o merma.
+      </p>
+    {% endif %}
+  </section>
+
+  <div class="lt1d-kpis">
+    <article><span>Físico visible</span><strong>{{ trace_summary.physical }}</strong></article>
+    <article><span>Reservado</span><strong>{{ trace_summary.reserved }}</strong></article>
+    <article><span>Comprometido</span><strong>{{ trace_summary.committed }}</strong></article>
+    <article><span>Asignado activo</span><strong>{{ trace_summary.allocation_reserved }}</strong></article>
+    <article><span>Consumido / enviado</span><strong>{{ trace_summary.allocation_consumed }}</strong></article>
+    <article><span>Liberado</span><strong>{{ trace_summary.allocation_released }}</strong></article>
+  </div>
+
+  <section class="lt1d-card">
+    <div class="section-title">
+      <div>
+        <span>Inventario actual</span>
+        <h3>Ubicaciones del lote</h3>
+      </div>
+      <small>
+        {% if lot.expiration_date %}
+          Caduca {{ lot.expiration_date|date:"d/m/Y" }}
+        {% else %}
+          Sin caducidad
+        {% endif %}
+      </small>
+    </div>
+
+    <div class="lt1d-table">
+      <div class="thead">
+        <span>Bodega</span><span>Ubicación</span><span>Estado</span>
+        <span>Físico</span><span>Reservado</span><span>Comprometido</span>
+      </div>
+      {% for balance in balances %}
+        <div class="trow">
+          <span>{{ balance.location.warehouse.name }}</span>
+          <strong>{{ balance.location.bin_code }}</strong>
+          <span>{{ balance.get_status_display }}</span>
+          <span>{{ balance.physical_quantity }}</span>
+          <span>{{ balance.reserved_quantity }}</span>
+          <span>{{ balance.committed_quantity }}</span>
+        </div>
+      {% empty %}
+        <div class="empty">Sin saldo actual visible en tus bodegas.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="lt1d-card">
+    <div class="section-title">
+      <div>
+        <span>Impacto comercial</span>
+        <h3>Pedidos y clientes vinculados</h3>
+      </div>
+      <small>{{ affected_orders|length }} pedido{{ affected_orders|length|pluralize }}</small>
+    </div>
+
+    <div class="lt1d-orders">
+      {% for order in affected_orders %}
+        <a href="{% url 'warehouse:timeline_pedido' order.id %}">
+          <div>
+            <span>Pedido</span>
+            <strong>{{ order.folio }}</strong>
+          </div>
+          <div>
+            <span>Cliente</span>
+            <strong>
+              {% if order.customer %}{{ order.customer.full_name }}{% else %}Sin cliente{% endif %}
+            </strong>
+          </div>
+          <div>
+            <span>Estado</span>
+            <strong>{{ order.get_status_display }}</strong>
+          </div>
+          <div>→</div>
+        </a>
+      {% empty %}
+        <div class="empty">Este lote todavía no está ligado a pedidos visibles.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="lt1d-card">
+    <div class="section-title">
+      <div>
+        <span>Historial operativo</span>
+        <h3>Asignaciones de picking</h3>
+      </div>
+      <small>{{ allocations|length }} registro{{ allocations|length|pluralize }}</small>
+    </div>
+
+    <div class="lt1d-table allocations">
+      <div class="thead">
+        <span>Pedido</span><span>Cliente</span><span>Bodega</span>
+        <span>Ubicación</span><span>Cantidad</span><span>Estado</span>
+      </div>
+      {% for allocation in allocations %}
+        <div class="trow">
+          <span>
+            <a href="{% url 'warehouse:timeline_pedido' allocation.picking_item.picking_order.order.id %}">
+              {{ allocation.picking_item.picking_order.order.folio }}
+            </a>
+          </span>
+          <span>
+            {% if allocation.picking_item.picking_order.order.customer %}
+              {{ allocation.picking_item.picking_order.order.customer.full_name }}
+            {% else %}
+              Sin cliente
+            {% endif %}
+          </span>
+          <span>{{ allocation.picking_item.picking_order.warehouse.name }}</span>
+          <span>{{ allocation.balance.location.bin_code }}</span>
+          <strong>{{ allocation.quantity }}</strong>
+          <span>{{ allocation.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div class="empty">Sin asignaciones históricas visibles.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="lt1d-card">
+    <div class="section-title">
+      <div>
+        <span>LT-1E · movimiento entre bodegas</span>
+        <h3>Historial de transferencias del lote</h3>
+      </div>
+      <small>{{ transfer_allocations|length }} asignación{{ transfer_allocations|length|pluralize }}</small>
+    </div>
+    <div class="lt1d-table allocations">
+      <div class="thead">
+        <span>Traspaso</span><span>Ruta</span><span>Origen</span>
+        <span>Cantidad</span><span>Recibido</span><span>Estado</span>
+      </div>
+      {% for a in transfer_allocations %}
+        <div class="trow">
+          <span><a href="{% url 'warehouse:transfer_detail' a.transfer_item.transfer.id %}">{{ a.transfer_item.transfer.folio }}</a></span>
+          <span>{{ a.transfer_item.transfer.origin_warehouse.name }} → {{ a.transfer_item.transfer.destination_warehouse.name }}</span>
+          <span>{{ a.source_balance.location.bin_code }}</span>
+          <strong>{{ a.quantity }}</strong>
+          <span>{{ a.received_quantity }}</span>
+          <span>{{ a.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div class="empty">Sin transferencias históricas de este lote.</div>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+
+<style>
+.lt1d-page{display:grid;gap:18px}.lt1d-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.eyebrow,.section-title span{color:#38bdf8;text-transform:uppercase;font-size:11px;letter-spacing:.08em;font-weight:900}.lt1d-head h2{color:#f8fafc;font-size:32px;margin:5px 0}.lt1d-head p{color:#94a3b8;margin:0}.lt1d-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.lt1d-actions a{color:#7dd3fc;text-decoration:none;font-weight:800}.lot-status{padding:8px 11px;border-radius:999px;font-weight:900;background:#1e293b;color:#e2e8f0}.status-active{background:rgba(34,197,94,.12);color:#86efac}.status-blocked{background:rgba(245,158,11,.12);color:#fcd34d}.status-recalled{background:rgba(239,68,68,.12);color:#fca5a5}.lt1d-alert{padding:14px;border-radius:12px}.lt1d-alert p{margin:5px 0 0}.lt1d-alert.danger{border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#fecaca}.lt1d-alert.warning{border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.08);color:#fde68a}.lt1d-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.lt1d-kpis article{padding:14px;background:#111827;border:1px solid rgba(148,163,184,.14);border-radius:12px}.lt1d-kpis span{display:block;color:#94a3b8;font-size:11px}.lt1d-kpis strong{display:block;color:#f8fafc;font-size:23px;margin-top:5px}.lt1d-card{background:#0f172a;border:1px solid rgba(148,163,184,.14);border-radius:14px;padding:17px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.section-title h3{color:#f8fafc;margin:4px 0}.section-title small{color:#94a3b8}.lt1d-table{display:grid;margin-top:14px}.thead,.trow{display:grid;grid-template-columns:1.3fr 1fr 1fr .7fr .7fr .8fr;gap:10px;align-items:center;padding:11px}.thead{color:#64748b;font-size:10px;text-transform:uppercase;font-weight:900;border-bottom:1px solid rgba(148,163,184,.16)}.trow{color:#cbd5e1;border-bottom:1px solid rgba(148,163,184,.08)}.trow strong{color:#f8fafc}.trow a{color:#7dd3fc;text-decoration:none}.lt1d-orders{display:grid;gap:8px;margin-top:14px}.lt1d-orders>a{display:grid;grid-template-columns:1fr 1.4fr 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:11px;background:#111827;border:1px solid rgba(148,163,184,.12);text-decoration:none}.lt1d-orders span{display:block;color:#64748b;font-size:10px;text-transform:uppercase}.lt1d-orders strong{color:#f8fafc}.empty{padding:18px;color:#94a3b8;text-align:center}.allocations .thead,.allocations .trow{grid-template-columns:1fr 1.4fr 1fr 1fr .6fr .8fr}@media(max-width:1000px){.lt1d-kpis{grid-template-columns:repeat(3,1fr)}.thead{display:none}.trow,.allocations .trow{grid-template-columns:1fr 1fr}.lt1d-orders>a{grid-template-columns:1fr 1fr}}@media(max-width:600px){.lt1d-head{display:grid}.lt1d-kpis{grid-template-columns:repeat(2,1fr)}}
+
+.lt1e-controls{display:grid;gap:12px}.lt1e-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:#111827;border:1px solid rgba(148,163,184,.12);border-radius:10px}.lt1e-form input,.lt1e-form select{background:#0b1220;border:1px solid rgba(148,163,184,.22);color:#e2e8f0;padding:9px 10px;border-radius:8px}.lt1e-form button{border:0;border-radius:8px;padding:9px 12px;background:#0369a1;color:#fff;font-weight:800;cursor:pointer}.lt1e-form .danger-btn{background:#991b1b}.lt1e-context{color:#94a3b8}.lt1e-quarantine,.lt1e-returns{display:grid;gap:8px;padding:10px;border-radius:10px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.16)}.lt1e-quarantine strong,.lt1e-returns h4{color:#f8fafc;margin:0}
+</style>
+{% endblock %}

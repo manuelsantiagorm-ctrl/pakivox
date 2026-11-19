@@ -1,0 +1,181 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Estado de Resultados | PAKIVOX{% endblock %}
+{% block page_title %}Estado de Resultados{% endblock %}
+{% block page_subtitle %}
+Resultados de {{ company.name }} del {{ start_date|date:"d/m/Y" }} al {{ end_date|date:"d/m/Y" }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="financial-page">
+
+  <form method="get" class="financial-toolbar">
+    <div class="financial-filter">
+      <div class="financial-field">
+        <label>Desde</label>
+        <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+      </div>
+
+      <div class="financial-field">
+        <label>Hasta</label>
+        <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+      </div>
+
+      <button class="financial-button" type="submit">
+        Actualizar
+      </button>
+    </div>
+
+    <a class="financial-button"
+       href="{% url 'accounting:financial_dashboard' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}">
+      Volver a Finanzas
+    </a>
+  </form>
+
+  <section class="financial-kpis">
+    <article class="financial-kpi info">
+      <span>Ventas netas</span>
+      <strong>${{ statement.net_sales|floatformat:2 }}</strong>
+      <small>{{ statement.orders_count }} pedidos entregados</small>
+    </article>
+
+    <article class="financial-kpi success">
+      <span>Utilidad bruta</span>
+      <strong>${{ statement.gross_profit|floatformat:2 }}</strong>
+      <small>{{ statement.gross_margin_percent|floatformat:2 }}% margen</small>
+    </article>
+
+    <article class="financial-kpi warning">
+      <span>Gastos operativos</span>
+      <strong>${{ statement.operating_expenses|floatformat:2 }}</strong>
+      <small>Periodo seleccionado</small>
+    </article>
+
+    <article class="financial-kpi {% if statement.net_profit < 0 %}danger{% else %}success{% endif %}">
+      <span>Utilidad neta</span>
+      <strong>${{ statement.net_profit|floatformat:2 }}</strong>
+      <small>{{ statement.net_margin_percent|floatformat:2 }}% margen neto</small>
+    </article>
+  </section>
+
+  <section class="financial-grid">
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h2>Estado de resultados</h2>
+      </div>
+
+      <table class="statement-table">
+        <tr>
+          <td>Ventas brutas</td>
+          <td>${{ statement.gross_sales|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="negative">
+          <td>(-) Descuentos</td>
+          <td>${{ statement.discounts|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Ventas netas</td>
+          <td>${{ statement.net_sales|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="negative">
+          <td>(-) Costo de ventas</td>
+          <td>${{ statement.cost_of_sales|floatformat:2 }}</td>
+        </tr>
+
+        <tr class="subtotal">
+          <td>Utilidad bruta</td>
+          <td>${{ statement.gross_profit|floatformat:2 }}</td>
+        </tr>
+
+        <tr>
+          <td>(+) Ingresos por envío</td>
+          <td>${{ statement.shipping_income|floatformat:2 }}</td>
+        </tr>
+
+        {% for income in statement.other_income %}
+          <tr>
+            <td>(+) {{ income.name }}</td>
+            <td>${{ income.amount|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+
+        {% for expense in statement.expenses %}
+          <tr class="negative">
+            <td>(-) {{ expense.name }}</td>
+            <td>${{ expense.amount|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+
+        <tr class="total">
+          <td>UTILIDAD NETA</td>
+          <td>${{ statement.net_profit|floatformat:2 }}</td>
+        </tr>
+      </table>
+
+      <div class="financial-alert warning" style="margin-top: 16px;">
+        El IVA cobrado en el periodo es
+        <strong>${{ statement.taxes|floatformat:2 }}</strong>.
+        Se presenta por separado porque no forma parte de los ingresos.
+      </div>
+    </article>
+
+    <article class="financial-panel">
+      <div class="financial-panel-header">
+        <h3>Comparación contra periodo anterior</h3>
+      </div>
+
+      <table class="statement-table">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Anterior</th>
+            <th>Actual</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>Ventas netas</td>
+            <td>${{ statement.previous.net_sales|floatformat:2 }}</td>
+            <td>${{ statement.net_sales|floatformat:2 }}</td>
+          </tr>
+
+          <tr>
+            <td>Utilidad bruta</td>
+            <td>${{ statement.previous.gross_profit|floatformat:2 }}</td>
+            <td>${{ statement.gross_profit|floatformat:2 }}</td>
+          </tr>
+
+          <tr>
+            <td>Gastos</td>
+            <td>${{ statement.previous.operating_expenses|floatformat:2 }}</td>
+            <td>${{ statement.operating_expenses|floatformat:2 }}</td>
+          </tr>
+
+          <tr class="total">
+            <td>Utilidad neta</td>
+            <td>${{ statement.previous.net_profit|floatformat:2 }}</td>
+            <td>${{ statement.net_profit|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="financial-alert success" style="margin-top: 16px;">
+        Periodo anterior:
+        {{ statement.previous.start_date|date:"d/m/Y" }}
+        al
+        {{ statement.previous.end_date|date:"d/m/Y" }}.
+      </div>
+    </article>
+  </section>
+
+</section>
+{% endblock %}

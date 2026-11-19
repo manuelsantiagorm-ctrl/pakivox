@@ -1,0 +1,1453 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Incidencia #{{ incident.pk }} | PAKIVOX
+{% endblock %}
+
+{% block content %}
+
+<style>
+/* ============================================================
+   PAKIVOX · INCIDENT DETAIL
+   Executive SaaS UI
+   ============================================================ */
+
+.p9d {
+    --p9d-bg: #0b1120;
+    --p9d-card: rgba(15, 23, 42, .82);
+    --p9d-card-strong: #111c2f;
+    --p9d-border: rgba(148, 163, 184, .14);
+    --p9d-border-hover: rgba(148, 163, 184, .25);
+
+    --p9d-text: #f8fafc;
+    --p9d-text-2: #cbd5e1;
+    --p9d-muted: #94a3b8;
+    --p9d-muted-2: #64748b;
+
+    --p9d-primary: #3b82f6;
+    --p9d-primary-hover: #2563eb;
+    --p9d-primary-soft: rgba(59, 130, 246, .11);
+
+    --p9d-success: #10b981;
+    --p9d-success-soft: rgba(16, 185, 129, .11);
+
+    --p9d-warning: #f59e0b;
+    --p9d-warning-soft: rgba(245, 158, 11, .11);
+
+    --p9d-danger: #ef4444;
+    --p9d-danger-soft: rgba(239, 68, 68, .10);
+
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 30px 24px 60px;
+    color: var(--p9d-text);
+}
+
+/* ------------------------------------------------------------
+   TOP NAV
+   ------------------------------------------------------------ */
+
+.p9d-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.p9d-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #93c5fd;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    transition: .18s ease;
+}
+
+.p9d-back:hover {
+    color: #bfdbfe;
+    transform: translateX(-2px);
+}
+
+.p9d-incident-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border: 1px solid var(--p9d-border);
+    background: rgba(15, 23, 42, .6);
+    border-radius: 9px;
+    color: var(--p9d-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+
+/* ------------------------------------------------------------
+   HERO
+   ------------------------------------------------------------ */
+
+.p9d-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--p9d-border);
+    border-radius: 20px;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, .10),
+            transparent 32%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(17, 28, 47, .96),
+            rgba(15, 23, 42, .95)
+        );
+    box-shadow:
+        0 16px 50px rgba(0, 0, 0, .18),
+        inset 0 1px 0 rgba(255, 255, 255, .025);
+    margin-bottom: 20px;
+}
+
+.p9d-hero-inner {
+    padding: 28px 30px;
+}
+
+.p9d-eyebrow {
+    color: #60a5fa;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.p9d-hero h1 {
+    margin: 0;
+    max-width: 900px;
+    color: var(--p9d-text);
+    font-size: clamp(25px, 3vw, 34px);
+    line-height: 1.18;
+    font-weight: 800;
+    letter-spacing: -.035em;
+}
+
+.p9d-description {
+    max-width: 900px;
+    margin: 14px 0 0;
+    color: var(--p9d-muted);
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.p9d-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+}
+
+.p9d-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 6px 10px;
+    border: 1px solid var(--p9d-border);
+    background: rgba(15, 23, 42, .65);
+    border-radius: 8px;
+    color: var(--p9d-text-2);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.p9d-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--p9d-muted-2);
+}
+
+/* STATUS */
+
+.p9d-badge[data-status="open"] {
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, .22);
+    background: rgba(245, 158, 11, .07);
+}
+
+.p9d-badge[data-status="open"] .p9d-badge-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, .08);
+}
+
+.p9d-badge[data-status="resolved"],
+.p9d-badge[data-status="closed"] {
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, .22);
+    background: rgba(16, 185, 129, .07);
+}
+
+.p9d-badge[data-status="resolved"] .p9d-badge-dot,
+.p9d-badge[data-status="closed"] .p9d-badge-dot {
+    background: #10b981;
+}
+
+.p9d-badge[data-status="in_progress"],
+.p9d-badge[data-status="processing"] {
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, .22);
+    background: rgba(59, 130, 246, .07);
+}
+
+.p9d-badge[data-status="in_progress"] .p9d-badge-dot,
+.p9d-badge[data-status="processing"] .p9d-badge-dot {
+    background: #3b82f6;
+}
+
+/* SEVERITY */
+
+.p9d-badge[data-severity="critical"] {
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, .25);
+    background: rgba(239, 68, 68, .07);
+}
+
+.p9d-badge[data-severity="high"] {
+    color: #fdba74;
+    border-color: rgba(249, 115, 22, .25);
+    background: rgba(249, 115, 22, .07);
+}
+
+.p9d-badge[data-severity="medium"] {
+    color: #fde68a;
+    border-color: rgba(245, 158, 11, .22);
+    background: rgba(245, 158, 11, .07);
+}
+
+.p9d-badge[data-severity="low"] {
+    color: #a7f3d0;
+    border-color: rgba(16, 185, 129, .20);
+    background: rgba(16, 185, 129, .06);
+}
+
+/* ------------------------------------------------------------
+   RESOLUTION
+   ------------------------------------------------------------ */
+
+.p9d-resolution {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+    padding: 16px 18px;
+    border: 1px solid rgba(16, 185, 129, .18);
+    border-radius: 12px;
+    background: var(--p9d-success-soft);
+}
+
+.p9d-resolution-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(16, 185, 129, .12);
+    color: #6ee7b7;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.p9d-resolution strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #a7f3d0;
+    font-size: 13px;
+}
+
+.p9d-resolution p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+/* ------------------------------------------------------------
+   STANDARD PANEL
+   ------------------------------------------------------------ */
+
+.p9d-panel {
+    border: 1px solid var(--p9d-border);
+    border-radius: 18px;
+    background: var(--p9d-card);
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, .10),
+        inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.p9d-panel-header {
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, .10);
+}
+
+.p9d-panel-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.p9d-panel-kicker {
+    margin-bottom: 6px;
+    color: #60a5fa;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.p9d-panel h2 {
+    margin: 0;
+    color: var(--p9d-text);
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 800;
+    letter-spacing: -.015em;
+}
+
+.p9d-panel-subtitle {
+    margin: 7px 0 0;
+    max-width: 760px;
+    color: var(--p9d-muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.p9d-panel-body {
+    padding: 22px 24px 24px;
+}
+
+/* ------------------------------------------------------------
+   HELD WORKFLOW
+   ------------------------------------------------------------ */
+
+.p9d-held-panel {
+    margin-bottom: 20px;
+}
+
+.p9d-workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.p9d-action-card {
+    position: relative;
+    padding: 20px;
+    border: 1px solid var(--p9d-border);
+    border-radius: 15px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 41, 59, .48),
+            rgba(15, 23, 42, .48)
+        );
+    transition:
+        border-color .18s ease,
+        transform .18s ease,
+        background .18s ease;
+}
+
+.p9d-action-card:hover {
+    border-color: var(--p9d-border-hover);
+    transform: translateY(-1px);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 41, 59, .62),
+            rgba(15, 23, 42, .55)
+        );
+}
+
+.p9d-action-card--warning {
+    border-color: rgba(245, 158, 11, .15);
+}
+
+.p9d-action-card--danger {
+    border-color: rgba(239, 68, 68, .16);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(69, 10, 10, .12),
+            rgba(15, 23, 42, .50)
+        );
+}
+
+.p9d-action-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.p9d-action-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(59, 130, 246, .17);
+    border-radius: 9px;
+    background: var(--p9d-primary-soft);
+    color: #93c5fd;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.p9d-action-card--warning .p9d-action-number {
+    border-color: rgba(245, 158, 11, .17);
+    background: var(--p9d-warning-soft);
+    color: #fcd34d;
+}
+
+.p9d-action-card--danger .p9d-action-number {
+    border-color: rgba(239, 68, 68, .17);
+    background: var(--p9d-danger-soft);
+    color: #fca5a5;
+}
+
+.p9d-action-heading h3 {
+    margin: 1px 0 3px;
+    color: #f1f5f9;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.p9d-action-heading p {
+    margin: 0;
+    color: var(--p9d-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.p9d-danger-message {
+    margin: 0 0 16px;
+    padding: 11px 13px;
+    border: 1px solid rgba(239, 68, 68, .14);
+    border-radius: 9px;
+    background: rgba(239, 68, 68, .06);
+    color: #fca5a5;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* ------------------------------------------------------------
+   FORMS
+   ------------------------------------------------------------ */
+
+.p9d form {
+    margin: 0;
+}
+
+.p9d label {
+    display: block;
+    margin: 0 0 6px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.p9d input,
+.p9d select,
+.p9d textarea {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid #334155;
+    outline: none;
+    border-radius: 9px;
+    background: #0b1324;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 13px;
+    transition:
+        border-color .17s ease,
+        box-shadow .17s ease,
+        background .17s ease;
+}
+
+.p9d textarea {
+    resize: vertical;
+    min-height: 78px;
+    line-height: 1.5;
+}
+
+.p9d input::placeholder,
+.p9d textarea::placeholder {
+    color: #52647b;
+}
+
+.p9d input:hover,
+.p9d select:hover,
+.p9d textarea:hover {
+    border-color: #475569;
+}
+
+.p9d input:focus,
+.p9d select:focus,
+.p9d textarea:focus {
+    border-color: #3b82f6;
+    background: #0d1729;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .10);
+}
+
+.p9d input[type="file"] {
+    padding: 7px;
+    color: var(--p9d-muted);
+}
+
+.p9d input[type="file"]::file-selector-button {
+    margin-right: 10px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 7px;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.p9d form p {
+    margin: 0;
+}
+
+.p9d .helptext {
+    display: block;
+    margin: -8px 0 12px;
+    color: var(--p9d-muted-2);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.p9d ul.errorlist {
+    margin: 0 0 8px;
+    padding: 9px 11px;
+    list-style: none;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, .08);
+    color: #fca5a5;
+    font-size: 12px;
+}
+
+/* ------------------------------------------------------------
+   BUTTONS
+   ------------------------------------------------------------ */
+
+.p9d-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 39px;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        transform .16s ease,
+        background .16s ease,
+        border-color .16s ease,
+        box-shadow .16s ease;
+}
+
+.p9d-btn:hover {
+    transform: translateY(-1px);
+}
+
+.p9d-btn:active {
+    transform: translateY(0);
+}
+
+.p9d-btn-primary {
+    background: var(--p9d-primary);
+    color: #fff;
+    box-shadow: 0 5px 16px rgba(37, 99, 235, .15);
+}
+
+.p9d-btn-primary:hover {
+    background: var(--p9d-primary-hover);
+}
+
+.p9d-btn-warning {
+    background: #b45309;
+    color: #fff;
+}
+
+.p9d-btn-warning:hover {
+    background: #92400e;
+}
+
+.p9d-btn-danger {
+    background: #b91c1c;
+    color: #fff;
+}
+
+.p9d-btn-danger:hover {
+    background: #991b1b;
+}
+
+/* ------------------------------------------------------------
+   OPERATIONS + TIMELINE
+   ------------------------------------------------------------ */
+
+.p9d-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(360px, 1.08fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.p9d-operations {
+    display: grid;
+    gap: 14px;
+}
+
+.p9d-operation-card {
+    padding: 20px;
+    border: 1px solid var(--p9d-border);
+    border-radius: 15px;
+    background: var(--p9d-card);
+}
+
+.p9d-operation-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 5px;
+}
+
+.p9d-operation-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 9px;
+    background: rgba(59, 130, 246, .09);
+    color: #93c5fd;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.p9d-operation-card h2 {
+    margin: 0;
+    color: #f1f5f9;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.p9d-operation-description {
+    margin: 0 0 16px 43px;
+    color: var(--p9d-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* timeline */
+
+.p9d-timeline-panel {
+    overflow: hidden;
+}
+
+.p9d-timeline {
+    padding: 6px 24px 26px;
+}
+
+.p9d-event {
+    position: relative;
+    padding: 20px 0 20px 28px;
+    border-left: 1px solid #334155;
+}
+
+.p9d-event:last-child {
+    padding-bottom: 4px;
+    border-left-color: transparent;
+}
+
+.p9d-event-dot {
+    position: absolute;
+    left: -5px;
+    top: 25px;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #3b82f6;
+    box-shadow:
+        0 0 0 4px #0f172a,
+        0 0 0 5px rgba(59, 130, 246, .20);
+}
+
+.p9d-event-type {
+    margin-bottom: 6px;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.p9d-event-notes {
+    margin-bottom: 8px;
+    color: var(--p9d-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.p9d-event-date {
+    color: var(--p9d-muted-2);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .03em;
+}
+
+.p9d-empty {
+    padding: 28px 24px 32px;
+    text-align: center;
+    color: var(--p9d-muted);
+}
+
+.p9d-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 11px;
+    border: 1px solid var(--p9d-border);
+    border-radius: 11px;
+    background: #111c2f;
+    color: #64748b;
+}
+
+.p9d-empty p {
+    margin: 0;
+    font-size: 12px;
+}
+
+/* ------------------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------------------ */
+
+@media (max-width: 980px) {
+    .p9d-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .p9d {
+        padding: 20px 14px 45px;
+    }
+
+    .p9d-topbar {
+        align-items: flex-start;
+    }
+
+    .p9d-hero-inner {
+        padding: 22px 18px;
+    }
+
+    .p9d-workflow-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .p9d-panel-header,
+    .p9d-panel-body {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .p9d-timeline {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .p9d-topbar {
+        flex-direction: column;
+    }
+
+    .p9d-hero h1 {
+        font-size: 23px;
+    }
+
+    .p9d-action-card {
+        padding: 17px;
+    }
+
+    .p9d-badges {
+        align-items: stretch;
+    }
+}
+</style>
+
+
+<main class="p9d">
+
+    <!-- ========================================================
+         NAVIGATION
+         ======================================================== -->
+    <div class="p9d-topbar">
+
+        <a
+            class="p9d-back"
+            href="{% url 'shipping_hub:incident_center' %}"
+        >
+            <span>←</span>
+            <span>Centro de incidencias</span>
+        </a>
+
+        <div class="p9d-incident-id">
+            INC-{{ incident.pk }}
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================
+         INCIDENT HERO
+         ======================================================== -->
+    <section class="p9d-hero">
+
+        <div class="p9d-hero-inner">
+
+            <div class="p9d-eyebrow">
+                Gestión de incidencia
+            </div>
+
+            <h1>
+                {{ incident.title }}
+            </h1>
+
+            <p class="p9d-description">
+                {{ incident.description }}
+            </p>
+
+
+            <div class="p9d-badges">
+
+                <div class="p9d-badge">
+                    <span class="p9d-badge-dot"></span>
+                    {{ incident.get_incident_type_display }}
+                </div>
+
+                <div
+                    class="p9d-badge"
+                    data-severity="{{ incident.severity }}"
+                >
+                    <span class="p9d-badge-dot"></span>
+                    Severidad · {{ incident.get_severity_display }}
+                </div>
+
+                <div
+                    class="p9d-badge"
+                    data-status="{{ incident.status }}"
+                >
+                    <span class="p9d-badge-dot"></span>
+                    {{ incident.get_status_display }}
+                </div>
+
+            </div>
+
+
+            {% if incident.resolution %}
+
+                <div class="p9d-resolution">
+
+                    <div class="p9d-resolution-icon">
+                        ✓
+                    </div>
+
+                    <div>
+                        <strong>Incidencia resuelta</strong>
+
+                        <p>
+                            {{ incident.resolution }}
+                        </p>
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================
+         HELD INCIDENT RESOLUTION
+         ======================================================== -->
+    {% if incident.incident_type == "held" and incident.status == "open" %}
+
+        <section class="p9d-panel p9d-held-panel">
+
+            <header class="p9d-panel-header">
+
+                <div class="p9d-panel-title-row">
+
+                    <div>
+                        <div class="p9d-panel-kicker">
+                            Resolución operativa
+                        </div>
+
+                        <h2>
+                            Resolver rechazo de paquetería
+                        </h2>
+
+                        <p class="p9d-panel-subtitle">
+                            Selecciona la acción que representa lo ocurrido.
+                            Al completar cualquiera de estas opciones, PAKIVOX
+                            registrará la resolución correspondiente.
+                        </p>
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <div class="p9d-panel-body">
+
+                <div class="p9d-workflow-grid">
+
+
+                    <!-- REPACK -->
+                    <article class="p9d-action-card">
+
+                        <div class="p9d-action-heading">
+
+                            <div class="p9d-action-number">
+                                01
+                            </div>
+
+                            <div>
+                                <h3>
+                                    Se resolvió reempacando
+                                </h3>
+
+                                <p>
+                                    La paquetería aceptó el envío después de corregir el empaque.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <form
+                            method="post"
+                            action="{% url 'shipping_hub:incident_resolve_repack' incident.pk %}"
+                        >
+
+                            {% csrf_token %}
+
+                            <label for="repack-notes">
+                                Notas de resolución
+                            </label>
+
+                            <textarea
+                                id="repack-notes"
+                                name="notes"
+                                rows="3"
+                                placeholder="Ej. Se reforzó el empaque y la paquetería aceptó el envío."
+                            ></textarea>
+
+                            <button
+                                type="submit"
+                                class="p9d-btn p9d-btn-primary"
+                            >
+                                Confirmar resolución
+                                <span>→</span>
+                            </button>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- NEW LABEL -->
+                    <article class="p9d-action-card">
+
+                        <div class="p9d-action-heading">
+
+                            <div class="p9d-action-number">
+                                02
+                            </div>
+
+                            <div>
+                                <h3>
+                                    Regenerar guía
+                                </h3>
+
+                                <p>
+                                    Registra la nueva paquetería y número de seguimiento.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <form
+                            method="post"
+                            action="{% url 'shipping_hub:incident_resolve_new_label' incident.pk %}"
+                        >
+
+                            {% csrf_token %}
+
+                            <label for="new-carrier">
+                                Nueva paquetería
+                            </label>
+
+                            <input
+                                id="new-carrier"
+                                type="text"
+                                name="new_carrier_name"
+                                placeholder="Ej. FedEx"
+                                required
+                            >
+
+
+                            <label for="new-tracking">
+                                Nuevo número de guía
+                            </label>
+
+                            <input
+                                id="new-tracking"
+                                type="text"
+                                name="new_tracking_number"
+                                placeholder="Ej. 875123456789"
+                                required
+                            >
+
+
+                            <label for="new-label-notes">
+                                Notas
+                            </label>
+
+                            <textarea
+                                id="new-label-notes"
+                                name="notes"
+                                rows="2"
+                                placeholder="Información adicional de la nueva guía."
+                            ></textarea>
+
+
+                            <button
+                                type="submit"
+                                class="p9d-btn p9d-btn-primary"
+                            >
+                                Registrar nueva guía
+                                <span>→</span>
+                            </button>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- FIELD EXPENSE -->
+                    <article class="p9d-action-card p9d-action-card--warning">
+
+                        <div class="p9d-action-heading">
+
+                            <div class="p9d-action-number">
+                                03
+                            </div>
+
+                            <div>
+                                <h3>
+                                    Gasto pagado en sitio
+                                </h3>
+
+                                <p>
+                                    Registra el gasto operativo y adjunta el comprobante.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <form
+                            method="post"
+                            action="{% url 'shipping_hub:incident_resolve_field_expense' incident.pk %}"
+                            enctype="multipart/form-data"
+                        >
+
+                            {% csrf_token %}
+
+
+                            <label for="expense-carrier">
+                                Nueva paquetería
+                            </label>
+
+                            <input
+                                id="expense-carrier"
+                                type="text"
+                                name="expense_carrier_name"
+                                placeholder="Ej. DHL"
+                                required
+                            >
+
+
+                            <label for="expense-tracking">
+                                Nuevo número de guía
+                            </label>
+
+                            <input
+                                id="expense-tracking"
+                                type="text"
+                                name="expense_tracking_number"
+                                placeholder="Número de seguimiento"
+                                required
+                            >
+
+
+                            <label for="expense-amount">
+                                Monto pagado
+                            </label>
+
+                            <input
+                                id="expense-amount"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                name="expense_amount"
+                                placeholder="0.00"
+                                required
+                            >
+
+
+                            <label for="expense-currency">
+                                Moneda
+                            </label>
+
+                            <input
+                                id="expense-currency"
+                                type="text"
+                                name="expense_currency"
+                                value="MXN"
+                            >
+
+
+                            <label for="expense-receipt">
+                                Comprobante
+                            </label>
+
+                            <input
+                                id="expense-receipt"
+                                type="file"
+                                name="receipt_file"
+                                accept="image/*,application/pdf"
+                                required
+                            >
+
+
+                            <button
+                                type="submit"
+                                class="p9d-btn p9d-btn-warning"
+                            >
+                                Registrar gasto y guía
+                                <span>→</span>
+                            </button>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- CANCELLATION -->
+                    <article class="p9d-action-card p9d-action-card--danger">
+
+                        <div class="p9d-action-heading">
+
+                            <div class="p9d-action-number">
+                                04
+                            </div>
+
+                            <div>
+                                <h3>
+                                    Cancelar envío
+                                </h3>
+
+                                <p>
+                                    Utiliza esta opción únicamente cuando el pedido ya no puede enviarse.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div class="p9d-danger-message">
+                            Esta acción regresará el pedido a bodega y liberará
+                            el stock reservado.
+                        </div>
+
+
+                        <form
+                            method="post"
+                            action="{% url 'shipping_hub:incident_resolve_cancellation' incident.pk %}"
+                            onsubmit="return confirm('Esto cancelará el pedido y liberará el stock reservado. ¿Confirmas la cancelación?');"
+                        >
+
+                            {% csrf_token %}
+
+                            <label for="cancellation-notes">
+                                Motivo de cancelación
+                            </label>
+
+                            <textarea
+                                id="cancellation-notes"
+                                name="notes"
+                                rows="4"
+                                placeholder="Ej. Empaque irreparable y no existe una alternativa viable de envío."
+                                required
+                            ></textarea>
+
+
+                            <button
+                                type="submit"
+                                class="p9d-btn p9d-btn-danger"
+                            >
+                                Cancelar pedido
+                            </button>
+
+                        </form>
+
+                    </article>
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+    {% endif %}
+
+
+    <!-- ========================================================
+         OPERATIONS + EVENT HISTORY
+         ======================================================== -->
+    <div class="p9d-main-grid">
+
+
+        <!-- LEFT -->
+        <div class="p9d-operations">
+
+
+            <!-- STATUS -->
+            <section class="p9d-operation-card">
+
+                <div class="p9d-operation-title">
+
+                    <div class="p9d-operation-icon">
+                        ↻
+                    </div>
+
+                    <h2>
+                        Cambiar estado
+                    </h2>
+
+                </div>
+
+                <p class="p9d-operation-description">
+                    Actualiza el estado operativo de esta incidencia.
+                </p>
+
+
+                <form
+                    method="post"
+                    action="{% url 'shipping_hub:incident_transition' incident.pk %}"
+                >
+
+                    {% csrf_token %}
+
+                    {{ action_form.as_p }}
+
+                    <button
+                        type="submit"
+                        class="p9d-btn p9d-btn-primary"
+                    >
+                        Actualizar estado
+                    </button>
+
+                </form>
+
+            </section>
+
+
+            <!-- RETRY -->
+            <section class="p9d-operation-card">
+
+                <div class="p9d-operation-title">
+
+                    <div class="p9d-operation-icon">
+                        ↗
+                    </div>
+
+                    <h2>
+                        Programar reintento
+                    </h2>
+
+                </div>
+
+                <p class="p9d-operation-description">
+                    Agenda una nueva ejecución relacionada con esta incidencia.
+                </p>
+
+
+                <form
+                    method="post"
+                    action="{% url 'shipping_hub:retry_create' incident.pk %}"
+                >
+
+                    {% csrf_token %}
+
+                    {{ retry_form.as_p }}
+
+                    <button
+                        type="submit"
+                        class="p9d-btn p9d-btn-primary"
+                    >
+                        Programar reintento
+                    </button>
+
+                </form>
+
+            </section>
+
+
+            <!-- RETURN -->
+            <section class="p9d-operation-card">
+
+                <div class="p9d-operation-title">
+
+                    <div class="p9d-operation-icon">
+                        ↩
+                    </div>
+
+                    <h2>
+                        Registrar devolución
+                    </h2>
+
+                </div>
+
+                <p class="p9d-operation-description">
+                    Registra formalmente la devolución asociada a la incidencia.
+                </p>
+
+
+                <form
+                    method="post"
+                    action="{% url 'shipping_hub:return_create' incident.pk %}"
+                >
+
+                    {% csrf_token %}
+
+                    {{ return_form.as_p }}
+
+                    <button
+                        type="submit"
+                        class="p9d-btn p9d-btn-primary"
+                    >
+                        Crear devolución
+                    </button>
+
+                </form>
+
+            </section>
+
+        </div>
+
+
+        <!-- RIGHT · TIMELINE -->
+        <section class="p9d-panel p9d-timeline-panel">
+
+            <header class="p9d-panel-header">
+
+                <div class="p9d-panel-kicker">
+                    Auditoría
+                </div>
+
+                <h2>
+                    Historial de la incidencia
+                </h2>
+
+                <p class="p9d-panel-subtitle">
+                    Registro cronológico e inmutable de los movimientos realizados.
+                </p>
+
+            </header>
+
+
+            {% for event in incident.events.all %}
+
+                {% if forloop.first %}
+                    <div class="p9d-timeline">
+                {% endif %}
+
+                    <div class="p9d-event">
+
+                        <span class="p9d-event-dot"></span>
+
+                        <div class="p9d-event-type">
+                            {{ event.event_type }}
+                        </div>
+
+                        <div class="p9d-event-notes">
+                            {{ event.notes|default:"Sin notas" }}
+                        </div>
+
+                        <div class="p9d-event-date">
+                            {{ event.created_at|date:"d/m/Y · H:i" }}
+                        </div>
+
+                    </div>
+
+                {% if forloop.last %}
+                    </div>
+                {% endif %}
+
+            {% empty %}
+
+                <div class="p9d-empty">
+
+                    <div class="p9d-empty-icon">
+                        ◷
+                    </div>
+
+                    <p>
+                        Esta incidencia aún no tiene movimientos registrados.
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        </section>
+
+
+    </div>
+
+</main>
+
+{% endblock %}

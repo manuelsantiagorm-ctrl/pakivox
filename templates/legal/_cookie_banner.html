@@ -1,0 +1,13 @@
+<div class="cookie-layer" data-cookie-layer hidden>
+  <section class="cookie-banner" data-cookie-banner role="dialog" aria-modal="true" aria-labelledby="cookie-title">
+    <div><span class="cookie-kicker">Tu privacidad</span><h2 id="cookie-title">Tú decides qué cookies usar</h2><p>Usamos cookies esenciales para seguridad y sesión. Analítica y marketing solo se activan con tu autorización.</p></div>
+    <div class="cookie-actions"><button type="button" class="cookie-secondary" data-cookie-reject>Rechazar no esenciales</button><button type="button" class="cookie-secondary" data-cookie-customize>Configurar</button><button type="button" class="cookie-primary" data-cookie-accept>Aceptar todas</button></div>
+    <div class="cookie-settings" data-cookie-panel hidden>
+      <label><span><strong>Esenciales</strong><small>Seguridad, sesión y formularios.</small></span><input type="checkbox" checked disabled></label>
+      <label><span><strong>Analítica</strong><small>Medición agregada del uso.</small></span><input type="checkbox" data-cookie-category="analytics"></label>
+      <label><span><strong>Marketing</strong><small>Campañas y personalización.</small></span><input type="checkbox" data-cookie-category="marketing"></label>
+      <button type="button" class="cookie-primary" data-cookie-save>Guardar preferencias</button>
+    </div>
+    <a href="{% url 'legal:document' 'politica-cookies' %}" class="cookie-policy">Leer política de cookies</a>
+  </section>
+</div>

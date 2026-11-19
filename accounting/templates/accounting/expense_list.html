@@ -1,0 +1,102 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gastos Operativos | PAKIVOX{% endblock %}
+{% block page_title %}Gastos Operativos{% endblock %}
+{% block page_subtitle %}Control, trazabilidad y composición del gasto de {{ company.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+<style>
+  .expense-console{--ec-card:#111b2e;--ec-line:#263754;--ec-muted:#8fa3bf;--ec-cyan:#25c7f0;--ec-green:#29d391;--ec-yellow:#f4bc45;--ec-red:#ff6473;display:grid;gap:18px;padding-bottom:30px}
+  .ec-toolbar,.ec-card{background:linear-gradient(145deg,rgba(18,29,49,.97),rgba(10,18,32,.97));border:1px solid var(--ec-line);border-radius:18px;box-shadow:0 16px 38px rgba(0,0,0,.18)}
+  .ec-toolbar{padding:18px;display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .ec-periods,.ec-actions,.ec-fields{display:flex;gap:9px;align-items:end;flex-wrap:wrap}
+  .ec-chip,.ec-btn{border:1px solid #304664;background:#15233a;color:#c8d6e8;border-radius:10px;padding:10px 14px;text-decoration:none;font-weight:700;font-size:.82rem;cursor:pointer;transition:.18s}
+  .ec-chip:hover,.ec-btn:hover{border-color:var(--ec-cyan);color:#fff;transform:translateY(-1px)}
+  .ec-btn.primary{background:linear-gradient(135deg,#08a9d5,#186ff0);border-color:transparent;color:#fff}.ec-btn.success{background:linear-gradient(135deg,#10a96f,#20c98a);border-color:transparent;color:#fff}.ec-btn.danger{background:#321925;border-color:#783044;color:#ff9ba6;padding:7px 10px}
+  .ec-field{display:grid;gap:6px}.ec-field label{color:var(--ec-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.ec-field input,.ec-field select{min-height:40px;background:#0d1728;border:1px solid #2d4160;border-radius:9px;color:#eaf2fb;padding:8px 11px;outline:none}.ec-field input:focus,.ec-field select:focus{border-color:var(--ec-cyan);box-shadow:0 0 0 3px rgba(37,199,240,.1)}
+  .ec-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.ec-kpi{padding:18px;position:relative;overflow:hidden}.ec-kpi:after{content:"";position:absolute;inset:auto -22px -35px auto;width:95px;height:95px;border-radius:50%;background:rgba(37,199,240,.07)}.ec-kpi-label{color:var(--ec-muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.ec-kpi-value{font-size:1.75rem;color:#f4f8fc;font-weight:900;margin:7px 0 4px}.ec-kpi-note{font-size:.78rem;color:#9db0c8}.ec-up{color:var(--ec-red)}.ec-down{color:var(--ec-green)}
+  .ec-insights{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.ec-card{padding:19px}.ec-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}.ec-card h2{font-size:1rem;margin:0;color:#edf5ff}.ec-card-head span{color:var(--ec-muted);font-size:.76rem}.ec-bars{display:grid;gap:13px}.ec-bar-row{display:grid;grid-template-columns:minmax(120px,1fr) 2fr auto;align-items:center;gap:12px;font-size:.82rem;color:#ccdaea}.ec-bar{height:8px;border-radius:9px;background:#0a1424;overflow:hidden}.ec-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#087cd5,var(--ec-cyan))}.ec-bar-value{min-width:82px;text-align:right;color:#f4f8fc;font-weight:800}.ec-status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ec-status{padding:14px;border-radius:12px;border:1px solid #263754;background:#0c1728}.ec-status strong{font-size:1.3rem;display:block;color:#fff}.ec-status span{font-size:.74rem;color:var(--ec-muted)}
+  .ec-table-card{padding:0;overflow:hidden}.ec-table-head{padding:18px;border-bottom:1px solid var(--ec-line);display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.ec-search{min-width:260px;flex:1}.ec-table-wrap{overflow-x:auto}.ec-table{width:100%;border-collapse:collapse;min-width:980px}.ec-table th{background:#0c1728;color:#8fa3bf;text-transform:uppercase;letter-spacing:.06em;font-size:.69rem;padding:12px 15px;text-align:left}.ec-table td{padding:14px 15px;border-top:1px solid rgba(44,62,88,.58);color:#cbd8e8;font-size:.82rem;vertical-align:middle}.ec-table tbody tr:hover{background:rgba(26,62,92,.24)}.ec-concept strong{color:#f3f7fc;display:block}.ec-concept small{color:#7890ae}.ec-amount{font-weight:900;color:#fff;white-space:nowrap}.ec-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:.7rem;font-weight:850}.ec-badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}.ec-badge.posted{background:rgba(41,211,145,.12);color:#4ce0a4}.ec-badge.draft{background:rgba(244,188,69,.12);color:#f6c75e}.ec-badge.cancelled{background:rgba(255,100,115,.11);color:#ff8390}.ec-cancelled{opacity:.58}.ec-cancelled .ec-amount{text-decoration:line-through}.ec-proof{color:#62d8f5;text-decoration:none}.ec-empty{text-align:center!important;padding:42px!important;color:#8197b2!important}.ec-pagination{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-top:1px solid var(--ec-line);color:var(--ec-muted);font-size:.78rem}.ec-pages{display:flex;gap:7px}.ec-pages a{color:#bdd0e5;text-decoration:none;border:1px solid #304664;border-radius:8px;padding:7px 10px}
+  @media(max-width:1100px){.ec-kpis{grid-template-columns:repeat(2,1fr)}.ec-insights{grid-template-columns:1fr}}
+  @media(max-width:650px){.ec-kpis{grid-template-columns:1fr}.ec-toolbar,.ec-card{border-radius:14px}.ec-fields,.ec-field{width:100%}.ec-field input,.ec-field select{width:100%}.ec-status-grid{grid-template-columns:1fr}.ec-bar-row{grid-template-columns:1fr auto}.ec-bar{grid-column:1/-1}.ec-pagination{align-items:flex-start;gap:12px;flex-direction:column}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="expense-console">
+  <form method="get" class="ec-toolbar">
+    <div>
+      <div class="ec-periods" style="margin-bottom:12px">
+        <a class="ec-chip" href="?start_date={{ current_month_start|date:'Y-m-d' }}&end_date={{ today|date:'Y-m-d' }}">Mes actual</a>
+        <a class="ec-chip" href="?start_date={{ previous_month_start|date:'Y-m-d' }}&end_date={{ previous_month_end|date:'Y-m-d' }}">Mes anterior</a>
+        <a class="ec-chip" href="?start_date={{ quarter_start|date:'Y-m-d' }}&end_date={{ today|date:'Y-m-d' }}">Trimestre</a>
+      </div>
+      <div class="ec-fields">
+        <div class="ec-field"><label>Desde</label><input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}"></div>
+        <div class="ec-field"><label>Hasta</label><input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}"></div>
+        <button class="ec-btn primary" type="submit"><i class="bi bi-funnel"></i> Aplicar periodo</button>
+      </div>
+    </div>
+    <div class="ec-actions">
+      <a class="ec-btn" href="{% url 'accounting:financial_dashboard' %}"><i class="bi bi-grid"></i> Mesa Financiera</a>
+      {% if can_manage_accounting %}<a class="ec-btn success" href="{% url 'accounting:expense_create' %}"><i class="bi bi-plus-circle"></i> Nuevo gasto</a>{% endif %}
+    </div>
+  </form>
+
+  <div class="ec-kpis">
+    <article class="ec-card ec-kpi"><div class="ec-kpi-label">Gasto contabilizado</div><div class="ec-kpi-value">${{ posted_total|floatformat:2 }}</div><div class="ec-kpi-note">{{ posted_count }} movimiento{{ posted_count|pluralize }}</div></article>
+    <article class="ec-card ec-kpi"><div class="ec-kpi-label">Cambio vs. periodo anterior</div><div class="ec-kpi-value {% if period_change_pct > 0 %}ec-up{% elif period_change_pct < 0 %}ec-down{% endif %}">{% if period_change_is_new %}Nuevo{% else %}{{ period_change_pct|floatformat:1 }}%{% endif %}</div><div class="ec-kpi-note">Anterior: ${{ previous_total|floatformat:2 }}</div></article>
+    <article class="ec-card ec-kpi"><div class="ec-kpi-label">Categoría principal</div><div class="ec-kpi-value" style="font-size:1.3rem">{{ top_category.category__name|default:"Sin movimientos" }}</div><div class="ec-kpi-note">{% if top_category %}${{ top_category.total|floatformat:2 }} · {{ top_category.percentage|floatformat:1 }}% del gasto{% else %}Sin gasto contabilizado{% endif %}</div></article>
+    <article class="ec-card ec-kpi"><div class="ec-kpi-label">Importe promedio</div><div class="ec-kpi-value">${{ average_expense|floatformat:2 }}</div><div class="ec-kpi-note">Solo movimientos contabilizados</div></article>
+  </div>
+
+  <div class="ec-insights">
+    <article class="ec-card">
+      <div class="ec-card-head"><h2><i class="bi bi-bar-chart"></i> Distribución por categoría</h2><span>Top 5 del periodo</span></div>
+      <div class="ec-bars">
+        {% for item in category_totals %}
+          <div class="ec-bar-row"><span>{{ item.category__name }}</span><div class="ec-bar"><i style="width:{{ item.percentage|floatformat:0 }}%"></i></div><span class="ec-bar-value">${{ item.total|floatformat:2 }}</span></div>
+        {% empty %}<div class="ec-empty">Aún no hay gastos contabilizados en este periodo.</div>{% endfor %}
+      </div>
+    </article>
+    <article class="ec-card">
+      <div class="ec-card-head"><h2><i class="bi bi-clipboard-data"></i> Control de movimientos</h2><span>Estado real</span></div>
+      <div class="ec-status-grid">
+        <div class="ec-status"><strong>{{ posted_count }}</strong><span>Contabilizados</span></div>
+        <div class="ec-status"><strong>{{ draft_count }}</strong><span>Borradores</span></div>
+        <div class="ec-status"><strong>{{ cancelled_count }}</strong><span>Cancelados</span></div>
+      </div>
+      <p style="color:#8398b3;font-size:.77rem;margin:14px 0 0"><i class="bi bi-info-circle"></i> Los cancelados permanecen para auditoría, pero no forman parte del gasto ejercido.</p>
+    </article>
+  </div>
+
+  <article class="ec-card ec-table-card">
+    <form method="get" class="ec-table-head">
+      <input type="hidden" name="start_date" value="{{ start_date|date:'Y-m-d' }}"><input type="hidden" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+      <div class="ec-field ec-search"><label>Buscar</label><input type="search" name="q" value="{{ search_query }}" placeholder="Concepto, beneficiario o referencia"></div>
+      <div class="ec-field"><label>Categoría</label><select name="category"><option value="">Todas</option>{% for category in categories %}<option value="{{ category.id }}" {% if category_filter == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+      <div class="ec-field"><label>Estado</label><select name="status"><option value="">Todos</option><option value="posted" {% if status_filter == 'posted' %}selected{% endif %}>Contabilizado</option><option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Borrador</option><option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelado</option></select></div>
+      <button class="ec-btn primary" type="submit">Filtrar</button>
+    </form>
+    <div class="ec-table-wrap">
+      <table class="ec-table">
+        <thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Beneficiario</th><th>Cuenta</th><th>Estado</th><th>Importe</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for expense in expenses %}
+          <tr class="{% if expense.status == 'cancelled' %}ec-cancelled{% endif %}">
+            <td>{{ expense.expense_date|date:"d/m/Y" }}</td>
+            <td class="ec-concept"><strong>{{ expense.description }}</strong><small>{{ expense.reference|default:"Sin referencia" }}</small></td>
+            <td>{{ expense.category.name }}</td><td>{{ expense.supplier_name|default:"—" }}</td><td>{{ expense.payment_account.name }}</td>
+            <td><span class="ec-badge {{ expense.status }}">{{ expense.get_status_display }}</span></td><td class="ec-amount">${{ expense.amount|floatformat:2 }}</td>
+            <td><div class="ec-actions">{% if expense.receipt_file %}<a class="ec-proof" href="{{ expense.receipt_file.url }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Comprobante</a>{% endif %}{% if can_manage_accounting and expense.status != 'cancelled' %}<form method="post" action="{% url 'accounting:expense_cancel' expense.id %}" onsubmit="return confirm('¿Cancelar y revertir este gasto?');">{% csrf_token %}<button class="ec-btn danger" type="submit">Cancelar</button></form>{% endif %}</div></td>
+          </tr>
+          {% empty %}<tr><td colspan="8" class="ec-empty">No hay gastos que coincidan con los filtros seleccionados.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}<div class="ec-pagination"><span>Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</span><div class="ec-pages">{% if page_obj.has_previous %}<a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}</div></div>{% endif %}
+  </article>
+</section>
+{% endblock %}

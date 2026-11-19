@@ -1,0 +1,4472 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo pedido | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Nuevo pedido
+{% endblock %}
+
+{% block page_subtitle %}
+Selecciona al cliente y confirma su dirección de entrega antes de generar el folio
+{% endblock %}
+
+{% block content %}
+
+<section class="new-order-page">
+
+  <!-- =====================================================
+       ENCABEZADO
+  ====================================================== -->
+
+  <header class="new-order-hero">
+
+    <div>
+      <span class="new-order-eyebrow">
+        VENTAS / NUEVO PEDIDO
+      </span>
+
+      <h1>
+        Crear nuevo pedido
+      </h1>
+
+      <p>
+        Selecciona al cliente y define el destino que utilizarán
+        almacén y Shipping Hub durante el proceso de entrega.
+      </p>
+    </div>
+
+    <a
+      href="{% url 'sales:lista_pedidos' %}"
+      class="new-order-back"
+    >
+      ← Volver a pedidos
+    </a>
+
+  </header>
+
+  <div class="new-order-layout">
+
+    <main class="new-order-main">
+
+      <!-- =====================================================
+           FORMULARIO PRINCIPAL
+      ====================================================== -->
+
+      <form
+        method="post"
+        id="createOrderForm"
+        class="new-order-form"
+        novalidate
+      >
+
+        {% csrf_token %}
+
+        <input
+          type="hidden"
+          name="company"
+          value="{{ company.id }}"
+        >
+
+        {% if conversation_id %}
+          <input
+            type="hidden"
+            name="conversation_id"
+            value="{{ conversation_id }}"
+          >
+        {% endif %}
+
+        <!-- =================================================
+             PASO 1: CLIENTE
+        ================================================== -->
+
+        <section class="order-section">
+
+          <div class="order-section-title">
+
+            <span class="order-step-number">
+              1
+            </span>
+
+            <div>
+              <h2>
+                Cliente
+              </h2>
+
+              <p>
+                Solo se muestran clientes pertenecientes a
+                {{ company.name }}.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="order-fields-grid">
+
+            <label class="order-field">
+
+              <span>
+                Empresa
+              </span>
+
+              <input
+                type="text"
+                value="{{ company.name }}"
+                disabled
+              >
+
+            </label>
+
+            <div class="order-field">
+
+              <div class="order-field-heading">
+
+                <span>
+                  Cliente
+                </span>
+
+                <button
+                  type="button"
+                  id="openQuickCustomer"
+                  class="small-action-button"
+                >
+                  + Nuevo cliente
+                </button>
+
+              </div>
+              <select
+                name="customer"
+                id="customerSelect"
+                required
+                hidden
+                aria-hidden="true"
+                tabindex="-1"
+              >
+
+                <option value="">
+                  Selecciona un cliente
+                </option>
+
+                {% for customer in customers %}
+
+                  <option
+                    value="{{ customer.id }}"
+                    {% if selected_customer_id|stringformat:"s" == customer.id|stringformat:"s" %}
+                      selected
+                    {% endif %}
+                  >
+                    {% if customer.full_name %}
+                      {{ customer.full_name }}
+                    {% else %}
+                      Cliente #{{ customer.id }}
+                    {% endif %}
+
+                    {% if customer.business_name %}
+                      — {{ customer.business_name }}
+                    {% endif %}
+                  </option>
+
+                {% empty %}
+
+                  <option value="">
+                    No hay clientes registrados
+                  </option>
+
+                {% endfor %}
+
+              </select>
+              <button
+                type="button"
+                id="customerPickerTrigger"
+                class="customer-picker-trigger"
+              >
+                <span id="customerPickerTriggerText" class="customer-picker-trigger-text">
+                  Selecciona un cliente
+                </span>
+                <span class="customer-picker-trigger-icon" aria-hidden="true">🔍</span>
+              </button>
+
+              <small class="field-help">
+                Al seleccionar un cliente se consultarán sus
+                direcciones de envío guardadas.
+              </small>
+
+              <input
+                type="hidden"
+                name="duplicate_override"
+                id="duplicateOverride"
+                value="0"
+              >
+
+              <section
+                id="relatedOrdersPanel"
+                class="related-orders-panel"
+                data-api-url="{% url 'sales:customer_related_orders_api' %}"
+                hidden
+                aria-live="polite"
+              >
+                <button
+                  type="button"
+                  id="relatedOrdersToggle"
+                  class="related-orders-heading"
+                  aria-expanded="false"
+                  aria-controls="relatedOrdersBody"
+                >
+                  <div>
+                    <strong>Este cliente ya tiene pedidos relacionados</strong>
+                    <p id="relatedOrdersMessage">
+                      Revísalos antes de crear una venta nueva.
+                    </p>
+                  </div>
+                  <span class="related-orders-badge">REVISAR</span>
+                  <span class="related-orders-chevron" aria-hidden="true">▾</span>
+                </button>
+
+                <div id="relatedOrdersBody" class="related-orders-body" hidden>
+                  <div id="relatedOrdersList" class="related-orders-list"></div>
+
+                  <div class="related-orders-actions">
+                    <button
+                      type="button"
+                      id="createAnywayButton"
+                      class="related-orders-continue"
+                    >
+                      Es una venta nueva · continuar
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                id="orderHistoryPanel"
+                class="order-history-panel"
+                hidden
+                aria-live="polite"
+              >
+                <button
+                  type="button"
+                  id="orderHistoryToggle"
+                  class="order-history-toggle"
+                  aria-expanded="false"
+                  aria-controls="orderHistoryList"
+                >
+                  <span>Pedidos anteriores</span>
+                  <span id="orderHistoryCount" class="order-history-count"></span>
+                  <span class="order-history-chevron" aria-hidden="true">▾</span>
+                </button>
+
+                <div id="orderHistoryList" class="order-history-list" hidden></div>
+              </section>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- =================================================
+             PASO 2: DIRECCIÓN
+        ================================================== -->
+
+        <section class="order-section">
+
+          <div class="order-section-title">
+
+            <span class="order-step-number">
+              2
+            </span>
+
+            <div>
+              <h2>
+                Dirección de entrega
+              </h2>
+
+              <p>
+                Usa una dirección guardada o captura una diferente
+                para este pedido.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="address-mode-grid">
+
+            <label class="address-mode-option">
+
+              <input
+                type="radio"
+                name="address_mode"
+                id="savedAddressMode"
+                value="saved"
+                {% if request.POST.address_mode == "saved" %}
+                  checked
+                {% endif %}
+              >
+
+              <span>
+                <strong>
+                  Dirección guardada
+                </strong>
+
+                <small>
+                  Seleccionar un domicilio registrado en CRM.
+                </small>
+              </span>
+
+            </label>
+
+            <label class="address-mode-option">
+
+              <input
+                type="radio"
+                name="address_mode"
+                id="customAddressMode"
+                value="custom"
+                {% if request.POST.address_mode == "custom" %}
+                  checked
+                {% endif %}
+              >
+
+              <span>
+                <strong>
+                  Usar otra dirección
+                </strong>
+
+                <small>
+                  Capturar un destino diferente para esta entrega.
+                </small>
+              </span>
+
+            </label>
+
+          </div>
+
+          <!-- DIRECCIONES GUARDADAS -->
+
+          <div
+            id="savedAddressesPanel"
+            class="address-panel"
+          >
+
+            <div
+              id="savedAddressesStatus"
+              class="address-status"
+            >
+              Selecciona un cliente para consultar sus direcciones.
+            </div>
+
+            <div
+              id="savedAddressesList"
+              class="saved-addresses-list"
+            ></div>
+
+          </div>
+
+          <!-- DIRECCIÓN PERSONALIZADA -->
+
+          <div
+            id="customAddressPanel"
+            class="address-panel custom-address-panel"
+            hidden
+          >
+
+            <div class="custom-address-header">
+
+              <strong>
+                Otra dirección de entrega
+              </strong>
+
+              <p>
+                Captura los datos exactamente como deben aparecer
+                en la guía.
+              </p>
+
+            </div>
+
+            <div class="order-fields-grid">
+
+              <label class="order-field">
+
+                <span>
+                  Nombre de la dirección
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_label"
+                  value="{{ request.POST.custom_label }}"
+                  placeholder="Ej. Casa, Negocio o Sucursal Centro"
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Persona que recibe
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_contact_name"
+                  value="{{ request.POST.custom_contact_name }}"
+                  placeholder="Ej. Patricia López"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Teléfono
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_phone"
+                  value="{{ request.POST.custom_phone }}"
+                  placeholder="Ej. 5512345678"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Correo electrónico
+                </span>
+
+                <input
+                  type="email"
+                  name="custom_email"
+                  value="{{ request.POST.custom_email }}"
+                  placeholder="entregas@cliente.com"
+                >
+
+              </label>
+
+              <label class="order-field order-field-full">
+
+                <span>
+                  Calle
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_street"
+                  value="{{ request.POST.custom_street }}"
+                  placeholder="Ej. Avenida Nacional"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Número exterior
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_exterior_number"
+                  value="{{ request.POST.custom_exterior_number }}"
+                  placeholder="Ej. 180"
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Número interior
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_interior_number"
+                  value="{{ request.POST.custom_interior_number }}"
+                  placeholder="Opcional"
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Colonia
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_neighborhood"
+                  value="{{ request.POST.custom_neighborhood }}"
+                  placeholder="Ej. San Pedro"
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Ciudad o municipio
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_city"
+                  value="{{ request.POST.custom_city }}"
+                  placeholder="Ej. Tecámac"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Estado
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_state"
+                  value="{{ request.POST.custom_state }}"
+                  placeholder="Ej. Estado de México"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Código postal
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_zip_code"
+                  value="{{ request.POST.custom_zip_code }}"
+                  maxlength="5"
+                  inputmode="numeric"
+                  placeholder="Ej. 55740"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  País
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_country"
+                  value="{{ request.POST.custom_country|default:'México' }}"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field">
+
+                <span>
+                  Código de país
+                </span>
+
+                <input
+                  type="text"
+                  name="custom_country_code"
+                  value="{{ request.POST.custom_country_code|default:'MX' }}"
+                  maxlength="2"
+                  placeholder="MX"
+                  required
+                >
+
+              </label>
+
+              <label class="order-field order-field-full">
+
+                <span>
+                  Referencias
+                </span>
+
+                <textarea
+                  name="custom_reference"
+                  rows="3"
+                  placeholder="Ej. Portón negro, preguntar por recepción"
+                >{{ request.POST.custom_reference }}</textarea>
+
+              </label>
+
+            </div>
+
+            <div class="save-address-options">
+
+              <label>
+
+                <input
+                  type="checkbox"
+                  name="save_address"
+                  id="saveAddressCheckbox"
+                  value="1"
+                  {% if request.POST.save_address %}
+                    checked
+                  {% endif %}
+                >
+
+                <span>
+                  Guardar esta dirección en el perfil del cliente
+                </span>
+
+              </label>
+
+              <label>
+
+                <input
+                  type="checkbox"
+                  name="make_default"
+                  id="makeDefaultCheckbox"
+                  value="1"
+                  {% if request.POST.make_default %}
+                    checked
+                  {% endif %}
+                >
+
+                <span>
+                  Marcar como dirección principal
+                </span>
+
+              </label>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- =================================================
+             PASO 3: INFORMACIÓN ADICIONAL
+        ================================================== -->
+
+        <section class="order-section">
+
+          <div class="order-section-title">
+
+            <span class="order-step-number">
+              3
+            </span>
+
+            <div>
+              <h2>
+                Información adicional
+              </h2>
+
+              <p>
+                Agrega indicaciones para ventas, almacén o entrega.
+              </p>
+            </div>
+
+          </div>
+
+          <label class="order-field">
+
+            <span>
+              Notas internas del pedido
+            </span>
+
+            <textarea
+              name="notes"
+              rows="4"
+              placeholder="Ej. Entregar por la tarde, preguntar por recepción..."
+            >{{ request.POST.notes }}</textarea>
+
+          </label>
+
+        </section>
+
+        <!-- =================================================
+             ACCIONES
+        ================================================== -->
+
+        <div class="order-actions">
+
+          <a
+            href="{% url 'sales:lista_pedidos' %}"
+            class="button-cancel"
+          >
+            Cancelar
+          </a>
+
+          <button
+            type="button"
+            id="openChatApiBtn"
+            class="button-whatsapp"
+            data-url-template="{% url 'sales:abrir_chat_cliente_desde_pedido' 0 %}"
+          >
+            Abrir WhatsApp
+          </button>
+
+          <button
+            type="submit"
+            class="button-submit"
+          >
+            Crear pedido y generar folio
+          </button>
+
+        </div>
+
+      </form>
+
+      <!-- =====================================================
+           CREAR CLIENTE RÁPIDO
+      ====================================================== -->
+
+      <section
+        id="quickCustomerBox"
+        class="quick-customer-box"
+        hidden
+      >
+
+        <div class="quick-customer-header">
+
+          <div>
+            <span class="new-order-eyebrow">
+              CRM RÁPIDO
+            </span>
+
+            <h2>
+              Crear cliente
+            </h2>
+
+            <p>
+              Después de guardarlo podrás seleccionar o capturar
+              su dirección dentro del pedido.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            id="closeQuickCustomer"
+            class="small-action-button"
+          >
+            Cerrar
+          </button>
+
+        </div>
+
+        <form
+          method="post"
+          action="{% url 'sales:crear_cliente_rapido_desde_pedido' %}"
+          class="quick-customer-form"
+        >
+
+          {% csrf_token %}
+
+          <div class="order-fields-grid">
+
+            <label class="order-field">
+
+              <span>
+                Cliente / Razón social
+              </span>
+
+              <input
+                type="text"
+                name="customer_name"
+                placeholder="Ej. Comercializadora Patricia"
+                required
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                Nombre comercial
+              </span>
+
+              <input
+                type="text"
+                name="business_name"
+                placeholder="Ej. Patricia"
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                Persona de contacto
+              </span>
+
+              <input
+                type="text"
+                name="contact_name"
+                placeholder="Ej. Patricia López"
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                Tipo de cliente
+              </span>
+
+              <select name="customer_type">
+                <option value="lead">Lead</option>
+                <option value="prospect">Prospecto</option>
+                <option value="customer" selected>Cliente</option>
+                <option value="vip">Cliente VIP</option>
+                <option value="distributor">Distribuidor</option>
+              </select>
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                Teléfono
+              </span>
+
+              <input
+                type="text"
+                name="phone"
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                WhatsApp
+              </span>
+
+              <input
+                type="text"
+                name="whatsapp"
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                RFC
+              </span>
+
+              <input
+                type="text"
+                name="rfc"
+              >
+
+            </label>
+
+            <label class="order-field">
+
+              <span>
+                Lista de precios
+              </span>
+
+              <select name="price_level">
+                <option value="public">Precio público</option>
+                <option value="wholesale" selected>Precio mayoreo</option>
+                <option value="distributor">Precio distribuidor</option>
+                <option value="special">Precio especial</option>
+              </select>
+
+            </label>
+
+            <label class="order-field order-field-full">
+
+              <span>
+                Correo electrónico
+              </span>
+
+              <input
+                type="email"
+                name="email"
+              >
+
+            </label>
+
+            <label class="order-field order-field-full">
+
+              <span>
+                Notas del cliente
+              </span>
+
+              <textarea
+                name="notes"
+                rows="3"
+              ></textarea>
+
+            </label>
+
+          </div>
+
+          <div class="order-actions">
+
+            <button
+              type="button"
+              id="cancelQuickCustomer"
+              class="button-cancel"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="button-submit"
+            >
+              Guardar cliente
+            </button>
+
+          </div>
+
+        </form>
+
+      </section>
+      {{ customers_data|json_script:"customers-data-json" }}
+      <section id="customerPickerBox" class="customer-picker-box" hidden data-profile-api-url="{% url 'sales:customer_quick_profile_api' %}">
+        <div class="customer-picker-panel">
+
+          <div class="customer-picker-header">
+            <div>
+              <span class="new-order-eyebrow">CRM</span>
+              <h2>Seleccionar cliente</h2>
+              <p>Busca por razón social, nombre comercial, RFC, teléfono o contacto.</p>
+            </div>
+            <button type="button" id="closeCustomerPicker" class="small-action-button">Cerrar</button>
+          </div>
+
+          <div class="customer-picker-search">
+            <input type="text" id="customerPickerSearch" placeholder="Escribe para buscar clientes..." autocomplete="off">
+            <span id="customerPickerCount" class="customer-picker-count"></span>
+          </div>
+
+          <div class="customer-picker-body">
+            <div id="customerPickerList" class="customer-picker-list" role="listbox" aria-label="Clientes"></div>
+            <div id="customerPickerDetail" class="customer-picker-detail">
+              <div class="customer-picker-detail-empty">Selecciona un cliente de la lista para ver su información.</div>
+            </div>
+          </div>
+
+          <div class="customer-picker-actions">
+            <button type="button" id="cancelCustomerPicker" class="button-cancel customer-picker-btn">Cancelar</button>
+            <button type="button" id="confirmCustomerPicker" class="button-submit customer-picker-btn" disabled>Seleccionar cliente</button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- =====================================================
+         PANEL LATERAL
+    ====================================================== -->
+
+    <aside class="new-order-side">
+
+      <span class="new-order-eyebrow">
+        FLUJO DEL PEDIDO
+      </span>
+
+      <h2>
+        Destino confirmado desde ventas
+      </h2>
+
+      <div class="order-flow">
+
+        <div>
+          <span>1</span>
+
+          <p>
+            <strong>
+              Seleccionar cliente
+            </strong>
+
+            Solo aparecen clientes de {{ company.name }}.
+          </p>
+        </div>
+
+        <div>
+          <span>2</span>
+
+          <p>
+            <strong>
+              Confirmar dirección
+            </strong>
+
+            Usa una dirección guardada o captura otra.
+          </p>
+        </div>
+
+        <div>
+          <span>3</span>
+
+          <p>
+            <strong>
+              Generar folio
+            </strong>
+
+            El destino queda congelado dentro del pedido.
+          </p>
+        </div>
+
+        <div>
+          <span>4</span>
+
+          <p>
+            <strong>
+              Procesar almacén
+            </strong>
+
+            Shipping Hub recuperará automáticamente esa dirección.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="security-warning">
+
+        <strong>
+          Seguridad multiempresa
+        </strong>
+
+        <p>
+          No se puede seleccionar una dirección perteneciente a
+          otro cliente o a otra empresa.
+        </p>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+</section>
+
+{% if conversation %}
+  <button
+    type="button"
+    id="floatingChatLauncher"
+    class="floating-chat-launcher"
+    aria-controls="floatingChatPanel"
+    aria-expanded="true"
+  >
+    <span class="floating-chat-icon">WA</span>
+    <span>
+      <strong>Chat con {{ conversation.customer.name|default:"Cliente WhatsApp" }}</strong>
+      <small>Conversación activa</small>
+    </span>
+  </button>
+
+  <section
+    id="floatingChatPanel"
+    class="floating-chat-panel"
+    aria-label="Chat de WhatsApp"
+  >
+    <header
+      id="floatingChatDragHandle"
+      class="floating-chat-header"
+      title="Arrastra para mover el chat"
+    >
+      <div class="floating-chat-customer">
+        <span class="floating-chat-avatar">WA</span>
+        <div>
+          <strong>{{ conversation.customer.name|default:"Cliente WhatsApp" }}</strong>
+          <small>
+            {{ conversation.customer.phone }} · {{ conversation.whatsapp_number.channel_name }}
+          </small>
+        </div>
+      </div>
+
+      <div class="floating-chat-header-actions">
+        <a
+          href="{% url 'messaging:chat_detail' conversation.id %}"
+          title="Abrir conversación completa"
+        >
+          ↗
+        </a>
+        <button
+          type="button"
+          id="floatingChatMinimize"
+          title="Minimizar chat"
+          aria-label="Minimizar chat"
+        >
+          −
+        </button>
+      </div>
+    </header>
+
+    <div id="floatingChatMessages" class="floating-chat-messages">
+      {% for chat_message in chat_messages %}
+        <article
+          class="floating-chat-message {% if chat_message.direction == 'outbound' %}is-outbound{% else %}is-inbound{% endif %}"
+        >
+          <div>{{ chat_message.body|default:"Mensaje sin texto"|linebreaksbr }}</div>
+          <small>
+            {{ chat_message.created_at|date:"d/m/Y H:i" }}
+            {% if chat_message.direction == "outbound" and chat_message.agent %}
+              · {{ chat_message.agent.get_full_name|default:chat_message.agent.username }}
+            {% endif %}
+          </small>
+        </article>
+      {% empty %}
+        <div class="floating-chat-empty">
+          Esta conversación todavía no tiene mensajes.
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if can_reply_chat %}
+      <form
+        method="post"
+        action="{% url 'messaging:chat_reply' conversation.id %}"
+        class="floating-chat-reply"
+      >
+        {% csrf_token %}
+        <input
+          type="hidden"
+          name="next"
+          value="{{ request.get_full_path }}"
+        >
+        <textarea
+          name="body"
+          rows="2"
+          maxlength="4096"
+          placeholder="Escribe una respuesta por WhatsApp..."
+          aria-label="Mensaje de WhatsApp"
+          required
+        ></textarea>
+        <button type="submit" title="Enviar respuesta">
+          Enviar
+        </button>
+      </form>
+    {% else %}
+      <div class="floating-chat-no-reply">
+        Puedes consultar el chat, pero no tienes permiso para responder en este canal.
+      </div>
+    {% endif %}
+  </section>
+{% endif %}
+<style>
+  /* =========================================================
+     PAKIVOX — NUEVO PEDIDO
+     Diseño general existente + modal CRM Premium responsive
+  ========================================================== */
+
+  .new-order-page,
+  .new-order-page * {
+    box-sizing: border-box;
+  }
+
+  .new-order-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .new-order-hero,
+  .new-order-form,
+  .quick-customer-box,
+  .new-order-side {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 17px;
+    background: #111827;
+  }
+
+  /* =========================================================
+     HERO
+  ========================================================== */
+
+  .new-order-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 23px;
+  }
+
+  .new-order-eyebrow {
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .new-order-hero h1 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 30px;
+  }
+
+  .new-order-hero p {
+    max-width: 760px;
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.55;
+  }
+
+  .new-order-back,
+  .small-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 41px;
+    padding: 0 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    background: #172033;
+    color: #e2e8f0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  /* =========================================================
+     LAYOUT PRINCIPAL
+  ========================================================== */
+
+  .new-order-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 350px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .new-order-main {
+    display: grid;
+    gap: 17px;
+  }
+
+  .new-order-form,
+  .quick-customer-box,
+  .new-order-side {
+    padding: 22px;
+  }
+
+  .new-order-form {
+    display: grid;
+    gap: 20px;
+  }
+
+  /* =========================================================
+     SECCIONES
+  ========================================================== */
+
+  .order-section {
+    display: grid;
+    gap: 16px;
+    padding-bottom: 21px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  }
+
+  .order-section-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .order-step-number,
+  .order-flow > div > span {
+    width: 35px;
+    height: 35px;
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 10px;
+    background: #38bdf8;
+    color: #082f49;
+    font-weight: 950;
+  }
+
+  .order-section-title h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 19px;
+  }
+
+  .order-section-title p {
+    margin: 4px 0 0;
+    color: #64748b;
+  }
+
+  /* =========================================================
+     CAMPOS
+  ========================================================== */
+
+  .order-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+  }
+
+  .order-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .order-field {
+    display: grid;
+    gap: 7px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .order-field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .order-field input,
+  .order-field select,
+  .order-field textarea,
+  .new-order-form select,
+  .quick-customer-form select {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 10px;
+    outline: none;
+    background: #020617;
+    color: #f8fafc;
+    font: inherit;
+  }
+
+  .order-field input:focus,
+  .order-field select:focus,
+  .order-field textarea:focus,
+  .new-order-form select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  }
+
+  .order-field input:disabled {
+    color: #94a3b8;
+    background: #0b1222;
+    cursor: not-allowed;
+  }
+
+  .field-help {
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  /* =========================================================
+     DIRECCIONES
+  ========================================================== */
+
+  .address-mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .address-mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 15px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    background: #0b1222;
+    cursor: pointer;
+  }
+
+  .address-mode-option:has(input:checked) {
+    border-color: rgba(56, 189, 248, 0.7);
+    background: rgba(56, 189, 248, 0.08);
+  }
+
+  .address-mode-option input {
+    width: auto;
+    margin-top: 4px;
+  }
+
+  .address-mode-option strong,
+  .address-mode-option small {
+    display: block;
+  }
+
+  .address-mode-option strong {
+    color: #f8fafc;
+  }
+
+  .address-mode-option small {
+    margin-top: 4px;
+    color: #64748b;
+  }
+
+  .address-panel {
+    padding: 15px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 13px;
+    background: #0a1222;
+  }
+
+  .address-status {
+    color: #94a3b8;
+  }
+
+  .saved-addresses-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .saved-address-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.17);
+    border-radius: 11px;
+    background: #020617;
+    cursor: pointer;
+  }
+
+  .saved-address-card:has(input:checked) {
+    border-color: rgba(34, 197, 94, 0.65);
+    background: rgba(34, 197, 94, 0.07);
+  }
+
+  .saved-address-card input {
+    width: auto;
+    margin-top: 4px;
+  }
+
+  .saved-address-card strong {
+    display: block;
+    color: #f8fafc;
+  }
+
+  .saved-address-card p {
+    margin: 5px 0 0;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+
+  .saved-address-card small {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+  }
+
+  .default-address-badge {
+    display: inline-flex;
+    margin-left: 7px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.13);
+    color: #86efac;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+  .custom-address-panel {
+    display: grid;
+    gap: 16px;
+  }
+
+  .custom-address-header strong {
+    color: #f8fafc;
+  }
+
+  .custom-address-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+  }
+
+  .save-address-options {
+    display: grid;
+    gap: 10px;
+    padding: 13px;
+    border: 1px solid rgba(56, 189, 248, 0.13);
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.05);
+  }
+
+  .save-address-options label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #cbd5e1;
+  }
+
+  .save-address-options input {
+    width: auto;
+  }
+
+  /* =========================================================
+     ACCIONES GENERALES
+  ========================================================== */
+
+  .order-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .order-actions button,
+  .order-actions a {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .button-cancel {
+    background: #334155;
+    color: #f8fafc;
+  }
+
+  .button-whatsapp {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .button-submit {
+    background: #38bdf8;
+    color: #082f49;
+  }
+
+  /* =========================================================
+     =========================================================
+     CREAR CLIENTE RÁPIDO
+     MODAL PREMIUM PAKIVOX
+     =========================================================
+  ========================================================== */
+
+  .quick-customer-box {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    gap: 0;
+
+    padding:
+      max(32px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-right))
+      max(32px, env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    overscroll-behavior: contain;
+
+    border: 0;
+    border-radius: 0;
+
+    background:
+      radial-gradient(
+        circle at 50% -10%,
+        rgba(14, 165, 233, 0.13),
+        transparent 35%
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        rgba(34, 197, 94, 0.055),
+        transparent 32%
+      ),
+      rgba(2, 6, 23, 0.88);
+
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+  }
+
+  .quick-customer-box[hidden] {
+    display: none !important;
+  }
+
+  /* ---------------------------------------------------------
+     CABECERA DEL MODAL
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .quick-customer-header {
+    position: relative;
+
+    width: min(920px, 100%);
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 24px;
+
+    margin: auto auto 0;
+
+    padding: 30px 32px 25px;
+
+    overflow: hidden;
+
+    border:
+      1px solid
+      rgba(125, 211, 252, 0.2);
+
+    border-bottom: 0;
+
+    border-radius:
+      22px
+      22px
+      0
+      0;
+
+    background:
+      radial-gradient(
+        circle at 8% 0%,
+        rgba(56, 189, 248, 0.08),
+        transparent 40%
+      ),
+      linear-gradient(
+        135deg,
+        rgba(17, 29, 50, 0.98),
+        rgba(12, 23, 41, 0.98)
+      );
+
+    box-shadow:
+      0 -1px 0 rgba(255, 255, 255, 0.025) inset,
+      0 30px 80px rgba(0, 0, 0, 0.38);
+  }
+
+  /* línea premium superior */
+
+  .quick-customer-box .quick-customer-header::before {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 2px;
+
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        #38bdf8 18%,
+        #22d3ee 48%,
+        #34d399 78%,
+        transparent
+      );
+
+    opacity: 0.95;
+  }
+
+  /* resplandor decorativo */
+
+  .quick-customer-box .quick-customer-header::after {
+    content: "";
+
+    position: absolute;
+    top: -120px;
+    right: 70px;
+
+    width: 250px;
+    height: 250px;
+
+    border-radius: 50%;
+
+    background:
+      rgba(56, 189, 248, 0.07);
+
+    filter: blur(50px);
+
+    pointer-events: none;
+  }
+
+  .quick-customer-box .quick-customer-header > div {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .quick-customer-box .quick-customer-header .new-order-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    margin-bottom: 8px;
+
+    color: #38bdf8;
+
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 900;
+
+    letter-spacing: 0.13em;
+  }
+
+  .quick-customer-box .quick-customer-header .new-order-eyebrow::before {
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 999px;
+
+    background: #38bdf8;
+
+    box-shadow:
+      0 0 0 4px rgba(56, 189, 248, 0.1),
+      0 0 14px rgba(56, 189, 248, 0.6);
+  }
+
+  .quick-customer-header h2 {
+    position: relative;
+    z-index: 1;
+
+    margin: 0;
+
+    color: #f8fafc;
+
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.18;
+
+    font-weight: 900;
+
+    letter-spacing: -0.035em;
+  }
+
+  .quick-customer-header p {
+    position: relative;
+    z-index: 1;
+
+    max-width: 610px;
+
+    margin: 8px 0 0;
+
+    color: #94a3b8;
+
+    font-size: 13px;
+    line-height: 1.6;
+
+    font-weight: 500;
+  }
+
+  /* ---------------------------------------------------------
+     BOTÓN CERRAR
+  ---------------------------------------------------------- */
+
+  .quick-customer-box #closeQuickCustomer {
+    position: relative;
+    z-index: 2;
+
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+
+    flex: 0 0 40px;
+
+    padding: 0;
+
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.22);
+
+    border-radius: 12px;
+
+    background:
+      rgba(15, 23, 42, 0.7);
+
+    color: #cbd5e1;
+
+    font-size: 0;
+
+    backdrop-filter: blur(10px);
+
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .quick-customer-box #closeQuickCustomer::before {
+    content: "×";
+
+    display: grid;
+    place-items: center;
+
+    width: 100%;
+    height: 100%;
+
+    color: currentColor;
+
+    font-size: 25px;
+    line-height: 1;
+
+    font-weight: 400;
+  }
+
+  .quick-customer-box #closeQuickCustomer:hover {
+    border-color: rgba(248, 113, 113, 0.5);
+
+    background:
+      rgba(239, 68, 68, 0.09);
+
+    color: #fecaca;
+
+    box-shadow:
+      0 8px 25px rgba(239, 68, 68, 0.08);
+
+    transform: translateY(-1px);
+  }
+
+  .quick-customer-box #closeQuickCustomer:active {
+    transform: scale(0.96);
+  }
+
+  /* ---------------------------------------------------------
+     CUERPO / FORMULARIO
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .quick-customer-form {
+    position: relative;
+
+    width: min(920px, 100%);
+
+    display: grid;
+
+    gap: 22px;
+
+    margin: 0 auto auto;
+
+    padding: 26px 32px 30px;
+
+    border:
+      1px solid
+      rgba(125, 211, 252, 0.2);
+
+    border-top:
+      1px solid
+      rgba(148, 163, 184, 0.11);
+
+    border-radius:
+      0
+      0
+      22px
+      22px;
+
+    background:
+      radial-gradient(
+        circle at 100% 100%,
+        rgba(56, 189, 248, 0.035),
+        transparent 34%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(17, 29, 50, 0.98),
+        rgba(10, 20, 36, 0.99)
+      );
+
+    box-shadow:
+      0 35px 90px rgba(0, 0, 0, 0.52),
+      0 0 0 1px rgba(255, 255, 255, 0.01) inset;
+  }
+
+  /* ---------------------------------------------------------
+     GRID DEL FORMULARIO
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .order-fields-grid {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 18px 20px;
+  }
+
+  .quick-customer-box .order-field-full {
+    grid-column: 1 / -1;
+  }
+
+  /* ---------------------------------------------------------
+     LABELS
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .order-field {
+    display: grid;
+
+    gap: 8px;
+
+    min-width: 0;
+
+    color: #cbd5e1;
+  }
+
+  .quick-customer-box .order-field > span {
+    color: #aab8cb;
+
+    font-size: 10px;
+    line-height: 1.2;
+
+    font-weight: 850;
+
+    letter-spacing: 0.065em;
+
+    text-transform: uppercase;
+  }
+
+  /* ---------------------------------------------------------
+     INPUTS / SELECT / TEXTAREA
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .order-field input,
+  .quick-customer-box .order-field select,
+  .quick-customer-box .order-field textarea {
+    width: 100%;
+    min-width: 0;
+
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.21);
+
+    outline: none;
+
+    border-radius: 12px;
+
+    background:
+      rgba(3, 10, 23, 0.72);
+
+    color: #f8fafc;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    line-height: 1.35;
+
+    font-weight: 500;
+
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.018) inset,
+      0 8px 20px rgba(0, 0, 0, 0.06);
+
+    transition:
+      border-color 0.18s ease,
+      background 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .quick-customer-box .order-field input,
+  .quick-customer-box .order-field select {
+    min-height: 48px;
+
+    padding:
+      0
+      14px;
+  }
+
+  .quick-customer-box .order-field textarea {
+    min-height: 100px;
+
+    padding: 13px 14px;
+
+    resize: vertical;
+  }
+
+  .quick-customer-box .order-field input::placeholder,
+  .quick-customer-box .order-field textarea::placeholder {
+    color: #64748b;
+
+    opacity: 1;
+  }
+
+  .quick-customer-box .order-field input:hover,
+  .quick-customer-box .order-field select:hover,
+  .quick-customer-box .order-field textarea:hover {
+    border-color:
+      rgba(148, 163, 184, 0.38);
+
+    background:
+      rgba(4, 12, 27, 0.9);
+  }
+
+  .quick-customer-box .order-field input:focus,
+  .quick-customer-box .order-field select:focus,
+  .quick-customer-box .order-field textarea:focus {
+    border-color: #38bdf8;
+
+    background:
+      rgba(3, 12, 28, 0.98);
+
+    box-shadow:
+      0 0 0 3px rgba(56, 189, 248, 0.11),
+      0 0 28px rgba(56, 189, 248, 0.045),
+      0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Autofill Chrome */
+
+  .quick-customer-box
+  input:-webkit-autofill,
+  .quick-customer-box
+  input:-webkit-autofill:hover,
+  .quick-customer-box
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #f8fafc;
+
+    -webkit-box-shadow:
+      0 0 0 1000px #07101f inset;
+
+    caret-color: #f8fafc;
+
+    transition:
+      background-color 9999s ease-in-out 0s;
+  }
+
+  /* ---------------------------------------------------------
+     SELECT PREMIUM
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .order-field select {
+    appearance: none;
+    -webkit-appearance: none;
+
+    padding-right: 42px;
+
+    cursor: pointer;
+
+    background-image:
+      linear-gradient(
+        45deg,
+        transparent 50%,
+        #94a3b8 50%
+      ),
+      linear-gradient(
+        135deg,
+        #94a3b8 50%,
+        transparent 50%
+      );
+
+    background-position:
+      calc(100% - 18px) 20px,
+      calc(100% - 13px) 20px;
+
+    background-size:
+      5px 5px,
+      5px 5px;
+
+    background-repeat:
+      no-repeat;
+  }
+
+  .quick-customer-box .order-field select option {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+
+  /* ---------------------------------------------------------
+     SEPARADOR + FOOTER
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .order-actions {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 2px;
+
+    padding-top: 20px;
+
+    border-top:
+      1px solid
+      rgba(148, 163, 184, 0.12);
+  }
+
+  .quick-customer-box .order-actions button {
+    min-height: 43px;
+
+    padding:
+      0
+      18px;
+
+    border-radius: 11px;
+
+    font-size: 12px;
+
+    font-weight: 850;
+
+    letter-spacing: -0.01em;
+
+    transition:
+      transform 0.16s ease,
+      background 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease,
+      filter 0.16s ease;
+  }
+
+  /* ---------------------------------------------------------
+     BOTÓN CANCELAR
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .button-cancel {
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.25);
+
+    background:
+      rgba(30, 41, 59, 0.72);
+
+    color: #e2e8f0;
+
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .quick-customer-box .button-cancel:hover {
+    border-color:
+      rgba(148, 163, 184, 0.42);
+
+    background: #263449;
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+  }
+
+  /* ---------------------------------------------------------
+     BOTÓN GUARDAR
+  ---------------------------------------------------------- */
+
+  .quick-customer-box .button-submit {
+    position: relative;
+
+    overflow: hidden;
+
+    min-width: 145px;
+
+    border:
+      1px solid
+      rgba(125, 211, 252, 0.46);
+
+    background:
+      linear-gradient(
+        135deg,
+        #38bdf8 0%,
+        #22d3ee 52%,
+        #2dd4bf 120%
+      );
+
+    color: #03283d;
+
+    box-shadow:
+      0 9px 24px rgba(14, 165, 233, 0.22),
+      0 2px 0 rgba(255, 255, 255, 0.18) inset;
+  }
+
+  .quick-customer-box .button-submit::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -100%;
+
+    width: 65%;
+    height: 100%;
+
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+
+    transform: skewX(-20deg);
+
+    transition:
+      left 0.45s ease;
+  }
+
+  .quick-customer-box .button-submit:hover {
+    filter: brightness(1.07);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+      0 13px 32px rgba(14, 165, 233, 0.3),
+      0 2px 0 rgba(255, 255, 255, 0.18) inset;
+  }
+
+  .quick-customer-box .button-submit:hover::before {
+    left: 145%;
+  }
+
+  .quick-customer-box .button-submit:active,
+  .quick-customer-box .button-cancel:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .quick-customer-box button:focus-visible,
+  .quick-customer-box input:focus-visible,
+  .quick-customer-box select:focus-visible,
+  .quick-customer-box textarea:focus-visible {
+    outline:
+      2px solid
+      rgba(56, 189, 248, 0.8);
+
+    outline-offset: 2px;
+  }
+
+  /* =========================================================
+     PANEL LATERAL
+  ========================================================== */
+
+  .new-order-side {
+    position: sticky;
+    top: 20px;
+  }
+
+  .new-order-side h2 {
+    margin: 7px 0 0;
+    color: #f8fafc;
+  }
+
+  .order-flow {
+    display: grid;
+    gap: 16px;
+    margin-top: 21px;
+  }
+
+  .order-flow > div {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 10px;
+  }
+
+  .order-flow p {
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+
+  .order-flow strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #f8fafc;
+  }
+
+  .security-warning {
+    margin-top: 20px;
+    padding: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 11px;
+    background: rgba(245, 158, 11, 0.07);
+    color: #fde68a;
+  }
+
+  .security-warning strong {
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .security-warning p {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* =========================================================
+     CHAT FLOTANTE
+  ========================================================== */
+
+  .floating-chat-launcher,
+  .floating-chat-panel,
+  .floating-chat-panel * {
+    box-sizing: border-box;
+  }
+
+  .floating-chat-launcher {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1040;
+
+    display: none;
+    align-items: center;
+    gap: 10px;
+
+    max-width: min(
+      330px,
+      calc(100vw - 32px)
+    );
+
+    padding:
+      10px
+      14px
+      10px
+      10px;
+
+    border:
+      1px solid
+      rgba(34, 197, 94, 0.45);
+
+    border-radius: 999px;
+
+    background: #111827;
+
+    color: #f8fafc;
+
+    box-shadow:
+      0 18px 45px
+      rgba(0, 0, 0, 0.42);
+
+    cursor: pointer;
+  }
+
+  .floating-chat-launcher.is-visible {
+    display: flex;
+  }
+
+  .floating-chat-launcher strong,
+  .floating-chat-launcher small {
+    display: block;
+
+    max-width: 230px;
+
+    overflow: hidden;
+
+    text-align: left;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+  }
+
+  .floating-chat-launcher strong {
+    font-size: 12px;
+  }
+
+  .floating-chat-launcher small {
+    margin-top: 2px;
+
+    color: #86efac;
+
+    font-size: 10px;
+  }
+
+  .floating-chat-icon,
+  .floating-chat-avatar {
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+    flex: 0 0 auto;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    color: #052e16;
+
+    font-size: 11px;
+
+    font-weight: 950;
+  }
+
+  .floating-chat-panel {
+    position: fixed;
+
+    right: 24px;
+    bottom: 24px;
+
+    z-index: 1041;
+
+    width:
+      min(
+        420px,
+        calc(100vw - 32px)
+      );
+
+    height:
+      min(
+        660px,
+        calc(100vh - 48px)
+      );
+
+    display: grid;
+
+    grid-template-rows:
+      auto
+      minmax(0, 1fr)
+      auto;
+
+    overflow: hidden;
+
+    resize: both;
+
+    min-width: 340px;
+    min-height: 440px;
+
+    max-width:
+      calc(100vw - 16px);
+
+    max-height:
+      calc(100vh - 16px);
+
+    border:
+      1px solid
+      rgba(34, 197, 94, 0.35);
+
+    border-radius: 18px;
+
+    background: #0b1222;
+
+    box-shadow:
+      0 24px 70px
+      rgba(0, 0, 0, 0.55);
+  }
+
+  .floating-chat-panel.is-minimized {
+    display: none;
+  }
+
+  .floating-chat-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+      space-between;
+
+    gap: 12px;
+
+    padding: 13px;
+
+    border-bottom:
+      1px solid
+      rgba(148, 163, 184, 0.16);
+
+    background: #111827;
+
+    cursor: grab;
+
+    user-select: none;
+
+    touch-action: none;
+  }
+
+  .floating-chat-panel.is-dragging
+  .floating-chat-header {
+    cursor: grabbing;
+  }
+
+  .floating-chat-panel.is-dragging {
+    transition: none;
+  }
+
+  .floating-chat-panel::after {
+    content: "";
+
+    position: absolute;
+
+    right: 3px;
+    bottom: 3px;
+
+    width: 16px;
+    height: 16px;
+
+    pointer-events: none;
+
+    background:
+      linear-gradient(
+        135deg,
+        transparent 0 42%,
+        rgba(34, 197, 94, 0.95) 43% 51%,
+        transparent 52% 64%,
+        rgba(34, 197, 94, 0.95) 65% 73%,
+        transparent 74%
+      );
+  }
+
+  .floating-chat-customer {
+    display: flex;
+
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 10px;
+  }
+
+  .floating-chat-customer div {
+    min-width: 0;
+  }
+
+  .floating-chat-customer strong,
+  .floating-chat-customer small {
+    display: block;
+
+    overflow: hidden;
+
+    text-overflow:
+      ellipsis;
+
+    white-space:
+      nowrap;
+  }
+
+  .floating-chat-customer strong {
+    color: #f8fafc;
+
+    font-size: 13px;
+  }
+
+  .floating-chat-customer small {
+    margin-top: 3px;
+
+    color: #94a3b8;
+
+    font-size: 10px;
+  }
+
+  .floating-chat-header-actions {
+    display: flex;
+
+    gap: 7px;
+  }
+
+  .floating-chat-header-actions a,
+  .floating-chat-header-actions button {
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+
+    place-items: center;
+
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.2);
+
+    border-radius: 9px;
+
+    background: #172033;
+
+    color: #e2e8f0;
+
+    font: inherit;
+
+    font-weight: 900;
+
+    text-decoration: none;
+
+    cursor: pointer;
+  }
+
+  .floating-chat-messages {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+    min-height: 0;
+
+    padding: 14px;
+
+    overflow-y: auto;
+
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(34, 197, 94, 0.06),
+        transparent 34%
+      ),
+      #07101d;
+  }
+
+  .floating-chat-message {
+    align-self: flex-start;
+
+    max-width: 84%;
+
+    padding:
+      9px
+      11px
+      7px;
+
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.14);
+
+    border-radius:
+      12px
+      12px
+      12px
+      3px;
+
+    background: #172033;
+
+    color: #e2e8f0;
+
+    font-size: 13px;
+
+    line-height: 1.45;
+
+    overflow-wrap: anywhere;
+  }
+
+  .floating-chat-message.is-outbound {
+    align-self: flex-end;
+
+    border-color:
+      rgba(34, 197, 94, 0.2);
+
+    border-radius:
+      12px
+      12px
+      3px
+      12px;
+
+    background: #14532d;
+
+    color: #f0fdf4;
+  }
+
+  .floating-chat-message small {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #94a3b8;
+
+    font-size: 9px;
+
+    text-align: right;
+  }
+
+  .floating-chat-message.is-outbound small {
+    color: #bbf7d0;
+  }
+
+  .floating-chat-empty,
+  .floating-chat-no-reply {
+    padding: 14px;
+
+    color: #94a3b8;
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    text-align: center;
+  }
+
+  .floating-chat-reply {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+
+    gap: 9px;
+
+    padding: 12px;
+
+    border-top:
+      1px solid
+      rgba(148, 163, 184, 0.16);
+
+    background: #111827;
+  }
+
+  .floating-chat-reply textarea {
+    min-width: 0;
+
+    max-height: 100px;
+
+    resize: vertical;
+
+    padding:
+      10px
+      11px;
+
+    border:
+      1px solid
+      rgba(148, 163, 184, 0.22);
+
+    border-radius: 10px;
+
+    outline: none;
+
+    background: #020617;
+
+    color: #f8fafc;
+
+    font: inherit;
+
+    font-size: 12px;
+  }
+
+  .floating-chat-reply textarea:focus {
+    border-color:
+      #22c55e;
+
+    box-shadow:
+      0 0 0 3px
+      rgba(34, 197, 94, 0.1);
+  }
+
+  .floating-chat-reply button {
+    align-self: stretch;
+
+    padding:
+      0
+      14px;
+
+    border: 0;
+
+    border-radius: 10px;
+
+    background: #22c55e;
+
+    color: #052e16;
+
+    font: inherit;
+
+    font-size: 12px;
+
+    font-weight: 950;
+
+    cursor: pointer;
+  }
+
+  /* =========================================================
+     TABLET
+  ========================================================== */
+
+  @media (max-width: 1050px) {
+
+    .new-order-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .new-order-side {
+      position: static;
+    }
+  }
+
+  /* =========================================================
+     MODAL — TABLET / PANTALLA MEDIANA
+  ========================================================== */
+
+  @media (max-width: 800px) {
+
+    .quick-customer-box {
+      padding:
+        max(20px, env(safe-area-inset-top))
+        max(14px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
+    }
+
+    .quick-customer-box .quick-customer-header {
+      padding:
+        25px
+        24px
+        21px;
+    }
+
+    .quick-customer-box .quick-customer-form {
+      padding:
+        22px
+        24px
+        26px;
+    }
+
+    .quick-customer-box .order-fields-grid {
+      gap:
+        16px
+        15px;
+    }
+  }
+
+  /* =========================================================
+     MÓVIL
+  ========================================================== */
+
+  @media (max-width: 700px) {
+
+    .new-order-hero {
+      display: grid;
+    }
+
+    .order-fields-grid,
+    .address-mode-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .order-field-full {
+      grid-column: auto;
+    }
+
+    .order-actions {
+      display: grid;
+    }
+
+    .order-actions button,
+    .order-actions a {
+      width: 100%;
+    }
+
+    /* -------------------------------------------------------
+       MODAL CRM MÓVIL
+    -------------------------------------------------------- */
+
+    .quick-customer-box {
+      display: flex;
+
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+    }
+
+    .quick-customer-box .quick-customer-header {
+      display: flex;
+
+      width: 100%;
+
+      gap: 15px;
+
+      padding:
+        22px
+        20px
+        19px;
+
+      border-radius:
+        18px
+        18px
+        0
+        0;
+    }
+
+    .quick-customer-header h2 {
+      font-size: 24px;
+    }
+
+    .quick-customer-header p {
+      margin-top: 6px;
+
+      font-size: 12px;
+
+      line-height: 1.5;
+    }
+
+    .quick-customer-box #closeQuickCustomer {
+      width: 38px;
+      min-width: 38px;
+      height: 38px;
+      min-height: 38px;
+
+      flex-basis: 38px;
+    }
+
+    .quick-customer-box .quick-customer-form {
+      width: 100%;
+
+      padding:
+        20px
+        20px
+        22px;
+
+      border-radius:
+        0
+        0
+        18px
+        18px;
+    }
+
+    .quick-customer-box .order-fields-grid {
+      grid-template-columns: 1fr;
+
+      gap: 15px;
+    }
+
+    .quick-customer-box .order-field-full {
+      grid-column: auto;
+    }
+
+    .quick-customer-box .order-field input,
+    .quick-customer-box .order-field select {
+      min-height: 49px;
+
+      font-size: 16px;
+    }
+
+    .quick-customer-box .order-field textarea {
+      min-height: 110px;
+
+      font-size: 16px;
+    }
+
+    .quick-customer-box .order-actions {
+      display: grid;
+
+      grid-template-columns:
+        1fr
+        1fr;
+
+      gap: 10px;
+
+      padding-top: 18px;
+    }
+
+    .quick-customer-box .order-actions button {
+      width: 100%;
+
+      min-height: 47px;
+
+      padding:
+        0
+        12px;
+    }
+
+    .quick-customer-box .button-submit {
+      min-width: 0;
+    }
+
+    /* CHAT */
+
+    .floating-chat-panel {
+      right: 10px;
+      bottom: 10px;
+
+      width:
+        calc(100vw - 20px);
+
+      height:
+        min(
+          680px,
+          calc(100vh - 20px)
+        );
+
+      min-width: 0;
+      min-height: 360px;
+
+      max-width:
+        calc(100vw - 20px);
+
+      max-height:
+        calc(100vh - 20px);
+
+      resize: vertical;
+    }
+
+    .floating-chat-launcher {
+      right: 14px;
+      bottom: 14px;
+    }
+  }
+
+  /* =========================================================
+     TELÉFONOS PEQUEÑOS
+  ========================================================== */
+
+  @media (max-width: 480px) {
+
+    .quick-customer-box {
+      padding: 0;
+
+      background:
+        #07101e;
+    }
+
+    .quick-customer-box .quick-customer-header {
+      border-left: 0;
+      border-right: 0;
+      border-top: 0;
+
+      border-radius: 0;
+
+      padding:
+        max(
+          21px,
+          env(safe-area-inset-top)
+        )
+        17px
+        18px;
+    }
+
+    .quick-customer-box .quick-customer-form {
+      flex: 1;
+
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+
+      border-radius: 0;
+
+      padding:
+        18px
+        17px
+        max(
+          22px,
+          env(safe-area-inset-bottom)
+        );
+
+      box-shadow: none;
+    }
+
+    .quick-customer-header h2 {
+      font-size: 22px;
+    }
+
+    .quick-customer-header p {
+      max-width: 280px;
+    }
+
+    .quick-customer-box .order-actions {
+      position: sticky;
+
+      bottom: 0;
+
+      z-index: 4;
+
+      margin:
+        4px
+        -17px
+        calc(
+          -1 *
+          max(
+            22px,
+            env(safe-area-inset-bottom)
+          )
+        );
+
+      padding:
+        14px
+        17px
+        max(
+          16px,
+          env(safe-area-inset-bottom)
+        );
+
+      border-top:
+        1px solid
+        rgba(148, 163, 184, 0.14);
+
+      background:
+        rgba(10, 20, 36, 0.96);
+
+      backdrop-filter:
+        blur(16px);
+
+      -webkit-backdrop-filter:
+        blur(16px);
+    }
+  }
+
+  /* =========================================================
+     MÓVILES MUY PEQUEÑOS
+  ========================================================== */
+
+  @media (max-width: 370px) {
+
+    .quick-customer-box .quick-customer-header {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .quick-customer-box .quick-customer-form {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .quick-customer-box .order-actions {
+      grid-template-columns: 1fr;
+
+      margin-left: -14px;
+      margin-right: -14px;
+
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+
+  /* =========================================================
+     PANTALLAS BAJAS / LAPTOP
+  ========================================================== */
+
+  @media (max-height: 760px) and (min-width: 701px) {
+
+    .quick-customer-box {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .quick-customer-box .quick-customer-header {
+      padding-top: 22px;
+      padding-bottom: 18px;
+    }
+
+    .quick-customer-box .quick-customer-form {
+      padding-top: 20px;
+      padding-bottom: 22px;
+    }
+
+    .quick-customer-box .order-fields-grid {
+      gap:
+        14px
+        18px;
+    }
+
+    .quick-customer-box .order-field input,
+    .quick-customer-box .order-field select {
+      min-height: 44px;
+    }
+
+    .quick-customer-box .order-field textarea {
+      min-height: 80px;
+    }
+  }
+
+  /* =========================================================
+     ACCESIBILIDAD
+  ========================================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+
+    .quick-customer-box *,
+    .quick-customer-box *::before,
+    .quick-customer-box *::after {
+      scroll-behavior: auto !important;
+
+      transition-duration:
+        0.01ms !important;
+
+      animation-duration:
+        0.01ms !important;
+
+      animation-iteration-count:
+        1 !important;
+    }
+  }
+
+    .customer-picker-trigger {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 12px 13px; border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 10px; background: #020617; color: #f8fafc; font: inherit;
+    font-size: 14px; text-align: left; cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .customer-picker-trigger:hover { border-color: rgba(56, 189, 248, 0.5); }
+  .customer-picker-trigger-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .customer-picker-trigger.is-empty .customer-picker-trigger-text { color: #64748b; }
+  .customer-picker-trigger-icon { flex: none; opacity: 0.7; }
+
+  .customer-picker-box {
+    position: fixed; inset: 0; z-index: 1000; background: rgba(2, 6, 23, 0.82);
+    backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center;
+    padding: 40px 20px; overflow-y: auto;
+  }
+  .customer-picker-box[hidden] { display: none; }
+
+  .customer-picker-panel {
+    background: #111827; border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 18px;
+    padding: 24px; max-width: 980px; width: 100%; box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+    display: grid; gap: 18px;
+  }
+
+  .customer-picker-header { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; overflow: hidden; }
+  .customer-picker-header::before { content: ""; position: absolute; top: -24px; left: -24px; right: -24px; height: 3px; background: linear-gradient(90deg, #38bdf8, #22c55e); }
+  .customer-picker-header h2 { margin: 8px 0 6px; color: #f8fafc; font-size: 21px; font-weight: 900; }
+  .customer-picker-header p { margin: 0; max-width: 460px; color: #94a3b8; font-size: 13px; line-height: 1.5; }
+
+  .customer-picker-search { position: relative; display: flex; align-items: center; }
+  .customer-picker-search input {
+    width: 100%; padding: 13px 90px 13px 15px; border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 11px; outline: none; background: #020617; color: #f8fafc; font: inherit; font-size: 14px;
+  }
+  .customer-picker-search input:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+  .customer-picker-count { position: absolute; right: 14px; color: #64748b; font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+
+  .customer-picker-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; min-height: 360px; max-height: 56vh; }
+    .customer-picker-detail-loading {
+    padding: 10px 0;
+    color: #64748b;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .customer-picker-frequency-badge {
+    display: inline-flex;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .customer-picker-frequency-badge[data-level="new"] {
+    background: rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+  }
+
+  .customer-picker-frequency-badge[data-level="occasional"] {
+    background: rgba(56, 189, 248, 0.14);
+    color: #7dd3fc;
+  }
+
+  .customer-picker-frequency-badge[data-level="recurring"] {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+  }
+
+  .customer-picker-frequency-badge[data-level="loyal"] {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fcd34d;
+  }
+  .customer-picker-list { overflow-y: auto; border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 13px; background: #0a1222; padding: 6px; display: grid; align-content: start; gap: 4px; }
+    .customer-picker-list::-webkit-scrollbar,
+  .customer-picker-detail::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .customer-picker-list::-webkit-scrollbar-track,
+  .customer-picker-detail::-webkit-scrollbar-track {
+    background: #0a1222;
+    border-radius: 10px;
+  }
+
+  .customer-picker-list::-webkit-scrollbar-thumb,
+  .customer-picker-detail::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
+    border: 2px solid #0a1222;
+  }
+
+  .customer-picker-list::-webkit-scrollbar-thumb:hover,
+  .customer-picker-detail::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+
+  .customer-picker-list,
+  .customer-picker-detail {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #0a1222;
+  }
+  .customer-picker-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .customer-picker-item:hover { background: #101a2d; }
+  .customer-picker-item.is-selected { border-color: rgba(56, 189, 248, 0.55); background: rgba(56, 189, 248, 0.08); }
+  .customer-picker-avatar { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: rgba(56, 189, 248, 0.16); color: #7dd3fc; font-size: 13px; font-weight: 900; }
+  .customer-picker-item-body { min-width: 0; flex: 1; }
+  .customer-picker-item-name { display: block; color: #f8fafc; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .customer-picker-item-meta { display: block; margin-top: 2px; color: #94a3b8; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .customer-picker-item-check { flex: none; color: #38bdf8; font-weight: 900; opacity: 0; }
+  .customer-picker-item.is-selected .customer-picker-item-check { opacity: 1; }
+  .customer-picker-empty-state { padding: 30px 14px; color: #64748b; font-size: 13px; text-align: center; }
+
+  .customer-picker-detail { overflow-y: auto; border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 13px; background: #0a1222; padding: 18px; }
+  .customer-picker-detail-empty { height: 100%; display: grid; place-items: center; color: #64748b; font-size: 13px; text-align: center; padding: 20px; }
+  .customer-picker-detail-name { color: #f8fafc; font-size: 17px; font-weight: 900; }
+  .customer-picker-detail-sub { margin-top: 3px; color: #94a3b8; font-size: 13px; }
+  .customer-picker-detail-section { margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(148, 163, 184, 0.18); }
+  .customer-picker-detail-section:first-of-type { margin-top: 16px; }
+  .customer-picker-detail-label { color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .customer-picker-detail-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; color: #cbd5e1; font-size: 13px; }
+  .customer-picker-detail-row strong { color: #f8fafc; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+
+  .customer-picker-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .customer-picker-actions .button-cancel,
+  .customer-picker-actions .button-submit {
+    min-height: 43px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .customer-picker-actions .button-cancel {
+    background: #334155;
+    color: #f8fafc;
+  }
+
+  .customer-picker-actions .button-submit {
+    background: #38bdf8;
+    color: #082f49;
+  }
+
+  .customer-picker-actions .button-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 760px) {
+    .customer-picker-body { grid-template-columns: 1fr; max-height: none; }
+    .customer-picker-list { max-height: 260px; }
+    .customer-picker-detail { min-height: 160px; }
+  }
+</style>
+
+<style id="pakivox-cs1d-related-orders">
+    .related-order-card.is-mine{border-color:rgba(56,189,248,.4);background:#0d1a2e}
+  .related-order-mine-badge{display:inline-flex;margin-left:8px;padding:2px 7px;border-radius:999px;background:rgba(56,189,248,.16);color:#7dd3fc;font-size:9px;font-weight:900;letter-spacing:.05em}
+  .related-orders-panel{margin-top:12px;padding:10px 14px;border:1px solid rgba(245,158,11,.35);border-radius:12px;background:rgba(245,158,11,.055);display:grid;gap:0}
+  .related-orders-panel[hidden]{display:none!important}
+  .related-orders-heading{width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:4px 0;border:0;background:transparent;text-align:left;cursor:pointer;font:inherit}
+  .related-orders-heading strong{display:block;color:#f8fafc;font-size:13px}
+  .related-orders-heading p{margin:3px 0 0;color:#94a3b8;font-size:11px;line-height:1.4}
+  .related-orders-badge{flex:none;padding:5px 8px;border-radius:999px;background:rgba(245,158,11,.14);color:#fcd34d;font-size:10px;font-weight:900;letter-spacing:.06em}
+  .related-orders-chevron{flex:none;color:#94a3b8;font-size:12px;align-self:center;transition:transform .15s ease}
+  .related-orders-panel.is-open .related-orders-chevron{transform:rotate(180deg)}
+  .related-orders-body{display:grid;gap:12px;padding-top:12px;margin-top:8px;border-top:1px solid rgba(148,163,184,.12)}
+  .related-orders-body[hidden]{display:none!important}
+  .related-orders-list{display:grid;gap:8px}
+  .related-order-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid rgba(148,163,184,.16);border-radius:10px;background:#0b1322}
+  .related-order-card strong,.related-order-card small{display:block}
+  .related-order-card strong{color:#e2e8f0;font-size:13px}
+  .related-order-card small{margin-top:3px;color:#64748b;font-size:11px}
+  .related-order-meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:7px}
+  .related-order-status{padding:4px 7px;border-radius:999px;background:rgba(56,189,248,.12);color:#7dd3fc;font-size:10px;font-weight:800}
+  .related-order-recoverable{padding:4px 7px;border-radius:999px;background:rgba(34,197,94,.12);color:#86efac;font-size:10px;font-weight:800}
+  .related-order-open{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 10px;border-radius:8px;border:1px solid rgba(56,189,248,.25);color:#7dd3fc;text-decoration:none;font-size:11px;font-weight:900;white-space:nowrap}
+  .related-order-restricted{color:#94a3b8;font-size:11px;max-width:150px;text-align:right}
+  .related-orders-actions{display:flex;justify-content:flex-end}
+  .related-orders-continue{border:0;border-radius:9px;padding:10px 13px;background:#f59e0b;color:#451a03;font-weight:900;cursor:pointer}
+  .related-orders-panel.is-confirmed{border-color:rgba(34,197,94,.32);background:rgba(34,197,94,.045)}
+  .related-orders-panel.is-confirmed .related-orders-badge{background:rgba(34,197,94,.12);color:#86efac}
+  @media(max-width:680px){.related-order-card{grid-template-columns:1fr}.related-order-open{width:100%}.related-order-restricted{text-align:left;max-width:none}.related-orders-actions{display:grid}.related-orders-continue{width:100%;min-height:42px}}
+
+  .order-history-panel{margin-top:12px;padding:2px 14px;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:rgba(148,163,184,.035)}
+  .order-history-panel[hidden]{display:none!important}
+  .order-history-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 0;border:0;background:transparent;color:#cbd5e1;font:inherit;font-size:12px;font-weight:800;text-align:left;cursor:pointer}
+  .order-history-toggle span:first-child{flex:none}
+  .order-history-count{color:#64748b;font-weight:700}
+  .order-history-chevron{margin-left:auto;color:#64748b;font-size:12px;transition:transform .15s ease}
+  .order-history-panel.is-open .order-history-chevron{transform:rotate(180deg)}
+  .order-history-list{display:grid;gap:8px;padding-bottom:12px}
+  .order-history-list[hidden]{display:none!important}
+  .order-history-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid rgba(148,163,184,.13);border-radius:10px;background:#0b1322}
+  .order-history-card strong,.order-history-card small{display:block}
+  .order-history-card strong{color:#cbd5e1;font-size:12px}
+  .order-history-card small{margin-top:3px;color:#64748b;font-size:11px}
+  .order-history-status{padding:3px 7px;border-radius:999px;background:rgba(148,163,184,.14);color:#cbd5e1;font-size:9px;font-weight:800;margin-left:6px}
+  .order-history-open{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,.2);color:#94a3b8;text-decoration:none;font-size:11px;font-weight:900;white-space:nowrap}
+  @media(max-width:680px){.order-history-card{grid-template-columns:1fr}.order-history-open{width:100%}}
+</style>
+
+<script>
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+      const form = document.getElementById(
+        "createOrderForm"
+      );
+
+      const customerSelect = document.getElementById(
+        "customerSelect"
+      );
+
+      const savedMode = document.getElementById(
+        "savedAddressMode"
+      );
+
+      const customMode = document.getElementById(
+        "customAddressMode"
+      );
+
+      const savedPanel = document.getElementById(
+        "savedAddressesPanel"
+      );
+
+      const customPanel = document.getElementById(
+        "customAddressPanel"
+      );
+
+      const addressStatus = document.getElementById(
+        "savedAddressesStatus"
+      );
+
+      const addressList = document.getElementById(
+        "savedAddressesList"
+      );
+
+      const saveAddressCheckbox = document.getElementById(
+        "saveAddressCheckbox"
+      );
+
+      const makeDefaultCheckbox = document.getElementById(
+        "makeDefaultCheckbox"
+      );
+
+      const openChatButton = document.getElementById(
+        "openChatApiBtn"
+      );
+
+      const quickCustomerBox = document.getElementById(
+        "quickCustomerBox"
+      );
+
+      const openQuickCustomer = document.getElementById(
+        "openQuickCustomer"
+      );
+
+      const closeQuickCustomer = document.getElementById(
+        "closeQuickCustomer"
+      );
+
+      const cancelQuickCustomer = document.getElementById(
+        "cancelQuickCustomer"
+      );
+
+      const addressesApiUrl =
+        "{% url 'sales:customer_shipping_addresses_api' %}";
+
+      const previousMode =
+        "{{ request.POST.address_mode|default:''|escapejs }}";
+
+      const previousAddressId =
+        "{{ request.POST.shipping_address_id|default:''|escapejs }}";
+
+      const floatingChatPanel = document.getElementById(
+        "floatingChatPanel"
+      );
+
+      const floatingChatLauncher = document.getElementById(
+        "floatingChatLauncher"
+      );
+
+      const floatingChatMinimize = document.getElementById(
+        "floatingChatMinimize"
+      );
+
+      const floatingChatDragHandle = document.getElementById(
+        "floatingChatDragHandle"
+      );
+
+      const floatingChatMessages = document.getElementById(
+        "floatingChatMessages"
+      );
+
+      if (floatingChatMessages) {
+        floatingChatMessages.scrollTop =
+          floatingChatMessages.scrollHeight;
+      }
+
+      if (
+        floatingChatPanel
+        && floatingChatLauncher
+        && floatingChatMinimize
+      ) {
+        floatingChatMinimize.addEventListener(
+          "click",
+          function () {
+            floatingChatPanel.classList.add("is-minimized");
+            floatingChatLauncher.classList.add("is-visible");
+            floatingChatLauncher.setAttribute("aria-expanded", "false");
+          }
+        );
+
+        floatingChatLauncher.addEventListener(
+          "click",
+          function () {
+            floatingChatPanel.classList.remove("is-minimized");
+            floatingChatLauncher.classList.remove("is-visible");
+            floatingChatLauncher.setAttribute("aria-expanded", "true");
+
+            if (floatingChatMessages) {
+              floatingChatMessages.scrollTop =
+                floatingChatMessages.scrollHeight;
+            }
+          }
+        );
+      }
+
+      if (floatingChatPanel && floatingChatDragHandle) {
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let panelStartLeft = 0;
+        let panelStartTop = 0;
+
+        function keepChatInsideViewport(left, top) {
+          const margin = 8;
+          const maxLeft = Math.max(
+            margin,
+            window.innerWidth - floatingChatPanel.offsetWidth - margin
+          );
+          const maxTop = Math.max(
+            margin,
+            window.innerHeight - floatingChatPanel.offsetHeight - margin
+          );
+
+          return {
+            left: Math.min(Math.max(left, margin), maxLeft),
+            top: Math.min(Math.max(top, margin), maxTop),
+          };
+        }
+
+        floatingChatDragHandle.addEventListener(
+          "pointerdown",
+          function (event) {
+            if (event.target.closest("a, button")) {
+              return;
+            }
+
+            const panelRect = floatingChatPanel.getBoundingClientRect();
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            panelStartLeft = panelRect.left;
+            panelStartTop = panelRect.top;
+
+            floatingChatPanel.style.left = panelRect.left + "px";
+            floatingChatPanel.style.top = panelRect.top + "px";
+            floatingChatPanel.style.right = "auto";
+            floatingChatPanel.style.bottom = "auto";
+            floatingChatPanel.classList.add("is-dragging");
+            floatingChatDragHandle.setPointerCapture(event.pointerId);
+          }
+        );
+
+        document.addEventListener(
+          "pointermove",
+          function (event) {
+            if (!floatingChatPanel.classList.contains("is-dragging")) {
+              return;
+            }
+
+            const position = keepChatInsideViewport(
+              panelStartLeft + event.clientX - dragStartX,
+              panelStartTop + event.clientY - dragStartY
+            );
+
+            floatingChatPanel.style.left = position.left + "px";
+            floatingChatPanel.style.top = position.top + "px";
+          }
+        );
+
+        function stopDragging(event) {
+          floatingChatPanel.classList.remove("is-dragging");
+
+          if (floatingChatDragHandle.hasPointerCapture(event.pointerId)) {
+            floatingChatDragHandle.releasePointerCapture(event.pointerId);
+          }
+        }
+
+        document.addEventListener("pointerup", stopDragging);
+        document.addEventListener("pointercancel", stopDragging);
+
+        window.addEventListener("resize", function () {
+          if (!floatingChatPanel.style.left) {
+            return;
+          }
+
+          const panelRect = floatingChatPanel.getBoundingClientRect();
+          const position = keepChatInsideViewport(
+            panelRect.left,
+            panelRect.top
+          );
+
+          floatingChatPanel.style.left = position.left + "px";
+          floatingChatPanel.style.top = position.top + "px";
+        });
+      }
+
+      const customFields = Array.from(
+        customPanel.querySelectorAll(
+          "input, select, textarea"
+        )
+      );
+
+      function setAddressMode(mode) {
+        const usingCustom =
+          mode === "custom";
+
+        customPanel.hidden = !usingCustom;
+        savedPanel.hidden = usingCustom;
+
+        customFields.forEach(
+          function (field) {
+            field.disabled = !usingCustom;
+          }
+        );
+
+        if (usingCustom) {
+          customMode.checked = true;
+        } else {
+          savedMode.checked = true;
+        }
+
+        updateDefaultOption();
+      }
+
+      function updateDefaultOption() {
+        const canUseDefault =
+          !saveAddressCheckbox.disabled
+          && saveAddressCheckbox.checked;
+
+        makeDefaultCheckbox.disabled =
+          !canUseDefault;
+
+        if (!canUseDefault) {
+          makeDefaultCheckbox.checked = false;
+        }
+      }
+
+      function createAddressCard(address) {
+        const card = document.createElement(
+          "label"
+        );
+
+        card.className =
+          "saved-address-card";
+
+        const radio = document.createElement(
+          "input"
+        );
+
+        radio.type = "radio";
+        radio.name =
+          "shipping_address_id";
+        radio.value =
+          String(address.id);
+
+        if (
+          previousAddressId
+          === String(address.id)
+        ) {
+          radio.checked = true;
+        }
+
+        const content = document.createElement(
+          "div"
+        );
+
+        const title = document.createElement(
+          "strong"
+        );
+
+        title.textContent =
+          address.label
+          || "Dirección de envío";
+
+        if (address.is_default) {
+          const badge = document.createElement(
+            "span"
+          );
+
+          badge.className =
+            "default-address-badge";
+
+          badge.textContent =
+            "PRINCIPAL";
+
+          title.appendChild(badge);
+        }
+
+        const addressText =
+          document.createElement("p");
+
+        addressText.textContent =
+          address.complete_address;
+
+        const contact =
+          document.createElement("small");
+
+        contact.textContent =
+          "Recibe: "
+          + address.contact_name
+          + (
+            address.phone
+              ? " · " + address.phone
+              : ""
+          );
+
+        content.appendChild(title);
+        content.appendChild(addressText);
+        content.appendChild(contact);
+
+        if (address.reference) {
+          const reference =
+            document.createElement("small");
+
+          reference.textContent =
+            "Referencia: "
+            + address.reference;
+
+          content.appendChild(reference);
+        }
+
+        card.appendChild(radio);
+        card.appendChild(content);
+
+        return card;
+      }
+
+      async function loadCustomerAddresses() {
+        addressList.replaceChildren();
+
+        const customerId =
+          customerSelect.value;
+
+        if (!customerId) {
+          savedMode.disabled = true;
+
+          addressStatus.hidden = false;
+          addressStatus.textContent =
+            "Selecciona un cliente para consultar sus direcciones.";
+
+          setAddressMode("custom");
+          return;
+        }
+
+        addressStatus.hidden = false;
+        addressStatus.textContent =
+          "Consultando direcciones...";
+
+        try {
+          const response = await fetch(
+            addressesApiUrl
+            + "?customer_id="
+            + encodeURIComponent(
+              customerId
+            ),
+            {
+              headers: {
+                "X-Requested-With":
+                  "XMLHttpRequest"
+              }
+            }
+          );
+
+          const data =
+            await response.json();
+
+          if (
+            !response.ok
+            || !data.ok
+          ) {
+            throw new Error(
+              data.error
+              || "No fue posible consultar las direcciones."
+            );
+          }
+
+          if (!data.addresses.length) {
+            savedMode.disabled = true;
+
+            addressStatus.hidden = false;
+            addressStatus.textContent =
+              "Este cliente todavía no tiene direcciones guardadas. Captura otra dirección.";
+
+            setAddressMode("custom");
+            return;
+          }
+
+          savedMode.disabled = false;
+          addressStatus.hidden = true;
+
+          data.addresses.forEach(
+            function (address) {
+              addressList.appendChild(
+                createAddressCard(
+                  address
+                )
+              );
+            }
+          );
+
+          let selectedAddress =
+            addressList.querySelector(
+              'input[name="shipping_address_id"]:checked'
+            );
+
+          if (!selectedAddress) {
+            selectedAddress =
+              addressList.querySelector(
+                'input[name="shipping_address_id"]'
+              );
+
+            if (selectedAddress) {
+              selectedAddress.checked = true;
+            }
+          }
+
+          if (
+            previousMode === "custom"
+          ) {
+            setAddressMode("custom");
+          } else {
+            setAddressMode("saved");
+          }
+
+        } catch (error) {
+          savedMode.disabled = true;
+
+          addressStatus.hidden = false;
+          addressStatus.textContent =
+            error.message;
+
+          setAddressMode("custom");
+        }
+      }
+
+      savedMode.addEventListener(
+        "change",
+        function () {
+          if (savedMode.checked) {
+            setAddressMode("saved");
+          }
+        }
+      );
+
+      customMode.addEventListener(
+        "change",
+        function () {
+          if (customMode.checked) {
+            setAddressMode("custom");
+          }
+        }
+      );
+
+      customerSelect.addEventListener(
+        "change",
+        loadCustomerAddresses
+      );
+
+      saveAddressCheckbox.addEventListener(
+        "change",
+        updateDefaultOption
+      );
+
+      openQuickCustomer.addEventListener(
+        "click",
+        function () {
+          quickCustomerBox.hidden = false;
+        }
+      );
+
+      function hideQuickCustomer() {
+        quickCustomerBox.hidden = true;
+      }
+
+      closeQuickCustomer.addEventListener(
+        "click",
+        hideQuickCustomer
+      );
+
+      cancelQuickCustomer.addEventListener(
+        "click",
+        hideQuickCustomer
+      );
+
+      openChatButton.addEventListener(
+        "click",
+        function () {
+          const customerId =
+            customerSelect.value;
+
+          if (!customerId) {
+            alert(
+              "Selecciona un cliente para abrir el chat."
+            );
+
+            customerSelect.focus();
+            return;
+          }
+
+          const url =
+            openChatButton.dataset
+              .urlTemplate
+              .replace(
+                "/0/",
+                "/" + customerId + "/"
+              );
+
+          window.location.href = url;
+        }
+      );
+
+      form.addEventListener(
+        "submit",
+        function (event) {
+          if (!customerSelect.value) {
+            event.preventDefault();
+
+            alert(
+              "Selecciona un cliente antes de crear el pedido."
+            );
+
+            customerSelect.focus();
+            return;
+          }
+
+          const selectedMode =
+            form.querySelector(
+              'input[name="address_mode"]:checked'
+            );
+
+          if (!selectedMode) {
+            event.preventDefault();
+
+            alert(
+              "Selecciona cómo se obtendrá la dirección de entrega."
+            );
+
+            return;
+          }
+
+          if (
+            selectedMode.value === "saved"
+            && !form.querySelector(
+              'input[name="shipping_address_id"]:checked'
+            )
+          ) {
+            event.preventDefault();
+
+            alert(
+              "Selecciona una dirección guardada."
+            );
+          }
+        }
+      );
+
+      updateDefaultOption();
+      loadCustomerAddresses();
+    }
+  );
+
+  
+</script>
+<script id="pakivox-customer-picker-script">
+  document.addEventListener("DOMContentLoaded", function () {
+    const customerSelect = document.getElementById("customerSelect");
+    const trigger = document.getElementById("customerPickerTrigger");
+    const triggerText = document.getElementById("customerPickerTriggerText");
+    const box = document.getElementById("customerPickerBox");
+    const closeBtn = document.getElementById("closeCustomerPicker");
+    const cancelBtn = document.getElementById("cancelCustomerPicker");
+    const confirmBtn = document.getElementById("confirmCustomerPicker");
+    const searchInput = document.getElementById("customerPickerSearch");
+    const countLabel = document.getElementById("customerPickerCount");
+    const listEl = document.getElementById("customerPickerList");
+    const detailEl = document.getElementById("customerPickerDetail");
+    const dataScript = document.getElementById("customers-data-json");
+
+    if (!customerSelect || !trigger || !box || !dataScript) return;
+
+    const customers = JSON.parse(dataScript.textContent || "[]");
+    const byId = new Map(customers.map(function (c) { return [String(c.id), c]; }));
+    let pendingId = customerSelect.value || "";
+
+    function initials(customer) {
+      const source = customer.full_name || customer.business_name || "?";
+      const parts = source.trim().split(/\s+/).slice(0, 2);
+      return parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join("") || "?";
+    }
+
+    function displayName(customer) {
+      return customer.full_name || (customer.business_name || ("Cliente #" + customer.id));
+    }
+
+    function refreshTriggerText() {
+      const current = byId.get(String(customerSelect.value));
+      if (current) {
+        triggerText.textContent = displayName(current) + (current.business_name ? " — " + current.business_name : "");
+        trigger.classList.remove("is-empty");
+      } else {
+        triggerText.textContent = "Selecciona un cliente";
+        trigger.classList.add("is-empty");
+      }
+    }
+
+    function matches(customer, query) {
+      if (!query) return true;
+      const haystack = [customer.full_name, customer.business_name, customer.contact_name, customer.rfc, customer.phone, customer.whatsapp, customer.email].join(" ").toLowerCase();
+      return haystack.indexOf(query) !== -1;
+    } 
+        let profileRequestToken = 0;
+
+    function frequencyLevel(label) {
+      if (label === "Cliente frecuente") return "loyal";
+      if (label === "Cliente recurrente") return "recurring";
+      if (label === "Cliente ocasional") return "occasional";
+      return "new";
+    }
+
+    function formatOrderDate(iso) {
+      if (!iso) return "Sin pedidos previos";
+      const date = new Date(iso);
+      return date.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function renderDetail(customer) {
+      if (!customer) {
+        detailEl.innerHTML = '<div class="customer-picker-detail-empty">Selecciona un cliente de la lista para ver su información.</div>';
+        return;
+      }
+      function row(label, value) {
+        if (!value) return "";
+        return '<div class="customer-picker-detail-row"><span>' + label + '</span><strong>' + String(value).replace(/</g, "&lt;") + '</strong></div>';
+      }
+
+      detailEl.innerHTML =
+        '<div class="customer-picker-detail-name">' + displayName(customer).replace(/</g, "&lt;") + '</div>' +
+        (customer.business_name ? '<div class="customer-picker-detail-sub">' + customer.business_name.replace(/</g, "&lt;") + '</div>' : '') +
+        '<div id="customerPickerDynamicSection"><div class="customer-picker-detail-loading">Consultando historial de pedidos y dirección...</div></div>' +
+        '<div class="customer-picker-detail-section"><div class="customer-picker-detail-label">Información comercial</div>' +
+        row("Tipo de cliente", customer.customer_type) + row("Lista de precios", customer.price_level) + row("RFC", customer.rfc) + '</div>' +
+        '<div class="customer-picker-detail-section"><div class="customer-picker-detail-label">Contacto</div>' +
+        row("Persona de contacto", customer.contact_name) + row("Teléfono", customer.phone) + row("WhatsApp", customer.whatsapp) + row("Correo", customer.email) + '</div>';
+
+      const apiUrl = box.dataset.profileApiUrl;
+      if (!apiUrl) return;
+
+      const requestToken = ++profileRequestToken;
+
+      fetch(apiUrl + "?customer_id=" + encodeURIComponent(customer.id), {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          if (requestToken !== profileRequestToken) return;
+          const dynamicSection = document.getElementById("customerPickerDynamicSection");
+          if (!dynamicSection) return;
+
+          if (!data.ok) {
+            dynamicSection.innerHTML = "";
+            return;
+          }
+
+          const level = frequencyLevel(data.frequency_label);
+          const addressText = data.address && data.address.complete_address
+            ? data.address.complete_address
+            : "Sin dirección guardada";
+
+          dynamicSection.innerHTML =
+            '<div class="customer-picker-detail-section" style="margin-top: 12px; padding-top: 0; border-top: none;">' +
+            '<span class="customer-picker-frequency-badge" data-level="' + level + '">' + data.frequency_label.replace(/</g, "&lt;") + '</span>' +
+            '</div>' +
+            '<div class="customer-picker-detail-section"><div class="customer-picker-detail-label">Historial de pedidos</div>' +
+            '<div class="customer-picker-detail-row"><span>Pedidos totales</span><strong>' + data.orders.total + '</strong></div>' +
+            '<div class="customer-picker-detail-row"><span>Entregados</span><strong>' + data.orders.delivered + '</strong></div>' +
+            (data.orders.cancelled ? '<div class="customer-picker-detail-row"><span>Cancelados</span><strong>' + data.orders.cancelled + '</strong></div>' : '') +
+            '<div class="customer-picker-detail-row"><span>Último pedido</span><strong>' +
+            (data.orders.last_order_folio ? data.orders.last_order_folio + " · " : "") +
+            formatOrderDate(data.orders.last_order_date) + '</strong></div>' +
+            '</div>' +
+            '<div class="customer-picker-detail-section"><div class="customer-picker-detail-label">Dirección de envío</div>' +
+            '<div class="customer-picker-detail-row" style="display:block;"><strong style="text-align:left; display:block;">' +
+            addressText.replace(/</g, "&lt;") + '</strong></div></div>';
+        })
+        .catch(function () {
+          const dynamicSection = document.getElementById("customerPickerDynamicSection");
+          if (dynamicSection) dynamicSection.innerHTML = "";
+        });
+    }
+    function renderList(query) {
+      const normalizedQuery = (query || "").trim().toLowerCase();
+      const filtered = customers.filter(function (c) { return matches(c, normalizedQuery); });
+      const limited = filtered.slice(0, 80);
+
+      countLabel.textContent = filtered.length === customers.length
+        ? customers.length + " cliente" + (customers.length === 1 ? "" : "s")
+        : "Mostrando " + limited.length + " de " + filtered.length;
+
+      if (!limited.length) {
+        listEl.innerHTML = '<div class="customer-picker-empty-state">No se encontraron clientes con esa búsqueda.</div>';
+        return;
+      }
+    
+
+      listEl.innerHTML = "";
+      limited.forEach(function (customer) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "customer-picker-item";
+        item.dataset.id = String(customer.id);
+        if (String(customer.id) === String(pendingId)) item.classList.add("is-selected");
+
+        const meta = [customer.business_name, customer.rfc, customer.phone || customer.whatsapp].filter(Boolean).join(" · ");
+
+        item.innerHTML =
+          '<span class="customer-picker-avatar">' + initials(customer) + '</span>' +
+          '<span class="customer-picker-item-body">' +
+          '<span class="customer-picker-item-name">' + displayName(customer).replace(/</g, "&lt;") + '</span>' +
+          '<span class="customer-picker-item-meta">' + (meta || "Sin datos adicionales").replace(/</g, "&lt;") + '</span></span>' +
+          '<span class="customer-picker-item-check" aria-hidden="true">✓</span>';
+
+        item.addEventListener("click", function () {
+          pendingId = customer.id;
+          listEl.querySelectorAll(".customer-picker-item").forEach(function (node) {
+            node.classList.toggle("is-selected", node.dataset.id === String(customer.id));
+          });
+          renderDetail(customer);
+          confirmBtn.disabled = false;
+        });
+
+        listEl.appendChild(item);
+      });
+    }
+
+    function openPicker() {
+      pendingId = customerSelect.value || "";
+      searchInput.value = "";
+      renderList("");
+      const current = byId.get(String(pendingId));
+      renderDetail(current || null);
+      confirmBtn.disabled = !current;
+      box.hidden = false;
+      window.setTimeout(function () { searchInput.focus(); }, 30);
+    }
+
+    function closePicker() { box.hidden = true; }
+
+    trigger.addEventListener("click", openPicker);
+    closeBtn.addEventListener("click", closePicker);
+    cancelBtn.addEventListener("click", closePicker);
+    searchInput.addEventListener("input", function () { renderList(searchInput.value); });
+
+    confirmBtn.addEventListener("click", function () {
+      if (!pendingId) return;
+      customerSelect.value = String(pendingId);
+      customerSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      refreshTriggerText();
+      closePicker();
+    });
+
+    box.addEventListener("click", function (event) {
+      if (event.target === box) closePicker();
+    });
+
+    refreshTriggerText();
+  });
+</script>
+<script id="pakivox-cs1d-related-orders-script">
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("createOrderForm");
+    const customerSelect = document.getElementById("customerSelect");
+    const panel = document.getElementById("relatedOrdersPanel");
+    const list = document.getElementById("relatedOrdersList");
+    const message = document.getElementById("relatedOrdersMessage");
+    const overrideInput = document.getElementById("duplicateOverride");
+    const continueButton = document.getElementById("createAnywayButton");
+
+    if (!form || !customerSelect || !panel || !list || !overrideInput) {
+      return;
+    }
+
+    const toggle = document.getElementById("relatedOrdersToggle");
+    const body = document.getElementById("relatedOrdersBody");
+
+    const historyPanel = document.getElementById("orderHistoryPanel");
+    const historyToggle = document.getElementById("orderHistoryToggle");
+    const historyCount = document.getElementById("orderHistoryCount");
+    const historyList = document.getElementById("orderHistoryList");
+
+    const apiUrl = panel.dataset.apiUrl;
+    let controller = null;
+    let state = { customerId: "", hasCandidates: false, loading: false };
+
+    function setPanelOpen(open) {
+      body.hidden = !open;
+      panel.classList.toggle("is-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    toggle?.addEventListener("click", function () {
+      setPanelOpen(body.hidden);
+    });
+
+    function setHistoryOpen(open) {
+      historyList.hidden = !open;
+      historyPanel.classList.toggle("is-open", open);
+      historyToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    historyToggle?.addEventListener("click", function () {
+      setHistoryOpen(historyList.hidden);
+    });
+
+    function addHistoryCard(item) {
+      const card = document.createElement("article");
+      card.className = "order-history-card";
+
+      const info = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = item.folio || `Pedido #${item.id}`;
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "order-history-status";
+      statusBadge.textContent = item.status_label;
+      title.appendChild(statusBadge);
+      info.appendChild(title);
+
+      const secondary = document.createElement("small");
+      secondary.textContent = item.restricted
+        ? "Pedido gestionado por otro responsable."
+        : `${money(item.total)} · ${ageText(item.created_at)}`;
+      info.appendChild(secondary);
+      card.appendChild(info);
+
+      if (item.can_open && item.detail_url) {
+        const link = document.createElement("a");
+        link.className = "order-history-open";
+        link.href = item.detail_url;
+        link.textContent = "Ver detalles";
+        card.appendChild(link);
+      }
+      historyList.appendChild(card);
+    }
+
+    function renderHistory(historyOrders) {
+      historyList.replaceChildren();
+      const items = historyOrders || [];
+
+      if (!items.length) {
+        historyPanel.hidden = true;
+        return;
+      }
+
+      historyPanel.hidden = false;
+      setHistoryOpen(false);
+      historyCount.textContent = `(${items.length})`;
+      items.forEach(addHistoryCard);
+    }
+
+    function money(value) {
+      if (value === null || value === undefined || value === "") return "";
+      const number = Number(value);
+      return Number.isFinite(number)
+        ? number.toLocaleString("es-MX", { style: "currency", currency: "MXN" })
+        : value;
+    }
+
+    function ageText(iso) {
+      const then = new Date(iso);
+      const now = new Date();
+      const minutes = Math.max(0, Math.floor((now - then) / 60000));
+      if (minutes < 60) return `hace ${minutes} min`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `hace ${hours} h`;
+      const days = Math.floor(hours / 24);
+      return `hace ${days} día${days === 1 ? "" : "s"}`;
+    }
+
+        function addCandidate(item, cancelled) {
+      const card = document.createElement("article");
+      card.className = "related-order-card";
+      if (item.is_mine) card.classList.add("is-mine");
+
+      const info = document.createElement("div");
+      const title = document.createElement("strong");
+
+      if (item.restricted) {
+        title.textContent = "Pedido de otro responsable";
+      } else {
+        title.textContent = item.folio;
+        if (item.is_mine) {
+          const mineBadge = document.createElement("span");
+          mineBadge.className = "related-order-mine-badge";
+          mineBadge.textContent = "TUYO";
+          title.appendChild(mineBadge);
+        }
+      }
+      info.appendChild(title);
+
+      const secondary = document.createElement("small");
+      if (item.restricted) {
+        secondary.textContent = item.created_by_name
+          ? `Gestionado por ${item.created_by_name} · ${ageText(item.created_at)}`
+          : `Existe una operación del mismo cliente gestionada por otro responsable · ${ageText(item.created_at)}`;
+      } else {
+        const ownerNote = !item.is_mine && item.created_by_name
+          ? ` · Creado por ${item.created_by_name}`
+          : "";
+        secondary.textContent = `${money(item.total)} · ${ageText(item.created_at)}${ownerNote}`;
+      }
+      info.appendChild(secondary);
+
+      const meta = document.createElement("div");
+      meta.className = "related-order-meta";
+      const status = document.createElement("span");
+      status.className = "related-order-status";
+      status.textContent = item.status_label;
+      meta.appendChild(status);
+
+      if (cancelled && item.recovery_candidate) {
+        const recovery = document.createElement("span");
+        recovery.className = "related-order-recoverable";
+        recovery.textContent = "Candidato a recuperación";
+        meta.appendChild(recovery);
+      }
+      info.appendChild(meta);
+      card.appendChild(info);
+
+      if (item.can_open && item.detail_url) {
+        const link = document.createElement("a");
+        link.className = "related-order-open";
+        link.href = item.detail_url;
+        if (cancelled && item.can_recover) {
+          link.textContent = "Abrir / recuperar";
+        } else if (item.is_mine) {
+          link.textContent = "Continuar mi pedido";
+        } else {
+          link.textContent = "Abrir pedido";
+        }
+        card.appendChild(link);
+      } else {
+        const restricted = document.createElement("span");
+        restricted.className = "related-order-restricted";
+        restricted.textContent = "Consulta a un supervisor si necesitas revisar este pedido.";
+        card.appendChild(restricted);
+      }
+      list.appendChild(card);
+    }
+
+    function render(data) {
+      list.replaceChildren();
+      const active = data.active_orders || [];
+      const cancelled = data.cancelled_recent_orders || [];
+      state.hasCandidates = Boolean(data.has_candidates);
+
+      if (!state.hasCandidates) {
+        panel.hidden = true;
+        setPanelOpen(false);
+        // Cliente sano: sin pedidos activos ni cancelados recientes.
+        // Se muestra, si existe, el historial tranquilo de pedidos cerrados.
+        renderHistory(data.history_orders);
+        return;
+      }
+
+      // Hay algo pendiente: el historial tranquilo se oculta para no
+      // competir por atención con la alerta que sí requiere acción.
+      historyPanel.hidden = true;
+
+      panel.hidden = false;
+      panel.classList.remove("is-confirmed");
+      setPanelOpen(false);
+      message.textContent = active.length
+        ? `${active.length} pedido${active.length === 1 ? "" : "s"} activo${active.length === 1 ? "" : "s"} para este cliente.`
+        : `Pedidos cancelados en las últimas ${data.cancelled_window_hours} horas que podrían corresponder a esta operación.`;
+
+      active.forEach(item => addCandidate(item, false));
+      cancelled.forEach(item => addCandidate(item, true));
+    }
+
+    async function checkRelatedOrders() {
+      const customerId = customerSelect.value;
+      overrideInput.value = "0";
+      panel.classList.remove("is-confirmed");
+      state = { customerId, hasCandidates: false, loading: false };
+
+      if (!customerId) {
+        panel.hidden = true;
+        historyPanel.hidden = true;
+        list.replaceChildren();
+        historyList.replaceChildren();
+        return;
+      }
+
+      if (controller) controller.abort();
+      controller = new AbortController();
+      state.loading = true;
+      // No se muestra ningún panel mientras se consulta: evita el
+      // parpadeo de la alerta para clientes que resultan estar sanos.
+      panel.hidden = true;
+      historyPanel.hidden = true;
+      list.replaceChildren();
+      historyList.replaceChildren();
+
+      try {
+        const response = await fetch(
+          `${apiUrl}?customer_id=${encodeURIComponent(customerId)}`,
+          {
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            signal: controller.signal,
+          }
+        );
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No fue posible revisar pedidos relacionados.");
+        }
+        if (customerSelect.value !== customerId) return;
+        render(data);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        panel.hidden = true;
+        historyPanel.hidden = true;
+        console.error("PAKIVOX CS-1D:", error);
+      } finally {
+        if (state.customerId === customerId) state.loading = false;
+      }
+    }
+
+    customerSelect.addEventListener("change", checkRelatedOrders);
+
+    continueButton?.addEventListener("click", function () {
+      overrideInput.value = "1";
+      panel.classList.add("is-confirmed");
+      message.textContent = "Confirmado: esta operación se registrará como una venta nueva y quedará auditada.";
+      form.requestSubmit();
+    });
+
+    form.addEventListener("submit", function (event) {
+      if (state.hasCandidates && overrideInput.value !== "1") {
+        event.preventDefault();
+        panel.hidden = false;
+        setPanelOpen(true);
+        panel.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+
+    if (customerSelect.value) checkRelatedOrders();
+  });
+</script>
+
+{% endblock %}

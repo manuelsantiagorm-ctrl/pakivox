@@ -1,0 +1,21 @@
+{% for deal in deals %}
+    <button
+        type="button"
+        class="search-result-card search-result-button"
+        hx-get="{% url 'deal_detail_modal' deal.id %}"
+        hx-target="#deal-modal-content"
+        hx-swap="innerHTML"
+        onclick="openDealModal()"
+    >
+        <div>
+            <strong>{{ deal.title }}</strong>
+            <small>{{ deal.customer.full_name }}</small>
+        </div>
+
+        <span>${{ deal.amount|floatformat:0 }}</span>
+    </button>
+{% empty %}
+    <div class="search-empty">
+        No se encontraron oportunidades.
+    </div>
+{% endfor %}

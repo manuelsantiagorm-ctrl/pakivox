@@ -1,0 +1,32 @@
+.env
+*.env
+*.sql
+*.dump
+*.tar
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+/media/
+/staticfiles/
+# --- PAKIVOX SECURITY: local-only artifacts ---
+.env.*
+!.env.production.example
+backups/
+_backups_pakivox/
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.bak
+*.backup
+*.backup_*
+*.backup-*
+!.env.postgresql.example
+!shipping_hub/.env.example
+runtime/shipping_flight_recorder/
+runtime/
+
+# Paquetes de despliegue armados a mano: no van al repositorio.
+/*_deploy.zip
+.local/

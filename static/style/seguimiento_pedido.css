@@ -1,0 +1,282 @@
+/*
+  Página pública de seguimiento del pedido (templates/customer_updates/).
+  La abre el comprador desde WhatsApp o correo: primero celular.
+  Paleta PAKIVOX: #021024 #052659 #5483B3 #7DA0CA #C1E8FF.
+*/
+
+:root {
+  --sp-navy-900: #021024;
+  --sp-navy-700: #052659;
+  --sp-blue-500: #5483B3;
+  --sp-blue-300: #7DA0CA;
+  --sp-blue-100: #C1E8FF;
+  --sp-bg: #f3f7fb;
+  --sp-card: #ffffff;
+  --sp-text: #10223a;
+  --sp-muted: #5b6f86;
+  --sp-line: #dde7f1;
+  --sp-ok: #15803d;
+  --sp-warn: #b45309;
+  --sp-bad: #b91c1c;
+}
+
+* { box-sizing: border-box; }
+
+body.sp-body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--sp-text);
+  background: var(--sp-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+.sp-wrap {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.sp-header {
+  color: #fff;
+  background: linear-gradient(160deg, var(--sp-navy-700), var(--sp-navy-900));
+  padding: 28px 0 56px;
+}
+
+.sp-company {
+  display: block;
+  color: var(--sp-blue-100);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  overflow-wrap: anywhere;
+}
+
+.sp-header h1 {
+  margin: 4px 0 12px;
+  font-size: 26px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.sp-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sp-navy-900);
+  background: var(--sp-blue-100);
+}
+
+.sp-status-shipped,
+.sp-status-delivered { background: #bbf7d0; color: #064e3b; }
+.sp-status-cancelled { background: #fecaca; color: #7f1d1d; }
+.sp-status-pending_payment,
+.sp-status-partial_paid,
+.sp-status-pending { background: #fde68a; color: #78350f; }
+
+.sp-main {
+  flex: 1;
+  margin-top: -36px;
+  padding-bottom: 24px;
+}
+
+.sp-card {
+  background: var(--sp-card);
+  border: 1px solid var(--sp-line);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(2, 16, 36, .06);
+}
+
+.sp-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: var(--sp-navy-700);
+}
+
+/* ---------- Avance ---------- */
+.sp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.sp-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--sp-muted);
+}
+
+.sp-step + .sp-step::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: -10px;
+  height: 18px;
+  border-left: 2px solid var(--sp-line);
+}
+
+.sp-step.is-done + .sp-step::before { border-color: var(--sp-ok); }
+
+.sp-dot {
+  flex: 0 0 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--sp-line);
+  background: #fff;
+}
+
+.sp-step.is-done { color: var(--sp-text); }
+.sp-step.is-done .sp-dot { background: var(--sp-ok); border-color: var(--sp-ok); color: #fff; }
+.sp-step.is-current { color: var(--sp-navy-700); font-weight: 700; }
+.sp-step.is-current .sp-dot {
+  border-color: var(--sp-blue-500);
+  color: var(--sp-blue-500);
+  box-shadow: 0 0 0 4px rgba(84, 131, 179, .18);
+}
+
+.sp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Filas ---------- */
+.sp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--sp-line);
+}
+
+.sp-row:last-child { border-bottom: 0; }
+.sp-row span { color: var(--sp-muted); }
+.sp-row strong { text-align: right; overflow-wrap: anywhere; }
+.sp-total strong { font-size: 18px; }
+.sp-due strong { color: var(--sp-warn); }
+.sp-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.sp-muted { color: var(--sp-muted); font-size: 14px; display: block; }
+
+.sp-shipment + .sp-shipment {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sp-line);
+}
+
+.sp-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  margin-top: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background: var(--sp-navy-700);
+}
+
+.sp-button:focus-visible,
+.sp-footer a:focus-visible {
+  outline: 3px solid var(--sp-blue-300);
+  outline-offset: 2px;
+}
+
+.sp-events {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--sp-line);
+}
+
+.sp-events li { padding: 6px 0; }
+.sp-events strong { display: block; font-size: 15px; }
+.sp-events span { font-size: 13px; color: var(--sp-muted); }
+
+.sp-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sp-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.sp-items li:last-child { border-bottom: 0; }
+.sp-items strong { overflow-wrap: anywhere; }
+.sp-qty { white-space: nowrap; font-weight: 700; color: var(--sp-navy-700); }
+
+.sp-alert {
+  display: flex;
+  gap: 12px;
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.sp-alert > i { font-size: 26px; color: var(--sp-bad); }
+.sp-alert h2 { color: var(--sp-bad); margin-bottom: 4px; }
+.sp-alert p { margin: 0; }
+
+.sp-updated {
+  margin: 4px 4px 0;
+  font-size: 13px;
+  color: var(--sp-muted);
+  text-align: center;
+}
+
+.sp-footer {
+  padding: 18px 16px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--sp-muted);
+}
+
+.sp-footer a { color: var(--sp-navy-700); font-weight: 700; text-decoration: none; }
+
+.sp-center {
+  margin-top: 0;
+  display: grid;
+  place-items: center;
+  padding-top: 15vh;
+}
+
+.sp-empty { text-align: center; max-width: 440px; }
+.sp-empty > i { font-size: 40px; color: var(--sp-blue-500); }
+.sp-empty h1 { font-size: 21px; margin: 8px 0; }
+.sp-empty p { margin: 0; color: var(--sp-muted); }
+
+@media (min-width: 720px) {
+  .sp-header h1 { font-size: 32px; }
+  .sp-card { padding: 22px 24px; }
+}

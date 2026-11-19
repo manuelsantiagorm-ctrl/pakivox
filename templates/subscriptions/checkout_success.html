@@ -1,0 +1,653 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>
+      {% if activation_complete %}
+        WhatsApp Premium activo | PAKIVOX
+      {% else %}
+        Verificando pago | PAKIVOX
+      {% endif %}
+    </title>
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    {% if activation_pending %}
+      <meta http-equiv="refresh" content="5" />
+    {% endif %}
+
+    <style>
+      :root {
+        --bg: #020617;
+        --card: #0f172a;
+        --border: rgba(148, 163, 184, 0.18);
+        --border-strong: rgba(148, 163, 184, 0.28);
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --muted-2: #cbd5e1;
+        --green: #10b981;
+        --green-2: #22c55e;
+        --cyan: #06b6d4;
+        --gold: #f59e0b;
+        --gold-2: #facc15;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(16, 185, 129, 0.14),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(37, 99, 235, 0.14),
+            transparent 30%
+          ),
+          var(--bg);
+        color: var(--text);
+      }
+
+      .success-card {
+        width: 100%;
+        max-width: 780px;
+        overflow: hidden;
+        border-radius: 30px;
+        background:
+          linear-gradient(
+            180deg,
+            #0b1220 0%,
+            #0f172a 100%
+          );
+        border: 1px solid var(--border);
+        box-shadow: 0 35px 90px rgba(0, 0, 0, 0.5);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-logo {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 14px;
+        background:
+          linear-gradient(
+            135deg,
+            var(--gold),
+            var(--gold-2)
+          );
+        color: #111827;
+        font-size: 17px;
+        font-weight: 950;
+        box-shadow: 0 16px 34px rgba(245, 158, 11, 0.24);
+      }
+
+      .brand-text strong {
+        display: block;
+        color: #f8fafc;
+        font-size: 15px;
+        font-weight: 950;
+      }
+
+      .brand-text span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-chip {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 13px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .status-chip.complete {
+        color: #bbf7d0;
+        background: rgba(6, 78, 59, 0.28);
+        border: 1px solid rgba(52, 211, 153, 0.35);
+      }
+
+      .status-chip.pending {
+        color: #fde68a;
+        background: rgba(120, 53, 15, 0.28);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        flex-shrink: 0;
+        border-radius: 999px;
+      }
+
+      .complete .status-dot {
+        background: var(--green-2);
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+      }
+
+      .pending .status-dot {
+        background: var(--gold-2);
+        box-shadow: 0 0 0 6px rgba(250, 204, 21, 0.12);
+        animation: pulse 1.4s infinite;
+      }
+
+      .content {
+        padding: 38px 32px 32px;
+        text-align: center;
+      }
+
+      .status-icon {
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 30px;
+        font-size: 46px;
+        font-weight: 950;
+      }
+
+      .status-icon.complete {
+        color: #022c22;
+        background:
+          linear-gradient(
+            135deg,
+            var(--green),
+            var(--cyan)
+          );
+        box-shadow: 0 24px 52px rgba(16, 185, 129, 0.25);
+      }
+
+      .status-icon.pending {
+        color: #422006;
+        background:
+          linear-gradient(
+            135deg,
+            var(--gold),
+            var(--gold-2)
+          );
+        box-shadow: 0 24px 52px rgba(245, 158, 11, 0.22);
+      }
+
+      .loader {
+        width: 38px;
+        height: 38px;
+        border: 5px solid rgba(66, 32, 6, 0.25);
+        border-top-color: #422006;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .eyebrow.complete {
+        color: #86efac;
+      }
+
+      .eyebrow.pending {
+        color: #fde68a;
+      }
+
+      h1 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 42px;
+        line-height: 1.05;
+        font-weight: 950;
+        letter-spacing: -0.06em;
+      }
+
+      .subtitle {
+        max-width: 610px;
+        margin: 16px auto 0;
+        color: var(--muted-2);
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .company-name {
+        color: #f8fafc;
+        font-weight: 900;
+      }
+
+      .confirm-box {
+        max-width: 640px;
+        margin: 28px auto 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .confirm-item {
+        padding: 16px;
+        border-radius: 18px;
+        background: #050d1d;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        text-align: left;
+      }
+
+      .confirm-item strong {
+        display: block;
+        color: #f8fafc;
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      .confirm-item span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .messages {
+        max-width: 640px;
+        margin: 24px auto 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      .alert {
+        padding: 14px 16px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.55;
+        text-align: left;
+      }
+
+      .alert.success {
+        color: #bbf7d0;
+        background: rgba(6, 78, 59, 0.28);
+        border: 1px solid rgba(52, 211, 153, 0.35);
+      }
+
+      .alert.error {
+        color: #fecaca;
+        background: rgba(127, 29, 29, 0.28);
+        border: 1px solid rgba(248, 113, 113, 0.38);
+      }
+
+      .alert.warning {
+        color: #fde68a;
+        background: rgba(120, 53, 15, 0.28);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+      }
+
+      .alert.info {
+        color: #bfdbfe;
+        background: rgba(30, 64, 175, 0.24);
+        border: 1px solid rgba(96, 165, 250, 0.34);
+      }
+
+      .actions {
+        margin-top: 30px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 24px;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 950;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          filter 0.2s ease,
+          background 0.2s ease,
+          border-color 0.2s ease;
+      }
+
+      .btn-primary {
+        color: #022c22;
+        background:
+          linear-gradient(
+            135deg,
+            var(--green),
+            #2dd4bf
+          );
+        border-color: rgba(45, 212, 191, 0.35);
+        box-shadow: 0 16px 34px rgba(16, 185, 129, 0.24);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.03);
+      }
+
+      .btn-pending {
+        color: #422006;
+        background:
+          linear-gradient(
+            135deg,
+            var(--gold),
+            var(--gold-2)
+          );
+        border-color: rgba(250, 204, 21, 0.35);
+        box-shadow: 0 16px 34px rgba(245, 158, 11, 0.2);
+      }
+
+      .btn-pending:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.03);
+      }
+
+      .btn-muted {
+        color: #e5e7eb;
+        background: #020817;
+      }
+
+      .btn-muted:hover {
+        background: #06101f;
+        border-color: var(--border-strong);
+      }
+
+      .session {
+        margin-top: 24px;
+        color: #64748b;
+        font-size: 11px;
+        word-break: break-all;
+      }
+
+      .footer-note {
+        margin-top: 20px;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.45;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .loader,
+        .pending .status-dot {
+          animation: none;
+        }
+
+        .btn {
+          transition: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 14px;
+        }
+
+        .success-card {
+          border-radius: 24px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .status-chip {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .content {
+          padding: 30px 18px 24px;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+
+        .confirm-box {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="success-card">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-logo">W</div>
+
+          <div class="brand-text">
+            <strong>PAKIVOX</strong>
+            <span>Plataforma SaaS de operación logística</span>
+          </div>
+        </div>
+
+        {% if activation_complete %}
+          <div class="status-chip complete">
+            <span class="status-dot"></span>
+            Suscripción activa
+          </div>
+        {% else %}
+          <div class="status-chip pending">
+            <span class="status-dot"></span>
+            Verificando activación
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="content">
+        {% if activation_complete %}
+          <div class="status-icon complete" aria-hidden="true">
+            ✓
+          </div>
+
+          <p class="eyebrow complete">
+            Pago verificado
+          </p>
+
+          <h1>WhatsApp Premium está activo</h1>
+
+          <p class="subtitle">
+            Stripe y PAKIVOX confirmaron la misma suscripción para
+            <span class="company-name">{{ company.name }}</span>.
+            Tu empresa ya puede utilizar las funciones de
+            WhatsApp Premium.
+          </p>
+
+          <div class="confirm-box">
+            <div class="confirm-item">
+              <strong>Empresa verificada</strong>
+              <span>{{ company.name }}</span>
+            </div>
+
+            <div class="confirm-item">
+              <strong>Pago confirmado</strong>
+              <span>
+                El webhook firmado de Stripe fue procesado
+                correctamente.
+              </span>
+            </div>
+
+            <div class="confirm-item">
+              <strong>WhatsApp Premium</strong>
+              <span>
+                Las funciones Premium ya están disponibles para
+                tu empresa.
+              </span>
+            </div>
+          </div>
+        {% else %}
+          <div class="status-icon pending" aria-hidden="true">
+            <div class="loader"></div>
+          </div>
+
+          <p class="eyebrow pending">
+            Verificación en proceso
+          </p>
+
+          <h1>Estamos verificando tu pago</h1>
+
+          <p class="subtitle">
+            Stripe recibió la operación, pero PAKIVOX todavía está
+            esperando la confirmación firmada para
+            <span class="company-name">{{ company.name }}</span>.
+            No necesitas volver a pagar.
+          </p>
+
+          <div class="confirm-box">
+            <div class="confirm-item">
+              <strong>Operación recibida</strong>
+              <span>
+                Estamos consultando el estado de la operación en
+                Stripe.
+              </span>
+            </div>
+
+            <div class="confirm-item">
+              <strong>Activación protegida</strong>
+              <span>
+                Premium solamente se liberará cuando coincidan la
+                empresa, el cliente y la suscripción.
+              </span>
+            </div>
+
+            <div class="confirm-item">
+              <strong>No repitas el pago</strong>
+              <span>
+                {% if activation_pending %}
+                  Esta página se actualizará automáticamente.
+                {% else %}
+                  Puedes verificar nuevamente desde el botón inferior.
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if messages %}
+          <div class="messages">
+            {% for message in messages %}
+              <div
+                class="alert {{ message.tags }}"
+                role="alert"
+              >
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="actions">
+          {% if activation_complete %}
+            <a href="/" class="btn btn-primary">
+              Entrar a PAKIVOX
+            </a>
+
+            <a
+              href="/inventory/products/"
+              class="btn btn-muted"
+            >
+              Ir a inventario
+            </a>
+          {% else %}
+            <a
+              href="?session_id={{ session_id|urlencode }}"
+              class="btn btn-pending"
+            >
+              Verificar nuevamente
+            </a>
+
+            <a href="/" class="btn btn-muted">
+              Volver a PAKIVOX
+            </a>
+          {% endif %}
+        </div>
+
+        {% if session_id %}
+          <div class="session">
+            Referencia Stripe: {{ session_id }}
+          </div>
+        {% endif %}
+
+        <div class="footer-note">
+          PAKIVOX SaaS · Sistema profesional de gestión de
+          almacenes en la nube
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

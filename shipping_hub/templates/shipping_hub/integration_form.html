@@ -1,0 +1,681 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+  {% if editing %}
+    Editar integración
+  {% else %}
+    Nueva integración
+  {% endif %}
+  | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+  {% if editing %}
+    Editar integración logística
+  {% else %}
+    Nueva integración logística
+  {% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+Conecta una cuenta de paquetería de forma segura por empresa
+{% endblock %}
+
+{% block content %}
+<section class="integration-form-page">
+  <div class="form-hero">
+    <div>
+      <span class="form-eyebrow">
+        <i class="bi bi-shield-lock-fill"></i>
+        {{ company.name }}
+      </span>
+
+      <h2>
+        {% if editing %}
+          Configurar {{ integration.get_provider_display }}
+        {% else %}
+          Conectar proveedor
+        {% endif %}
+      </h2>
+
+      <p>
+        Utiliza Sandbox durante el desarrollo. Todas las credenciales se
+        cifran antes de almacenarse en la base de datos.
+      </p>
+    </div>
+
+    <a
+      href="{% url 'shipping_hub:integrations_list' %}"
+      class="back-btn"
+    >
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </a>
+  </div>
+
+  <form method="post" class="integration-form" data-save-form>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-section">
+      <div class="section-heading">
+        <div class="section-number">1</div>
+
+        <div>
+          <h3>Proveedor y entorno</h3>
+          <p>
+            Sandbox y producción utilizan credenciales distintas.
+          </p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field-group">
+          <label for="{{ form.provider.id_for_label }}">
+            {{ form.provider.label }}
+          </label>
+
+          {{ form.provider }}
+
+          {% for error in form.provider.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="field-group">
+          <label for="{{ form.environment.id_for_label }}">
+            {{ form.environment.label }}
+          </label>
+
+          {{ form.environment }}
+
+          {% for error in form.environment.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="field-group">
+          <label for="{{ form.account_mode.id_for_label }}">{{ form.account_mode.label }}</label>
+          {{ form.account_mode }}
+          {% if form.account_mode.help_text %}<small class="field-help">{{ form.account_mode.help_text }}</small>{% endif %}
+          {% for error in form.account_mode.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+        </div>
+
+        <div class="field-group field-full">
+          <label for="{{ form.account_name.id_for_label }}">
+            {{ form.account_name.label }}
+          </label>
+
+          {{ form.account_name }}
+
+          {% for error in form.account_name.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="sandbox-warning" id="environment-warning">
+        <i class="bi bi-flask-fill"></i>
+
+        <div>
+          <strong>Modo Sandbox recomendado</strong>
+          <p>
+            Permite probar autenticación y cotizaciones sin usar
+            la cuenta de producción.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-heading">
+        <div class="section-number">2</div>
+
+        <div>
+          <h3>Credenciales del proveedor</h3>
+          <p>
+            Los campos cambian automáticamente según el proveedor seleccionado.
+          </p>
+        </div>
+      </div>
+
+      <div class="master-account-note" id="master-account-note" hidden>
+        <i class="bi bi-building-lock"></i>
+        <p>Se utilizarán las credenciales maestras configuradas por PAKIVOX.</p>
+      </div>
+
+      <div class="field-grid" id="credential-fields">
+        {% for credential_field in form %}
+          {% if credential_field.name == 'api_token' or credential_field.name == 'api_key' or credential_field.name == 'api_secret' or credential_field.name == 'client_id' or credential_field.name == 'client_secret' or credential_field.name == 'account_number' or credential_field.name == 'customer_number' %}
+            <div class="field-group credential-field" data-credential-field="{{ credential_field.name }}">
+              <label for="{{ credential_field.id_for_label }}">{{ credential_field.label }}</label>
+              <div class="token-field">
+                {{ credential_field }}
+                <button type="button" class="show-token-btn" data-toggle-secret aria-label="Mostrar u ocultar credencial">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              {% if credential_field.help_text %}<small class="field-help">{{ credential_field.help_text }}</small>{% endif %}
+              {% for error in credential_field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="security-note">
+        <i class="bi bi-key-fill"></i>
+
+        <p>
+          Después de guardar, PAKIVOX no mostrará nuevamente las claves.
+          Skydropx generará y renovará su Bearer Token automáticamente.
+        </p>
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.webhook_secret.id_for_label }}">{{ form.webhook_secret.label }}</label>
+        <div class="token-field">
+          {{ form.webhook_secret }}
+          <button type="button" class="show-token-btn" data-toggle-secret aria-label="Mostrar u ocultar secreto"><i class="bi bi-eye"></i></button>
+        </div>
+        {% if form.webhook_secret.help_text %}<small class="field-help">{{ form.webhook_secret.help_text }}</small>{% endif %}
+        {% for error in form.webhook_secret.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-heading">
+        <div class="section-number">3</div>
+
+        <div>
+          <h3>Formato de etiquetas</h3>
+          <p>
+            PDF será la primera opción para impresión manual;
+            ZPL queda preparado para QZ Tray.
+          </p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field-group">
+          <label for="{{ form.preferred_label_format.id_for_label }}">
+            {{ form.preferred_label_format.label }}
+          </label>
+
+          {{ form.preferred_label_format }}
+
+          {% for error in form.preferred_label_format.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="field-group">
+          <label for="{{ form.fallback_label_format.id_for_label }}">
+            {{ form.fallback_label_format.label }}
+          </label>
+
+          {{ form.fallback_label_format }}
+
+          {% for error in form.fallback_label_format.errors %}
+            <small class="field-error">{{ error }}</small>
+          {% endfor %}
+        </div>
+
+        <div class="field-group">
+          <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+          {{ form.priority }}
+          {% for error in form.priority.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+        </div>
+      </div>
+
+      <div class="field-grid option-grid">
+        <label class="check-option">{{ form.allow_quote_fallback }} <span>{{ form.allow_quote_fallback.label }}</span></label>
+        <label class="check-option">{{ form.is_active }} <span>{{ form.is_active.label }}</span></label>
+        <label class="check-option">{{ form.is_primary }} <span>{{ form.is_primary.label }}</span></label>
+      </div>
+      {% for error in form.allow_quote_fallback.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      {% for error in form.is_active.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      {% for error in form.is_primary.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+    </div>
+
+    <div class="form-actions">
+      <a
+        href="{% url 'shipping_hub:integrations_list' %}"
+        class="cancel-btn"
+      >
+        Cancelar
+      </a>
+
+      <button
+        type="submit"
+        class="save-btn"
+        id="save-button"
+      >
+        <i class="bi bi-shield-check"></i>
+
+        {% if editing %}
+          Guardar cambios
+        {% else %}
+          Guardar integración
+        {% endif %}
+      </button>
+    </div>
+  </form>
+</section>
+
+<style>
+  .integration-form-page {
+    max-width: 980px;
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+  }
+
+  .form-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px;
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(56, 189, 248, .18),
+        transparent 35%
+      ),
+      #0f172a;
+    border: 1px solid rgba(56, 189, 248, .18);
+  }
+
+  .form-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .form-hero h2 {
+    color: #f8fafc;
+    margin: 9px 0 6px;
+    font-size: 28px;
+  }
+
+  .form-hero p {
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .integration-form {
+    display: grid;
+    gap: 18px;
+  }
+
+  .form-section {
+    padding: 22px;
+    border-radius: 20px;
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, .15);
+    display: grid;
+    gap: 20px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+  }
+
+  .section-number {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    border-radius: 11px;
+    color: #082f49;
+    background: #38bdf8;
+    font-weight: 950;
+  }
+
+  .section-heading h3 {
+    color: #f8fafc;
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
+
+  .section-heading p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .field-full {
+    grid-column: 1 / -1;
+  }
+
+  .field-group {
+    display: grid;
+    gap: 8px;
+  }
+
+  .field-group label {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .shipping-input {
+    width: 100%;
+    min-height: 47px;
+    padding: 11px 13px;
+    color: #f8fafc;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .24);
+    border-radius: 12px;
+    outline: none;
+  }
+
+  .shipping-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, .1);
+  }
+
+  .token-field {
+    position: relative;
+  }
+
+  .token-field .shipping-input {
+    padding-right: 54px;
+  }
+
+  .show-token-btn {
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    width: 38px;
+    height: 34px;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 9px;
+    color: #94a3b8;
+    background: rgba(148, 163, 184, .1);
+    cursor: pointer;
+  }
+
+  .show-token-btn:hover {
+    color: #f8fafc;
+    background: rgba(148, 163, 184, .16);
+  }
+
+  .field-help {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .field-error {
+    color: #fca5a5;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .form-errors {
+    padding: 14px 16px;
+    border-radius: 14px;
+    color: #fecaca;
+    background: rgba(239, 68, 68, .1);
+    border: 1px solid rgba(239, 68, 68, .24);
+  }
+
+  .form-errors p {
+    margin: 0;
+  }
+
+  .sandbox-warning,
+  .security-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 13px 14px;
+    border-radius: 13px;
+  }
+
+  .option-grid { margin-top: 4px; }
+  .check-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 10px 13px;
+    color: #cbd5e1;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, .2);
+    border-radius: 12px;
+  }
+
+  .master-account-note {
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, .08);
+    border: 1px solid rgba(139, 92, 246, .2);
+    border-radius: 13px;
+  }
+
+  .master-account-note:not([hidden]) { display: flex; }
+  .master-account-note p { margin: 0; }
+
+  .sandbox-warning {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .08);
+    border: 1px solid rgba(245, 158, 11, .2);
+  }
+
+  .sandbox-warning.production-mode {
+    color: #fecaca;
+    background: rgba(239, 68, 68, .08);
+    border-color: rgba(239, 68, 68, .2);
+  }
+
+  .sandbox-warning strong {
+    display: block;
+  }
+
+  .sandbox-warning p,
+  .security-note p {
+    margin: 3px 0 0;
+    font-size: 13px;
+  }
+
+  .security-note {
+    color: #bae6fd;
+    background: rgba(56, 189, 248, .08);
+    border: 1px solid rgba(56, 189, 248, .18);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: #0f172a;
+    border: 1px solid rgba(148, 163, 184, .15);
+  }
+
+  .back-btn,
+  .cancel-btn,
+  .save-btn {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 11px;
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .back-btn,
+  .cancel-btn {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, .08);
+    border: 1px solid rgba(148, 163, 184, .2);
+  }
+
+  .save-btn {
+    color: #052e16;
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    border: 0;
+    cursor: pointer;
+  }
+
+  .save-btn:disabled {
+    opacity: .55;
+    cursor: wait;
+  }
+
+  @media (max-width: 720px) {
+    .form-hero,
+    .field-grid,
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .field-full {
+      grid-column: auto;
+    }
+
+    .back-btn,
+    .cancel-btn,
+    .save-btn {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const providerSelect = document.getElementById("{{ form.provider.id_for_label }}");
+    const accountModeSelect = document.getElementById("{{ form.account_mode.id_for_label }}");
+    const credentialContainer = document.getElementById("credential-fields");
+    const masterAccountNote = document.getElementById("master-account-note");
+    const environmentSelect = document.getElementById(
+      "{{ form.environment.id_for_label }}"
+    );
+    const warning = document.getElementById("environment-warning");
+    const saveForm = document.querySelector("[data-save-form]");
+    const saveButton = document.getElementById("save-button");
+
+    document.querySelectorAll("[data-toggle-secret]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        const input = button.closest(".token-field").querySelector("input");
+        const showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        button.innerHTML = showing
+          ? '<i class="bi bi-eye"></i>'
+          : '<i class="bi bi-eye-slash"></i>';
+      });
+    });
+
+    const providerFields = {
+      envia: ["api_token"],
+      skydropx: ["client_id", "client_secret"],
+      estafeta_direct: ["api_key", "client_id", "client_secret", "customer_number"],
+      fedex_direct: ["client_id", "client_secret", "account_number"],
+      dhl_direct: ["api_key", "api_secret", "account_number"]
+    };
+
+    function updateCredentialFields() {
+      const masterMode = accountModeSelect && accountModeSelect.value === "master";
+      const enabled = new Set(providerFields[providerSelect ? providerSelect.value : ""] || []);
+      document.querySelectorAll("[data-credential-field]").forEach(function (group) {
+        const visible = !masterMode && enabled.has(group.dataset.credentialField);
+        group.hidden = !visible;
+        group.querySelectorAll("input").forEach(function (input) { input.disabled = !visible; });
+      });
+      if (credentialContainer) credentialContainer.hidden = masterMode;
+      if (masterAccountNote) masterAccountNote.hidden = !masterMode;
+    }
+
+    if (providerSelect) providerSelect.addEventListener("change", updateCredentialFields);
+    if (accountModeSelect) accountModeSelect.addEventListener("change", updateCredentialFields);
+    updateCredentialFields();
+
+    function updateEnvironmentWarning() {
+      if (!environmentSelect || !warning) {
+        return;
+      }
+
+      const production =
+        environmentSelect.value === "production";
+
+      warning.classList.toggle(
+        "production-mode",
+        production
+      );
+
+      warning.innerHTML = production
+        ? `
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>
+            <strong>Entorno de producción</strong>
+            <p>
+              Esta conexión utilizará saldo y operaciones reales.
+              Confirma que el token también sea de producción.
+            </p>
+          </div>
+        `
+        : `
+          <i class="bi bi-flask-fill"></i>
+          <div>
+            <strong>Modo Sandbox recomendado</strong>
+            <p>
+              Permite probar autenticación y cotizaciones sin usar
+              la cuenta de producción.
+            </p>
+          </div>
+        `;
+    }
+
+    if (environmentSelect) {
+      environmentSelect.addEventListener(
+        "change",
+        updateEnvironmentWarning
+      );
+
+      updateEnvironmentWarning();
+    }
+
+    if (saveForm && saveButton) {
+      saveForm.addEventListener("submit", function () {
+        saveButton.disabled = true;
+        saveButton.innerHTML =
+          '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+      });
+    }
+  });
+</script>
+{% endblock %}

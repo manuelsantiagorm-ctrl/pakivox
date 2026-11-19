@@ -1,0 +1,199 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Shipping | PAKIVOX{% endblock %}
+{% block page_title %}
+  {{ pipeline_title|default:"Envíos" }}
+{% endblock %}
+
+{% block page_subtitle %}
+  {{ pipeline_subtitle|default:"Gestión de paquetería, guías y entregas" }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/lista_envios.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="shipping-list-page">
+
+  {% if warehouse_read_only %}
+    <div class="warehouse-global-warning">
+      <div class="warehouse-global-warning__icon">
+        <i class="bi bi-eye"></i>
+      </div>
+
+      <div>
+        <strong>Consulta global de bodegas</strong>
+        <p>
+          Estás visualizando envíos de todas las bodegas accesibles.
+          Selecciona una bodega específica para registrar guía,
+          marcar salida o confirmar entrega.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="shipping-toolbar">
+    <div>
+      <span class="eyebrow">Almacén</span>
+      <h1>{{ pipeline_title|default:"Envíos" }}</h1>
+      <p>{{ pipeline_subtitle|default:"Gestión de paquetería, guías y entregas" }}</p>
+
+      {% if active_warehouse %}
+        <span class="warehouse-scope-badge">
+          <i class="bi bi-building"></i>
+          {{ active_warehouse.name }}
+        </span>
+      {% else %}
+        <span class="warehouse-scope-badge global">
+          <i class="bi bi-buildings"></i>
+          Todas las bodegas
+        </span>
+      {% endif %}
+    </div>
+    <div class="filters">
+        <a href="{% url 'warehouse:lista_shipping' %}" class="{% if not status %}active{% endif %}">Todas</a>
+        <a href="?status=pending" class="{% if status == 'pending' %}active{% endif %}">Pendientes</a>
+        <a href="?status=shipped" class="{% if status == 'shipped' %}active{% endif %}">Enviadas</a>
+        <a href="?status=delivered" class="{% if status == 'delivered' %}active{% endif %}">Entregadas</a>
+    </div>
+    </div>
+    {% if "shipping.execute" in user_capability_codes or capability_access_all %}
+    <div class="envios-accesos">
+        <a href="{% url 'shipping_hub:my_pending_batches' %}" class="envios-acceso is-principal"><i class="bi bi-list-check"></i> Mis lotes pendientes</a>
+        <a href="{% url 'shipping_hub:shipment_batch_create' %}" class="envios-acceso"><i class="bi bi-box-seam-fill"></i> Generar lote de envío</a>
+        <a href="{% url 'shipping_hub:incident_center' %}" class="envios-acceso"><i class="bi bi-exclamation-triangle-fill"></i> Incidencias logísticas</a>
+    </div>
+    {% endif %}
+    {% if packing_ready_for_shipping %}
+  <div class="packing-ready-section">
+    <div class="packing-ready-header">
+      <h2><i class="bi bi-box-seam"></i> Paquetes listos para generar envío</h2>
+      <p>Pedidos ya empacados que aún no tienen un envío generado.</p>
+    </div>
+
+    <div class="shipping-table">
+      <div class="table-head packing-ready-head">
+        <span>Pedido</span>
+        <span>Bodega</span>
+        <span>Cliente</span>
+        <span>Empacado</span>
+        <span></span>
+      </div>
+
+      {% for packing in packing_ready_for_shipping %}
+        <article class="table-row packing-ready-row">
+          <div>
+            <strong>{{ packing.order.folio }}</strong>
+          </div>
+
+          <div class="warehouse-cell">
+            <strong>
+              <i class="bi bi-building"></i>
+              {{ packing.picking_order.warehouse.name }}
+            </strong>
+          </div>
+
+          <div>
+            {% if packing.order.customer %}
+              {{ packing.order.customer.full_name }}
+            {% else %}
+              Sin cliente
+            {% endif %}
+          </div>
+
+          <div>{{ packing.packed_at|date:"d/m/Y H:i" }}</div>
+
+          <div class="actions">
+            <a href="{% url 'warehouse:generar_shipping' packing.id %}">
+              Generar envío
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+  <div class="shipping-table">
+    <div class="table-head">
+      <span>Pedido</span>
+      <span>Bodega / cumplimiento</span>
+      <span>Cliente</span>
+      <span>Estado</span>
+      <span>Paquetería</span>
+      <span>Guía</span>
+      <span>Fecha</span>
+      <span></span>
+    </div>
+
+    {% for shipping in shipping_orders %}
+      <article class="table-row">
+        <div>
+          <strong>{{ shipping.order.folio }}</strong>
+          <small>{{ shipping.company.name }}</small>
+        </div>
+
+        <div class="warehouse-cell">
+          <strong>
+            <i class="bi bi-building"></i>
+            {{ shipping.packing_order.picking_order.warehouse.name }}
+          </strong>
+
+          <small>
+            {% if shipping.fulfillment %}
+              {{ shipping.fulfillment.code }}
+            {% else %}
+              Flujo histórico
+            {% endif %}
+          </small>
+        </div>
+
+        <div>
+          {% if shipping.order.customer %}
+            {{ shipping.order.customer.full_name }}
+          {% else %}
+            Sin cliente
+          {% endif %}
+        </div>
+
+        <div>
+          <span class="status-pill {{ shipping.status }}">
+            {{ shipping.get_status_display }}
+          </span>
+        </div>
+
+        <div>
+          {% if shipping.carrier %}
+            {{ shipping.carrier }}
+          {% else %}
+            Pendiente
+          {% endif %}
+        </div>
+
+        <div>
+          {% if shipping.tracking_number %}
+            {{ shipping.tracking_number }}
+          {% else %}
+            Sin guía
+          {% endif %}
+        </div>
+
+        <div>{{ shipping.created_at|date:"d/m/Y H:i" }}</div>
+
+        <div class="actions">
+          <a href="{% url 'warehouse:detalle_shipping' shipping.id %}">
+            Ver envío
+          </a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state">
+        <h3>No hay órdenes de envío</h3>
+        <p>Genera un envío desde un pedido empacado.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

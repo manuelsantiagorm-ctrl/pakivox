@@ -1,0 +1,189 @@
+<section class="fv3b-section" id="riesgos">
+
+  <div class="fv3b-head">
+    <div>
+      <span class="fv3b-kicker danger">RISK ENGINE</span>
+      <h2>Riesgos operativos actuales</h2>
+      <p>
+        Solo se muestran condiciones respaldadas por información real.
+      </p>
+    </div>
+
+    {% if not founder.system.database.ok or not founder.system.shipping_worker.online or founder.system.shipping_purchases.possible_charge or founder.system.shipping_events.dead_letter %}
+      <span class="fv3b-risk-global bad">
+        Atención requerida
+      </span>
+    {% else %}
+      <span class="fv3b-risk-global good">
+        Operación controlada
+      </span>
+    {% endif %}
+  </div>
+
+
+  <div class="fv3b-risk-grid">
+
+    <!-- DB -->
+    <article class="fv3b-risk-row">
+      <div class="fv3b-risk-main">
+        <span class="
+          fv3b-risk-light
+          {% if founder.system.database.ok %}good{% else %}bad{% endif %}
+        "></span>
+
+        <div>
+          <strong>PostgreSQL</strong>
+
+          <small>
+            {% if founder.system.database.ok %}
+              Base respondiendo correctamente.
+            {% else %}
+              La comprobación de base de datos falló.
+            {% endif %}
+          </small>
+        </div>
+      </div>
+
+      <span>
+        {% if founder.system.database.ok %}
+          OK
+        {% else %}
+          CRÍTICO
+        {% endif %}
+      </span>
+    </article>
+
+
+    <!-- WORKER -->
+    <article class="fv3b-risk-row">
+      <div class="fv3b-risk-main">
+        <span class="
+          fv3b-risk-light
+          {% if founder.system.shipping_worker.online %}good{% else %}bad{% endif %}
+        "></span>
+
+        <div>
+          <strong>Shipping Worker</strong>
+
+          <small>
+            {{ founder.system.shipping_worker.status }}
+          </small>
+        </div>
+      </div>
+
+      <span>
+        {% if founder.system.shipping_worker.online %}
+          OK
+        {% else %}
+          CRÍTICO
+        {% endif %}
+      </span>
+    </article>
+
+
+    <!-- MANUAL -->
+    <article class="fv3b-risk-row">
+      <div class="fv3b-risk-main">
+        <span class="
+          fv3b-risk-light
+          {% if founder.system.shipping_purchases.manual_review %}warn{% else %}good{% endif %}
+        "></span>
+
+        <div>
+          <strong>Guías en revisión manual</strong>
+
+          <small>
+            {{ founder.system.shipping_purchases.manual_review }}
+            operación(es).
+          </small>
+        </div>
+      </div>
+
+      <span>
+        {% if founder.system.shipping_purchases.manual_review %}
+          REVISAR
+        {% else %}
+          OK
+        {% endif %}
+      </span>
+    </article>
+
+
+    <!-- POSSIBLE CHARGE -->
+    <article class="fv3b-risk-row">
+      <div class="fv3b-risk-main">
+        <span class="
+          fv3b-risk-light
+          {% if founder.system.shipping_purchases.possible_charge %}bad{% else %}good{% endif %}
+        "></span>
+
+        <div>
+          <strong>Cobros shipping inciertos</strong>
+
+          <small>
+            {{ founder.system.shipping_purchases.possible_charge }}
+            operación(es).
+          </small>
+        </div>
+      </div>
+
+      <span>
+        {% if founder.system.shipping_purchases.possible_charge %}
+          BLOQUEAR RECOMPRA
+        {% else %}
+          OK
+        {% endif %}
+      </span>
+    </article>
+
+
+    <!-- DEAD LETTER -->
+    <article class="fv3b-risk-row">
+      <div class="fv3b-risk-main">
+        <span class="
+          fv3b-risk-light
+          {% if founder.system.shipping_events.dead_letter %}bad{% else %}good{% endif %}
+        "></span>
+
+        <div>
+          <strong>Eventos Dead Letter</strong>
+
+          <small>
+            {{ founder.system.shipping_events.dead_letter }}
+            evento(s).
+          </small>
+        </div>
+      </div>
+
+      <span>
+        {% if founder.system.shipping_events.dead_letter %}
+          INTERVENIR
+        {% else %}
+          OK
+        {% endif %}
+      </span>
+    </article>
+
+
+    <!-- CLIENT HEALTH -->
+    <article class="fv3b-risk-row pending">
+      <div class="fv3b-risk-main">
+        <span class="fv3b-risk-light unknown"></span>
+
+        <div>
+          <strong>Churn Risk</strong>
+
+          <small>
+            Requiere instrumentación de actividad por tenant.
+          </small>
+        </div>
+      </div>
+
+      <span>
+        PENDIENTE
+      </span>
+    </article>
+
+  </div>
+
+</section>

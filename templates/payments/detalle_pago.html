@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+
+{% block title %}{{ payment.folio }} | Pagos | PAKIVOX{% endblock %}
+
+{% block page_title %}
+Pago {{ payment.folio }}
+{% endblock %}
+
+{% block page_subtitle %}
+Revisa el cobro y realiza únicamente la acción que corresponde.
+{% endblock %}
+
+{% block content %}
+
+<section class="payment-detail-page">
+
+  <div class="detail-actions-top">
+    <a href="{% url 'payments:lista_pagos' %}" class="btn-soft">
+      <i class="bi bi-arrow-left"></i>
+      Volver a pagos
+    </a>
+
+    {% if payment.order %}
+      <a href="{% url 'payments:pagos_pedido' payment.order.id %}" class="btn-soft">
+        <i class="bi bi-credit-card"></i>
+        Pagos del pedido
+      </a>
+
+      {% if can_view_sales %}
+        <a href="{% url 'sales:detalle_pedido' payment.order.id %}" class="btn-soft">
+          <i class="bi bi-receipt"></i>
+          Ver pedido
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <section class="ps6a-payment-step tone-{{ simple_payment_step.tone }}" data-ps6a-primary="payment">
+    <div class="ps6a-payment-step-copy">
+      <div class="ps6a-payment-step-icon">
+        <i class="bi {{ simple_payment_step.icon }}"></i>
+      </div>
+      <div>
+        <small>Qué sigue</small>
+        <strong>{{ simple_payment_step.title }}</strong>
+        <p>{{ simple_payment_step.description }}</p>
+      </div>
+    </div>
+
+    {% if simple_payment_step.code == "review" and can_approve_payment %}
+      <div class="ps6a-review-actions">
+        <form
+          method="post"
+          action="{% url 'payments:aprobar_pago' payment.id %}"
+          onsubmit="return confirm('¿Aprobar este pago y actualizar el pedido?')"
+        >
+          {% csrf_token %}
+          <button class="ps6a-approve-btn" type="submit" data-submit-once>
+            <i class="bi bi-check2-circle"></i>
+            Aprobar pago
+          </button>
+        </form>
+
+        {% if payment.can_reject %}
+          <details class="ps6a-reject-box">
+            <summary>Rechazar</summary>
+            <form method="post" action="{% url 'payments:rechazar_pago' payment.id %}">
+              {% csrf_token %}
+              <textarea name="reason" rows="3" required minlength="3" placeholder="Explica por qué no se puede aprobar"></textarea>
+              <button type="submit" data-submit-once>Confirmar rechazo</button>
+            </form>
+          </details>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if simple_payment_step.code == "approved_sent_to_picking" and simple_payment_step.action_url %}
+        <a class="ps6a-approve-btn" href="{{ simple_payment_step.action_url }}">
+            <i class="bi bi-box-seam"></i>
+            {{ simple_payment_step.action_label }}
+        </a>
+        {% endif %}
+    </section>
+
+  <section class="detail-grid">
+    <div class="detail-main-card">
+      <div class="detail-header">
+        <div>
+          <span class="label">Folio de pago</span>
+          <h2>{{ payment.folio }}</h2>
+        </div>
+
+        <span class="payment-status status-{{ payment.status }}">
+          {{ payment.get_status_display }}
+        </span>
+      </div>
+
+      <div class="amount-box">
+        <span>Monto</span>
+        <strong>${{ payment.amount|floatformat:2 }}</strong>
+      </div>
+
+      <div class="info-grid">
+        <div>
+          <span>Pedido</span>
+          <strong>
+            {% if payment.order %}
+              {% if can_view_sales %}
+                <a href="{% url 'sales:detalle_pedido' payment.order.id %}">
+                  {{ payment.order.folio }}
+                </a>
+              {% else %}
+                {{ payment.order.folio }}
+              {% endif %}
+            {% else %}
+              Sin pedido
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <span>Cliente</span>
+          <strong>
+            {% if payment.order.customer %}
+              {{ payment.order.customer.full_name }}
+            {% else %}
+              Sin cliente
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <span>Método</span>
+          <strong>{{ payment.get_payment_method_display }}</strong>
+        </div>
+
+        <div>
+          <span>Tipo</span>
+          <strong>{{ payment.get_payment_type_display }}</strong>
+        </div>
+
+        <div>
+          <span>Registrado por</span>
+          <strong>{{ payment.registered_by|default:"Sistema" }}</strong>
+        </div>
+
+        <div>
+          <span>Revisado por</span>
+          <strong>{{ payment.reviewed_by|default:"Sin revisión" }}</strong>
+        </div>
+
+        <div>
+          <span>Fecha registro</span>
+          <strong>{{ payment.created_at|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div>
+          <span>Fecha pago</span>
+          <strong>
+            {% if payment.paid_at %}
+              {{ payment.paid_at|date:"d/m/Y H:i" }}
+            {% else %}
+              Sin fecha
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <span>Fecha revisión</span>
+          <strong>
+            {% if payment.reviewed_at %}
+              {{ payment.reviewed_at|date:"d/m/Y H:i" }}
+            {% else %}
+              Sin revisión
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <span>Referencia</span>
+          <strong>{{ payment.transaction_id|default:"Sin referencia" }}</strong>
+        </div>
+      </div>
+
+      {% if payment.notes %}
+        <div class="text-box">
+          <span>Notas</span>
+          <p>{{ payment.notes }}</p>
+        </div>
+      {% endif %}
+
+      {% if payment.rejection_reason %}
+        <div class="text-box danger">
+          <span>Motivo / comentario de revisión</span>
+          <p>{{ payment.rejection_reason }}</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="detail-side-card">
+      <h3>Estado del pedido</h3>
+
+      <div class="order-summary">
+        <div>
+          <span>Total pedido</span>
+          <strong>${{ payment.order.total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Pagado</span>
+          <strong>${{ payment.order.amount_paid|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo</span>
+          <strong>${{ payment.order.balance_due|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Estado</span>
+          <strong>{{ payment.order.get_status_display }}</strong>
+        </div>
+      </div>
+
+      <div class="side-actions">
+        {% if payment.order and can_view_sales %}
+          <a href="{% url 'sales:detalle_pedido' payment.order.id %}" class="side-btn blue">
+            <i class="bi bi-receipt"></i>
+            Abrir pedido
+          </a>
+        {% endif %}
+      </div>
+
+      {% if payment.proof_file and can_view_payment_proof %}
+        <a href="{% url 'payments:ver_comprobante_pago' payment.id %}" target="_blank" rel="noopener" class="btn-proof">
+          <i class="bi bi-paperclip"></i>
+          Ver comprobante
+        </a>
+      {% elif payment.proof_file %}
+        <div class="no-proof">
+          Comprobante protegido · no tienes permiso para abrirlo
+        </div>
+      {% else %}
+        <div class="no-proof">
+          Sin comprobante adjunto
+        </div>
+      {% endif %}
+    </aside>
+  </section>
+
+  {% if payment.can_cancel and can_cancel_payment or payment.can_refund and can_refund_payment %}
+    <details class="ps6a-payment-advanced">
+      <summary>
+        <i class="bi bi-three-dots"></i>
+        Resoluciones y opciones avanzadas
+      </summary>
+
+      <div class="review-grid ps6a-payment-advanced-grid">
+        {% if payment.can_cancel and can_cancel_payment %}
+          <form
+            method="post"
+            action="{% url 'payments:cancelar_pago' payment.id %}"
+            class="review-card warning"
+            onsubmit="return confirm('¿Cancelar este pago?')"
+          >
+            {% csrf_token %}
+            <h3>Cancelar pago</h3>
+            <p>Úsalo solo si este registro no debe continuar a revisión.</p>
+            <textarea name="reason" rows="3" required minlength="3" placeholder="Motivo de cancelación"></textarea>
+            <button type="submit" data-submit-once>Cancelar pago</button>
+          </form>
+        {% endif %}
+
+        {% if payment.can_refund and can_refund_payment %}
+          <form
+            method="post"
+            action="{% url 'payments:reembolsar_pago' payment.id %}"
+            class="review-card purple"
+            onsubmit="return confirm('Esto SOLO registrará la solicitud. PAKIVOX no marcará el dinero como devuelto hasta que exista confirmación.')"
+          >
+            {% csrf_token %}
+            <input type="hidden" name="idempotency_key" value="refund-request-{{ payment.id }}-{{ payment.updated_at|date:'U' }}">
+            <h3>Solicitar reembolso total</h3>
+            <p class="refund-safety-note">No devuelve dinero automáticamente. Registra una resolución financiera pendiente.</p>
+            <textarea name="reason" rows="3" required minlength="5" placeholder="Motivo del reembolso"></textarea>
+            <button type="submit" data-submit-once>Registrar solicitud</button>
+          </form>
+        {% endif %}
+      </div>
+    </details>
+  {% endif %}
+
+  {% if refund_requests or customer_credits %}
+    <section class="ps6a-resolution-history">
+      <div class="ps6a-resolution-head">
+        <span>Historial financiero</span>
+        <h3>Resoluciones y saldos relacionados</h3>
+      </div>
+
+      <div class="review-grid">
+        {% for refund in refund_requests %}
+          <article class="review-card refund-request-card">
+            <h3>Reembolso {{ refund.get_status_display }}</h3>
+            <p><strong>Monto:</strong> ${{ refund.amount|floatformat:2 }}</p>
+            <p><strong>Motivo:</strong> {{ refund.reason }}</p>
+            <p><strong>Solicitado:</strong> {{ refund.requested_at|date:"d/m/Y H:i" }}</p>
+
+            {% if refund.status == "requested" %}
+              <div class="refund-pending-banner">
+                Dinero aún NO marcado como devuelto. Confirma solo después de verificar la devolución real.
+              </div>
+
+              {% if can_confirm_refund %}
+                <form
+                  method="post"
+                  action="{% url 'payments:confirmar_reembolso_pago' refund.id %}"
+                  onsubmit="return confirm('¿Confirmas que el dinero YA fue devuelto realmente fuera de PAKIVOX?')"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="idempotency_key" value="refund-confirm-{{ refund.id }}">
+                  <input type="text" name="confirmation_reference" required minlength="4" placeholder="Referencia, transferencia o evidencia de devolución">
+                  <button type="submit" data-submit-once>Confirmar devolución real</button>
+                </form>
+              {% endif %}
+
+              {% if can_convert_customer_credit %}
+                <form
+                  method="post"
+                  action="{% url 'payments:convertir_reembolso_saldo_favor' refund.id %}"
+                  class="customer-credit-form"
+                  onsubmit="return confirm('¿Confirmas que NO se devolverá este dinero y se conservará como saldo a favor del cliente?')"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="idempotency_key" value="credit-issue-{{ refund.id }}">
+                  <textarea name="reason" rows="2" required minlength="5" placeholder="Motivo / acuerdo para conservar el dinero como saldo a favor"></textarea>
+                  <button type="submit" data-submit-once>Convertir a saldo a favor</button>
+                </form>
+              {% endif %}
+            {% elif refund.status == "confirmed" %}
+              <div class="refund-confirmed-banner">
+                Devolución confirmada · Referencia: {{ refund.confirmation_reference }}
+              </div>
+            {% elif refund.status == "converted_to_credit" %}
+              <div class="customer-credit-banner">
+                Este dinero NO fue devuelto: se convirtió en saldo a favor del cliente.
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+
+        {% for credit in customer_credits %}
+          <article class="review-card customer-credit-card">
+            <h3>Saldo a favor</h3>
+            <p><strong>Cliente:</strong> {{ credit.customer.full_name }}</p>
+            <p><strong>Emitido:</strong> ${{ credit.amount|floatformat:2 }}</p>
+            <p><strong>Disponible:</strong> ${{ credit.remaining_amount|floatformat:2 }}</p>
+            <p><strong>Estado:</strong> {{ credit.get_status_display }}</p>
+            <div class="customer-credit-banner">
+              El dinero permanece en la empresa. No se creó un segundo cobro ni una devolución ficticia.
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+</section>
+
+<style>
+  .payment-detail-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .detail-actions-top {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn-soft,
+  .btn-next,
+  .btn-picking {
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 900;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid transparent;
+  }
+
+  .btn-soft {
+    background: rgba(56, 189, 248, .12);
+    color: #7dd3fc;
+    border-color: rgba(56, 189, 248, .18);
+  }
+
+  .btn-next {
+    background: rgba(34, 197, 94, .14);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, .28);
+  }
+
+  .btn-picking {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #111827;
+    box-shadow: 0 12px 28px rgba(245, 158, 11, .24);
+  }
+
+  .next-step-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 18px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(22, 163, 74, .18), rgba(14, 165, 233, .10));
+    border: 1px solid rgba(34, 197, 94, .26);
+  }
+
+  .next-step-banner.pending {
+    background: linear-gradient(135deg, rgba(245, 158, 11, .15), rgba(15, 23, 42, .75));
+    border-color: rgba(245, 158, 11, .25);
+  }
+
+  .next-step-banner span {
+    display: block;
+    color: #86efac;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 5px;
+  }
+
+  .next-step-banner.pending span {
+    color: #fbbf24;
+  }
+
+  .next-step-banner strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 17px;
+    margin-bottom: 5px;
+  }
+
+  .next-step-banner p {
+    color: #cbd5e1;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .next-step-banner a {
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 1000;
+  }
+
+  .next-step-banner.pending a {
+    background: #38bdf8;
+    color: #082f49;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1.6fr .8fr;
+    gap: 18px;
+  }
+
+  .detail-main-card,
+  .detail-side-card,
+  .review-card {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    padding-bottom: 16px;
+  }
+
+  .label,
+  .info-grid span,
+  .order-summary span,
+  .text-box span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 7px;
+  }
+
+  .detail-header h2 {
+    margin: 0;
+    color: #f8fafc;
+  }
+
+  .payment-status {
+    display: inline-flex;
+    align-items: center;
+    height: fit-content;
+    padding: 8px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .status-pending {
+    background: rgba(245, 158, 11, .13);
+    color: #fbbf24;
+  }
+
+  .status-under_review {
+    background: rgba(56, 189, 248, .13);
+    color: #7dd3fc;
+  }
+
+  .status-approved {
+    background: rgba(34, 197, 94, .13);
+    color: #86efac;
+  }
+
+  .status-rejected,
+  .status-cancelled {
+    background: rgba(239, 68, 68, .13);
+    color: #fca5a5;
+  }
+
+  .status-refunded {
+    background: rgba(168, 85, 247, .13);
+    color: #c4b5fd;
+  }
+
+  .amount-box {
+    margin: 18px 0;
+    background: rgba(56, 189, 248, .10);
+    border: 1px solid rgba(56, 189, 248, .20);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .amount-box span {
+    color: #7dd3fc;
+    font-weight: 900;
+  }
+
+  .amount-box strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 34px;
+    margin-top: 6px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .info-grid div,
+  .order-summary div {
+    background: rgba(15, 23, 42, .75);
+    border: 1px solid rgba(148, 163, 184, .12);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .info-grid strong,
+  .order-summary strong {
+    color: #f8fafc;
+  }
+
+  .info-grid a {
+    color: #7dd3fc;
+    text-decoration: none;
+  }
+
+  .text-box {
+    margin-top: 16px;
+    background: rgba(15, 23, 42, .75);
+    border: 1px solid rgba(148, 163, 184, .12);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .text-box p {
+    color: #cbd5e1;
+    margin: 0;
+  }
+
+  .text-box.danger {
+    background: rgba(239, 68, 68, .10);
+    border-color: rgba(239, 68, 68, .25);
+  }
+
+  .detail-side-card h3,
+  .review-card h3 {
+    color: #f8fafc;
+    margin: 0 0 14px;
+  }
+
+  .order-summary {
+    display: grid;
+    gap: 10px;
+  }
+
+  .side-actions {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .side-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 1000;
+  }
+
+  .side-btn.blue {
+    background: rgba(56, 189, 248, .14);
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, .24);
+  }
+
+  .side-btn.green {
+    background: rgba(34, 197, 94, .16);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, .28);
+  }
+
+  .btn-proof,
+  .no-proof {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .btn-proof {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .no-proof {
+    background: rgba(148, 163, 184, .10);
+    color: #94a3b8;
+  }
+
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .review-card p {
+    color: #94a3b8;
+  }
+
+  .review-card.waiting-authorization {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(245, 158, 11, .35);
+    background: linear-gradient(135deg, rgba(245, 158, 11, .13), rgba(15, 23, 42, .92));
+  }
+
+  .review-card.waiting-authorization h3 {
+    color: #fbbf24;
+  }
+
+  .review-card textarea {
+    width: 100%;
+    background: #020617;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .review-card button {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 11px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .review-card.success button {
+    background: #16a34a;
+  }
+
+  .review-card.danger button {
+    background: #dc2626;
+  }
+
+  .review-card.warning button {
+    background: #d97706;
+  }
+
+  .review-card.purple button {
+    background: #7c3aed;
+  }
+
+  @media (max-width: 1100px) {
+    .detail-grid,
+    .review-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .next-step-banner {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .next-step-banner a {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+
+  .refund-safety-note { color:#c4b5fd; font-size:12px; line-height:1.45; }
+  .refund-request-card { border-color:rgba(168,85,247,.28); }
+  .refund-pending-banner, .refund-confirmed-banner {
+    margin:10px 0; padding:10px 12px; border-radius:10px; font-size:12px; font-weight:800;
+  }
+  .refund-pending-banner { background:rgba(245,158,11,.12); color:#fcd34d; }
+  .refund-confirmed-banner { background:rgba(34,197,94,.12); color:#86efac; }
+  .refund-request-card input[type="text"] {
+    width:100%; box-sizing:border-box; margin:8px 0; padding:10px 12px; border-radius:9px;
+    border:1px solid rgba(148,163,184,.22); background:#020617; color:#f8fafc;
+  }
+
+  .customer-credit-form { margin-top:12px; padding-top:12px; border-top:1px solid rgba(34,197,94,.18); }
+  .customer-credit-form textarea { width:100%; box-sizing:border-box; margin:8px 0; }
+  .customer-credit-card { border-color:rgba(34,197,94,.32); }
+  .customer-credit-banner {
+    margin-top:10px; padding:10px 12px; border-radius:9px;
+    background:rgba(34,197,94,.12); color:#86efac; font-size:12px; line-height:1.45;
+  }
+
+  .ps6a-payment-step{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:20px;border:1px solid rgba(37,194,215,.28);border-radius:18px;background:linear-gradient(135deg,rgba(37,194,215,.10),rgba(9,24,42,.92));box-shadow:0 14px 36px rgba(0,0,0,.14)}
+  .ps6a-payment-step-copy{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;align-items:flex-start}.ps6a-payment-step-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:rgba(37,194,215,.14);color:#67e8f9;font-size:20px}.ps6a-payment-step small{display:block;color:#67e8f9;font-weight:950;text-transform:uppercase;letter-spacing:.08em}.ps6a-payment-step strong{display:block;margin-top:4px;color:#f8fafc;font-size:18px}.ps6a-payment-step p{margin:6px 0 0;color:#cbd5e1;line-height:1.5}.ps6a-payment-step.tone-success{border-color:rgba(36,217,155,.32);background:linear-gradient(135deg,rgba(36,217,155,.10),rgba(9,24,42,.92))}.ps6a-payment-step.tone-success .ps6a-payment-step-icon,.ps6a-payment-step.tone-success small{color:#86efac}.ps6a-payment-step.tone-warning{border-color:rgba(233,168,46,.34);background:linear-gradient(135deg,rgba(233,168,46,.10),rgba(9,24,42,.92))}.ps6a-payment-step.tone-warning .ps6a-payment-step-icon,.ps6a-payment-step.tone-warning small{color:#fcd34d}.ps6a-payment-step.tone-danger{border-color:rgba(239,68,68,.30)}.ps6a-payment-step.tone-muted{border-color:rgba(148,163,184,.24)}
+  .ps6a-review-actions{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}.ps6a-review-actions form{margin:0}.ps6a-approve-btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:12px 16px;background:#24d99b;color:#052e16;font-weight:950;cursor:pointer}.ps6a-reject-box{position:relative}.ps6a-reject-box>summary{list-style:none;cursor:pointer;border:1px solid rgba(239,68,68,.28);border-radius:12px;padding:11px 14px;color:#fca5a5;font-weight:900}.ps6a-reject-box>summary::-webkit-details-marker{display:none}.ps6a-reject-box form{position:absolute;right:0;margin-top:8px;width:min(380px,88vw);padding:14px;border:1px solid rgba(239,68,68,.25);border-radius:14px;background:#07111f;z-index:30}.ps6a-reject-box textarea{width:100%;box-sizing:border-box;background:#020617;color:#f8fafc;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:10px}.ps6a-reject-box button{width:100%;margin-top:8px;border:0;border-radius:10px;padding:10px;background:#dc2626;color:#fff;font-weight:900}
+  .ps6a-payment-advanced{border:1px solid rgba(148,163,184,.18);border-radius:16px;background:rgba(9,24,42,.55)}.ps6a-payment-advanced>summary{list-style:none;cursor:pointer;padding:14px 16px;color:#cbd5e1;font-weight:900}.ps6a-payment-advanced>summary::-webkit-details-marker{display:none}.ps6a-payment-advanced-grid{padding:0 14px 14px}.ps6a-resolution-history{display:grid;gap:12px}.ps6a-resolution-head span{color:#94a3b8;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.ps6a-resolution-head h3{margin:4px 0 0;color:#f8fafc}
+  @media(max-width:760px){.ps6a-payment-step{grid-template-columns:1fr}.ps6a-review-actions{display:grid}.ps6a-approve-btn,.ps6a-reject-box>summary{width:100%;justify-content:center}.ps6a-reject-box form{position:static;width:100%;margin-top:8px}}
+</style>
+
+{% endblock %}

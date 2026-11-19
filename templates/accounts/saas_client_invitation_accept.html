@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Activa tu cuenta | PAKIVOX</title>
+
+  <link rel="stylesheet" href="{% static 'style/activar_cuenta.css' %}">
+</head>
+
+<body>
+  <main class="invitation-card">
+    <div class="brand">
+      <div class="brand-logo">W</div>
+
+      <div>
+        <strong>PAKIVOX</strong>
+        <small>Activación segura de cuenta</small>
+      </div>
+    </div>
+
+    {% if invitation_status == "pending" %}
+      <span class="eyebrow">Invitación verificada</span>
+
+      <h1>Activa {{ invitation.company_name }}</h1>
+
+      <p class="description">
+        Hola {{ invitation.admin_name }}. Crea tu contraseña para
+        activar tu cuenta y comenzar a operar en WMS360.
+      </p>
+
+      <div class="invitation-data">
+        <span>
+          Correo:
+          <strong>{{ invitation.admin_email }}</strong>
+        </span>
+
+        <span>
+          Plan:
+          <strong>{{ invitation.plan.name }}</strong>
+        </span>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="{{ form.password1.id_for_label }}">
+            {{ form.password1.label }}
+          </label>
+
+          {{ form.password1 }}
+          {% for error in form.password1.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.password2.id_for_label }}">
+            {{ form.password2.label }}
+          </label>
+
+          {{ form.password2 }}
+
+          {% for error in form.password2.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="submit-button">
+          Activar mi cuenta
+        </button>
+      </form>
+
+      <a href="{% url 'accounts:login' %}" class="secondary-link">
+        Ya tengo cuenta, iniciar sesión
+      </a>
+    {% else %}
+      <span class="eyebrow">Invitación</span>
+
+      <h1>No se pudo usar esta invitación</h1>
+
+      <div class="status-error" role="alert">
+        {{ error_message|default:"La invitación no está disponible." }}
+      </div>
+
+      <a href="{% url 'accounts:login' %}" class="secondary-link">
+        Ir a iniciar sesión
+      </a>
+    {% endif %}
+  </main>
+</body>
+</html>

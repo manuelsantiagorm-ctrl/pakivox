@@ -1,0 +1,26 @@
+<div class="modal-card">
+    <div class="modal-header-wms">
+        <div>
+            <h3>Oportunidad creada</h3>
+            <p>{{ deal.title }}</p>
+        </div>
+    </div>
+
+    <div class="modal-body-wms">
+        <div class="deal-modal-hero">
+            <span>Valor estimado</span>
+            <strong>${{ deal.amount|floatformat:0 }}</strong>
+        </div>
+
+        <p class="text-muted">
+            La oportunidad se agregó al pipeline comercial.
+        </p>
+    </div>
+</div>
+
+<script>
+    showToast("Oportunidad creada correctamente");
+    setTimeout(function () {
+        location.reload();
+    }, 900);
+</script>

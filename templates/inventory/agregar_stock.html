@@ -1,0 +1,694 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Registrar entrada de stock | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Entrada de inventario
+{% endblock %}
+
+{% block page_subtitle %}
+Registra existencias en la bodega activa con trazabilidad completa
+{% endblock %}
+
+{% block content %}
+<section class="stock-entry-page">
+  <header class="stock-entry-hero">
+    <div>
+      <span class="eyebrow">Inventario / Entrada manual</span>
+
+      <h1>Registrar entrada de stock</h1>
+
+      <p>
+        Agrega existencias de
+        <strong>{{ product.name }}</strong>
+        exclusivamente a la bodega
+        <strong>{{ warehouse.name }}</strong>.
+      </p>
+    </div>
+
+    <div class="warehouse-badge">
+      <i class="bi bi-building"></i>
+
+      <div>
+        <small>Bodega de destino</small>
+        <strong>{{ warehouse.name }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <div class="stock-entry-layout">
+    <section class="stock-entry-card">
+      <header class="card-header">
+        <div class="card-icon">
+          <i class="bi bi-box-arrow-in-down"></i>
+        </div>
+
+        <div>
+          <span class="eyebrow">Nueva operación</span>
+          <h2>Datos de la entrada</h2>
+          <p>
+            La cantidad capturada se sumará al stock físico actual.
+          </p>
+        </div>
+      </header>
+
+      <form method="post" class="stock-entry-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-alert error">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            <div>
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="form-field">
+          <label for="{{ form.variant.id_for_label }}">
+            SKU o variante
+          </label>
+
+          {{ form.variant }}
+
+          {% if form.variant.help_text %}
+            <small>{{ form.variant.help_text }}</small>
+          {% endif %}
+
+          {% for error in form.variant.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-field">
+          <label for="{{ form.quantity.id_for_label }}">
+            Cantidad de entrada
+          </label>
+
+          {{ form.quantity }}
+
+          <small>
+            Captura únicamente unidades físicas nuevas que realmente
+            ingresaron a la bodega.
+          </small>
+
+          {% for error in form.quantity.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-field">
+          <label for="{{ form.reference.id_for_label }}">
+            Referencia
+          </label>
+
+          {{ form.reference }}
+
+          <small>
+            Ejemplo: factura, orden de compra, carga inicial o folio interno.
+          </small>
+
+          {% for error in form.reference.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-field">
+          <label for="{{ form.notes.id_for_label }}">
+            Notas
+          </label>
+
+          {{ form.notes }}
+
+          <small>
+            Describe el motivo y cualquier información útil para auditoría.
+          </small>
+
+          {% for error in form.notes.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="audit-notice">
+          <i class="bi bi-shield-check"></i>
+
+          <div>
+            <strong>Movimiento auditable</strong>
+
+            <p>
+              PAKIVOX guardará la empresa, bodega, SKU, cantidad,
+              stock anterior, stock posterior, usuario y fecha.
+            </p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a
+            href="{% url 'inventory:seleccionar_producto_entrada_stock' %}"
+            class="button secondary"
+          >
+            <i class="bi bi-arrow-left"></i>
+            Cancelar
+          </a>
+
+          <button type="submit" class="button primary">
+            <i class="bi bi-check-circle-fill"></i>
+            Registrar entrada
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="stock-summary-card">
+      <header>
+        <span class="eyebrow">Contexto de operación</span>
+        <h2>{{ product.name }}</h2>
+
+        <p>
+          {{ product.description|default:"Producto sin descripción registrada." }}
+        </p>
+      </header>
+
+      <div class="context-list">
+        <div>
+          <span>Empresa</span>
+          <strong>{{ company.name }}</strong>
+        </div>
+
+        <div>
+          <span>Bodega</span>
+          <strong>{{ warehouse.name }}</strong>
+        </div>
+
+        <div>
+          <span>SKU base</span>
+          <strong>{{ product.base_sku|default:"Sin SKU base" }}</strong>
+        </div>
+
+        <div>
+          <span>Estado</span>
+
+          {% if product.is_active %}
+            <strong class="success-text">Activo</strong>
+          {% else %}
+            <strong class="danger-text">Inactivo</strong>
+          {% endif %}
+        </div>
+      </div>
+
+      <section class="current-stock">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Existencias actuales</span>
+            <h3>Stock por SKU</h3>
+          </div>
+
+          <i class="bi bi-boxes"></i>
+        </div>
+
+        {% for stock in current_stock_rows %}
+          <article class="stock-row">
+            <div class="stock-row-title">
+              <strong>{{ stock.variant.sku }}</strong>
+              <span>{{ stock.variant.presentation|default:"Presentación general" }}</span>
+            </div>
+
+            <div class="stock-metrics">
+              <div>
+                <small>Físico</small>
+                <strong>{{ stock.physical_stock }}</strong>
+              </div>
+
+              <div>
+                <small>Reservado</small>
+                <strong>{{ stock.reserved_stock }}</strong>
+              </div>
+
+              <div>
+                <small>Comprometido</small>
+                <strong>{{ stock.committed_stock }}</strong>
+              </div>
+
+              <div class="available">
+                <small>Disponible</small>
+                <strong>{{ stock.available_stock }}</strong>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-stock">
+            <i class="bi bi-inbox"></i>
+            <strong>Sin stock registrado</strong>
+
+            <p>
+              Esta será la primera entrada del producto en
+              {{ warehouse.name }}.
+            </p>
+          </div>
+        {% endfor %}
+      </section>
+
+      <div class="security-note">
+        <i class="bi bi-lock-fill"></i>
+
+        <p>
+          Esta operación no modifica stock reservado ni comprometido.
+          Solamente incrementa las existencias físicas.
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .stock-entry-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .stock-entry-hero,
+  .stock-entry-card,
+  .stock-summary-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  .stock-entry-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 26px;
+    border-color: rgba(34, 211, 238, 0.25);
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(6, 182, 212, 0.14),
+        transparent 38%
+      ),
+      #0f172a;
+  }
+
+  .stock-entry-hero h1 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .stock-entry-hero p,
+  .card-header p,
+  .stock-summary-card header p {
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .stock-entry-hero p strong {
+    color: #e2e8f0;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .warehouse-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 230px;
+    padding: 14px 17px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 15px;
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  .warehouse-badge > i {
+    color: #34d399;
+    font-size: 25px;
+  }
+
+  .warehouse-badge div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .warehouse-badge small {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .warehouse-badge strong {
+    color: #f8fafc;
+  }
+
+  .stock-entry-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .stock-entry-card,
+  .stock-summary-card {
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 24px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  }
+
+  .card-header h2,
+  .stock-summary-card h2 {
+    margin: 4px 0;
+    color: #f8fafc;
+  }
+
+  .card-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    border-radius: 14px;
+    color: #22d3ee;
+    background: rgba(6, 182, 212, 0.12);
+    font-size: 23px;
+  }
+
+  .stock-entry-form {
+    display: grid;
+    gap: 19px;
+    padding: 24px;
+  }
+
+  .form-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .form-field label {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 13px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 11px;
+    outline: none;
+    color: #f8fafc;
+    background: #020617;
+    font: inherit;
+  }
+
+  .form-field textarea {
+    min-height: 110px;
+    resize: vertical;
+  }
+
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus {
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.11);
+  }
+
+  .form-field small {
+    color: #64748b;
+    line-height: 1.45;
+  }
+
+  .field-error {
+    color: #fda4af;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .form-alert,
+  .audit-notice,
+  .security-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 13px;
+  }
+
+  .form-alert.error {
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    color: #fecdd3;
+    background: rgba(244, 63, 94, 0.09);
+  }
+
+  .form-alert p {
+    margin: 0;
+  }
+
+  .audit-notice {
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #d1fae5;
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  .audit-notice > i {
+    color: #34d399;
+    font-size: 21px;
+  }
+
+  .audit-notice p,
+  .security-note p {
+    margin: 4px 0 0;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 11px;
+    padding-top: 4px;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 17px;
+    border: 0;
+    border-radius: 11px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 900;
+  }
+
+  .button.secondary {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    background: transparent;
+  }
+
+  .button.primary {
+    color: #022c22;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+  }
+
+  .stock-summary-card {
+    padding: 23px;
+  }
+
+  .context-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .context-list > div {
+    display: grid;
+    gap: 5px;
+    padding: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.13);
+    border-radius: 12px;
+    background: #020617;
+  }
+
+  .context-list span,
+  .stock-metrics small {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .context-list strong {
+    color: #e2e8f0;
+  }
+
+  .success-text {
+    color: #34d399 !important;
+  }
+
+  .danger-text {
+    color: #fb7185 !important;
+  }
+
+  .current-stock {
+    display: grid;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-heading h3 {
+    margin: 4px 0 0;
+    color: #f8fafc;
+  }
+
+  .section-heading > i {
+    color: #38bdf8;
+    font-size: 25px;
+  }
+
+  .stock-row {
+    padding: 14px;
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 13px;
+    background: #020617;
+  }
+
+  .stock-row-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 13px;
+  }
+
+  .stock-row-title strong {
+    color: #f8fafc;
+  }
+
+  .stock-row-title span {
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .stock-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .stock-metrics > div {
+    display: grid;
+    gap: 3px;
+    padding: 9px;
+    border-radius: 9px;
+    background: #0f172a;
+  }
+
+  .stock-metrics strong {
+    color: #e2e8f0;
+  }
+
+  .stock-metrics .available strong {
+    color: #34d399;
+  }
+
+  .empty-stock {
+    display: grid;
+    place-items: center;
+    padding: 25px;
+    border: 1px dashed rgba(148, 163, 184, 0.25);
+    border-radius: 13px;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  .empty-stock i {
+    margin-bottom: 9px;
+    color: #38bdf8;
+    font-size: 28px;
+  }
+
+  .empty-stock strong {
+    color: #e2e8f0;
+  }
+
+  .empty-stock p {
+    margin: 6px 0 0;
+  }
+
+  .security-note {
+    margin-top: 17px;
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .security-note > i {
+    color: #fbbf24;
+  }
+
+  @media (max-width: 1050px) {
+    .stock-entry-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .stock-entry-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .warehouse-badge {
+      min-width: 0;
+    }
+
+    .context-list,
+    .stock-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    .button {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}

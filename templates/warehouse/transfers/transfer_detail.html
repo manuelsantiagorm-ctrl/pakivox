@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}{% include "warehouse/transfers/_styles.html" %}
+<main class="wt"><section class="wt-head"><h1>{{ transfer.folio }}</h1><div>{{ transfer.origin_warehouse.name }} → {{ transfer.destination_warehouse.name }}</div></section>
+<section class="wt-card wt-grid"><div><b>Estado</b><p><span class="wt-badge">{{ transfer.get_status_display }}</span></p></div><div><b>Prioridad</b><p>{{ transfer.get_priority_display }}</p></div><div><b>Motivo</b><p>{{ transfer.reason }}</p></div><div><b>Solicitó</b><p>{{ transfer.requested_by }}</p></div></section>
+<section class="wt-card wt-table">
+<h3>Productos y trazabilidad por lote</h3>
+<table>
+<thead>
+<tr>
+<th>SKU / lote</th><th>Solicitado</th><th>Reservado</th><th>Despachado</th>
+<th>Recibido</th><th>Dañado</th><th>Rechazado</th><th>Faltante</th><th>Estado lote</th>
+</tr>
+</thead>
+<tbody>
+{% for i in transfer.items.all %}
+  {% if i.variant.inventory_control == "normal" %}
+    <tr>
+      <td><strong>{{ i.variant.sku }}</strong><div class="wt-muted">NORMAL</div></td>
+      <td>{{ i.requested_quantity }}</td><td>{{ i.reserved_quantity }}</td>
+      <td>{{ i.dispatched_quantity }}</td><td>{{ i.received_quantity }}</td>
+      <td>{{ i.damaged_quantity }}</td><td>{{ i.rejected_quantity }}</td>
+      <td>{{ i.missing_quantity }}</td><td>—</td>
+    </tr>
+  {% else %}
+    {% for a in i.lot_allocations.all %}
+      <tr>
+        <td>
+          <strong>{{ i.variant.sku }}</strong>
+          <div>Lote <b>{{ a.lot.lot_number }}</b></div>
+          <div class="wt-muted">
+            Origen {{ a.source_balance.location.bin_code }}
+            {% if a.destination_balance %}→ Destino {{ a.destination_balance.location.bin_code }}{% endif %}
+          </div>
+        </td>
+        <td>{{ a.quantity }}</td><td>{% if a.status == "reserved" %}{{ a.quantity }}{% else %}0{% endif %}</td>
+        <td>{% if a.status == "in_transit" or a.status == "partial" or a.status == "closed" %}{{ a.quantity }}{% else %}0{% endif %}</td>
+        <td>{{ a.received_quantity }}</td><td>{{ a.damaged_quantity }}</td>
+        <td>{{ a.rejected_quantity }}</td><td>{{ a.missing_quantity }}</td>
+        <td>{{ a.get_status_display }}</td>
+      </tr>
+    {% empty %}
+      <tr><td><strong>{{ i.variant.sku }}</strong></td><td colspan="8">Sin asignaciones de lote.</td></tr>
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+</tbody>
+</table>
+</section>
+<section class="wt-card"><h3>Acciones</h3><div class="wt-actions">
+{% if transfer.status == "draft" and is_origin_active %}<form method="post" action="{% url 'warehouse:transfer_request' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><button class="wt-btn">Solicitar</button></form>{% endif %}
+{% if transfer.status == "requested" and is_origin_active %}<form method="post" action="{% url 'warehouse:transfer_reserve' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><button class="wt-btn">Reservar stock</button></form>{% endif %}
+{% if transfer.status == "reserved" and is_origin_active %}<form method="post" action="{% url 'warehouse:transfer_start_dispatch' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><button class="wt-btn">Iniciar despacho</button></form>{% endif %}
+{% if transfer.status == "dispatching" and is_origin_active %}<a class="wt-btn" href="{% url 'warehouse:transfer_dispatch_page' transfer.pk %}">Confirmar despacho</a>{% endif %}
+{% if transfer.status == "in_transit" and is_destination_active %}<form method="post" action="{% url 'warehouse:transfer_start_receiving' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><button class="wt-btn">Iniciar recepción</button></form>{% endif %}
+{% if transfer.status == "receiving" and is_destination_active %}<a class="wt-btn ok" href="{% url 'warehouse:transfer_receive' transfer.pk %}">Registrar recepción</a><form method="post" action="{% url 'warehouse:transfer_complete' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><button class="wt-btn">Completar</button></form>{% endif %}
+{% if transfer.can_be_cancelled and is_origin_active %}<form method="post" action="{% url 'warehouse:transfer_cancel' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><input name="cancellation_reason" placeholder="Motivo de cancelación" required><button class="wt-btn danger">Cancelar</button></form>{% endif %}
+{% if transfer.status == "completed" or transfer.status == "completed_with_differences" %}{% if is_destination_active %}<form method="post" action="{% url 'warehouse:transfer_reverse' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><input name="reason" placeholder="Motivo de reversa" required><button class="wt-btn danger">Crear reversa</button></form>{% endif %}{% endif %}
+</div>{% if not active_warehouse %}<p class="wt-muted">“Todas las bodegas” es solo lectura. Selecciona una bodega concreta para operar.</p>{% endif %}</section>
+<section class="wt-card"><h3>Auditoría</h3>{% for e in transfer.events.all %}<p><b>{{ e.created_at|date:"d/m/Y H:i" }}</b> · {{ e.get_action_display }} · {{ e.description }}</p>{% empty %}<p>Sin eventos.</p>{% endfor %}</section></main>
+{% endblock %}

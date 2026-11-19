@@ -1,0 +1,1725 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Dashboard CEO | PAKIVOX
+
+
+
+
+{% endblock %}
+
+{% block page_title %}
+Dashboard CEO
+{% endblock %}
+
+{% block page_subtitle %}
+Panel ejecutivo comercial, operativo, financiero, inventario, compras,
+proveedores y rentabilidad real de PAKIVOX
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'style/tablero_ceo.css' %}">
+<link rel="stylesheet" href="{% static 'style/tablero_operacion.css' %}">
+<link rel="stylesheet" href="{% static 'style/tablero_finanzas.css' %}">
+<link rel="stylesheet" href="{% static 'style/tablero_actividad.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="ceo-dashboard">
+
+  <nav class="ceo-view-tabs" aria-label="Vistas del Dashboard CEO">
+    <div class="ceo-view-tabs__main" role="tablist" aria-label="Dashboard CEO">
+      <button type="button" class="ceo-view-tab is-active" data-ceo-view="summary" role="tab" aria-selected="true">
+        <i class="bi bi-speedometer2"></i><span>Resumen</span>
+      </button>
+      <button type="button" class="ceo-view-tab" data-ceo-view="operation" role="tab" aria-selected="false">
+        <i class="bi bi-box-seam"></i><span>Operación</span>
+      </button>
+      <button type="button" class="ceo-view-tab" data-ceo-view="finance" role="tab" aria-selected="false">
+        <i class="bi bi-graph-up-arrow"></i><span>Finanzas</span>
+      </button>
+      <button type="button" class="ceo-view-tab" data-ceo-view="activity" role="tab" aria-selected="false">
+        <i class="bi bi-clock-history"></i><span>Actividad</span>
+      </button>
+      <button
+        type="button"
+        class="ceo-view-tab ceo-gemini-tab"
+        data-ceo-view="gemini"
+        role="tab"
+        aria-selected="false"
+        id="ceoCopilotLaunch"
+        aria-controls="ceoAiWorkbench"
+      >
+        <i class="bi bi-stars"></i><span>Gemini IA</span>
+        <small>CEO Copilot</small>
+      </button>
+    </div>
+  </nav>
+
+  <section class="ceo-operation-board opx-board ceo-view-item" data-ceo-group="operation" aria-label="Tablero ejecutivo de operación">
+    <div class="opx-kpis" aria-label="Operación de hoy">
+      <div class="opx-kpi"><span>Pedidos en curso</span><strong data-opx-kpi="in-progress">0</strong><small>sin contar borradores, entregados ni cancelados</small></div>
+      <a class="opx-kpi" href="{% url 'warehouse:lista_picking' %}"><span>Por surtir</span><strong>{{ pending_pickings|default:0 }}</strong><small>esperando picking</small></a>
+      <a class="opx-kpi" href="{% url 'warehouse:lista_packing' %}"><span>Por empacar</span><strong>{{ pending_packings|default:0 }}</strong><small>esperando packing</small></a>
+      <a class="opx-kpi" href="{% url 'warehouse:lista_shipping' %}"><span>Envíos en camino</span><strong>{{ shipped_shippings|default:0 }}</strong><small>{{ pending_shippings|default:0 }} por despachar</small></a>
+    </div>
+
+    <article class="opx-card opx-card--wide" data-executive-card="orders"
+      data-draft="{{ draft_orders|default:0 }}" data-pending="{{ pending_orders|default:0 }}" data-paid="{{ paid_orders|default:0 }}"
+      data-picking="{{ picking_orders_count|default:0 }}" data-packed="{{ packed_orders|default:0 }}" data-shipped="{{ shipped_orders|default:0 }}"
+      data-delivered="{{ delivered_orders|default:0 }}" data-cancelled="{{ cancelled_orders|default:0 }}">
+      <header class="opx-card-head">
+        <div><h3>Camino de los pedidos</h3><p>Cuántos pedidos hay en cada etapa, de la venta a la entrega.</p></div>
+        <div class="opx-badge"><strong data-opx-delivered-pct>0%</strong><span>ya entregados</span></div>
+      </header>
+      <div class="opx-chart opx-chart--flow"><canvas id="opxOrdersFlow" role="img" aria-label="Pedidos por etapa: pendientes, pagados, en picking, empacados, enviados y entregados"></canvas></div>
+      <footer class="opx-card-foot">
+        <span class="opx-note" data-opx-orders-note></span>
+        <div class="opx-actions"><a href="{% url 'sales:lista_pedidos' %}">Ver pedidos</a><button type="button" data-operation-details-open>Desglosar</button></div>
+      </footer>
+    </article>
+
+    <article class="opx-card" data-executive-card="warehouse">
+      <header class="opx-card-head">
+        <div><h3>Avance de la bodega</h3><p>Trabajo terminado contra trabajo pendiente.</p></div>
+        <div class="opx-badge"><strong data-opx-warehouse-pct>0%</strong><span>terminado</span></div>
+      </header>
+      <div class="opx-rings">
+        <figure class="opx-ring" data-process data-label="Picking" data-complete="{{ completed_pickings|default:0 }}" data-pending="{{ pending_pickings|default:0 }}">
+          <div class="opx-ring-canvas"><canvas id="opxPickingRing" role="img" aria-label="Avance de picking"></canvas><b data-opx-ring-pct>0%</b></div>
+          <figcaption><strong>Picking</strong><span data-opx-ring-text></span></figcaption>
+        </figure>
+        <figure class="opx-ring" data-process data-label="Packing" data-complete="{{ packed_packings|default:0 }}" data-pending="{{ pending_packings|default:0 }}">
+          <div class="opx-ring-canvas"><canvas id="opxPackingRing" role="img" aria-label="Avance de packing"></canvas><b data-opx-ring-pct>0%</b></div>
+          <figcaption><strong>Packing</strong><span data-opx-ring-text></span></figcaption>
+        </figure>
+      </div>
+      <div class="opx-ship">
+        <span><b>{{ pending_shippings|default:0 }}</b> por despachar</span>
+        <span><b>{{ shipped_shippings|default:0 }}</b> en camino</span>
+        <span class="is-good"><b>{{ delivered_shippings|default:0 }}</b> entregados</span>
+      </div>
+      <footer class="opx-card-foot">
+        <div class="opx-actions"><a href="{% url 'warehouse:lista_picking' %}">Picking</a><a href="{% url 'warehouse:lista_packing' %}">Packing</a><a href="{% url 'warehouse:lista_shipping' %}">Envíos</a></div>
+      </footer>
+    </article>
+
+    <article class="opx-card" data-executive-card="inventory"
+      data-physical="{{ stock_physical|default:0 }}" data-available="{{ stock_available|default:0 }}"
+      data-reserved="{{ stock_reserved|default:0 }}" data-committed="{{ stock_committed|default:0 }}">
+      <header class="opx-card-head">
+        <div><h3>Inventario</h3><p>Cómo se reparten las piezas que tienes en bodega.</p></div>
+        <div class="opx-badge"><strong data-opx-available-pct>0%</strong><span>disponible</span></div>
+      </header>
+      <div class="opx-donut">
+        <div class="opx-donut-canvas"><canvas id="opxInventoryDonut" role="img" aria-label="Inventario disponible, reservado y comprometido"></canvas>
+          <div class="opx-donut-center"><strong>{{ stock_available|default:0 }}</strong><span>disponibles para vender</span></div>
+        </div>
+        <ul class="opx-legend">
+          <li><i class="is-available"></i><span>Disponible</span><b>{{ stock_available|default:0 }}</b></li>
+          <li><i class="is-reserved"></i><span>Reservado</span><b>{{ stock_reserved|default:0 }}</b></li>
+          <li><i class="is-committed"></i><span>Comprometido</span><b>{{ stock_committed|default:0 }}</b></li>
+          <li class="is-total"><span>Físico en bodega</span><b>{{ stock_physical|default:0 }}</b></li>
+        </ul>
+      </div>
+      <footer class="opx-card-foot">
+        <div class="opx-actions"><a href="{% url 'inventory:lista_stock' %}">Ver inventario</a><button type="button" data-operation-details-open>Desglosar</button></div>
+      </footer>
+    </article>
+
+    <article class="opx-card opx-card--wide" data-executive-card="purchases"
+      data-draft="{{ purchase_draft_orders|default:0 }}" data-sent="{{ purchase_sent_orders|default:0 }}"
+      data-partial="{{ purchase_partially_received_orders|default:0 }}" data-received="{{ purchase_received_orders|default:0 }}"
+      data-cancelled="{{ purchase_cancelled_orders|default:0 }}">
+      <header class="opx-card-head">
+        <div><h3>Compras a proveedores</h3><p>En qué va cada orden de compra.</p></div>
+        <div class="opx-badge"><strong data-opx-received-pct>0%</strong><span>recibidas</span></div>
+      </header>
+      <div class="opx-chart opx-chart--bar"><canvas id="opxPurchasesBar" role="img" aria-label="Órdenes de compra por estado: borrador, enviadas, parciales, recibidas y canceladas"></canvas></div>
+      <footer class="opx-card-foot">
+        <span class="opx-note" data-opx-purchases-note></span>
+        <div class="opx-actions"><a href="{% url 'purchases:lista_compras' %}">Ver compras</a><button type="button" data-operation-details-open>Desglosar</button></div>
+      </footer>
+    </article>
+  </section>
+
+  <section class="operation-priority ceo-view-item" data-ceo-group="operation" aria-label="Prioridades operativas">
+    <div><span>Clientes activos</span><strong>{{ active_customers|default:0 }}</strong></div><div><span>SKUs activos</span><strong>{{ active_variants|default:0 }}</strong></div><div class="{% if low_stock_count > 0 %}is-alert{% endif %}"><span>Stock bajo</span><strong>{{ low_stock_count|default:0 }}</strong></div><div class="{% if pending_payments > 0 %}is-alert{% endif %}"><span>Pagos por revisar</span><strong>{{ pending_payments|default:0 }}</strong></div>
+    <button type="button" class="operation-details-toggle" data-operation-details-toggle aria-expanded="false" aria-controls="ceoOperationDetails"><span>Ver desglose operativo</span><i class="bi bi-chevron-down"></i></button>
+  </section>
+
+  <div class="ceo-summary-shell" id="ceoSummaryShell">
+    {% include "dashboard/partials/executive_home.html" %}
+  </div>
+
+  
+
+  <section class="ceo-ai-workbench ceo-view-item ceo-gemini-view" data-ceo-group="gemini" id="ceoAiWorkbench" aria-label="Gemini IA · Copiloto ejecutivo PAKIVOX">
+    <div class="ceo-ai-header">
+      <div>
+        <span class="ceo-ai-eyebrow">
+          <i class="bi bi-stars"></i>
+          Inteligencia ejecutiva
+        </span>
+
+        <h2>Copiloto de crecimiento PAKIVOX</h2>
+
+        <p>
+          Consulta libre, estrategia comercial, recuperación de clientes y
+          prevención de quiebres usando datos reales de esta empresa.
+        </p>
+      </div>
+
+      <div
+        class="ceo-ai-quota"
+        id="ceoAiQuota"
+        data-allowed="{{ ai_quota.allowed|yesno:'true,false' }}"
+        data-used="{{ ai_quota.used|default:0 }}"
+        data-limit="{{ ai_quota.limit|default_if_none:'' }}"
+        data-remaining="{{ ai_quota.remaining|default_if_none:'' }}"
+      >
+        <div class="ceo-ai-quota-top">
+          <div class="ceo-ai-model">
+            <i class="bi bi-gem"></i>
+            Gemini
+          </div>
+
+          <span class="ceo-ai-quota-status" id="ceoAiQuotaStatus">
+            {% if ai_quota.limit == None %}Consultas ilimitadas{% else %}{{ ai_quota.remaining }} disponibles{% endif %}
+          </span>
+        </div>
+
+        {% if ai_quota.limit != None %}
+        <div class="ceo-ai-quota-copy">
+          <strong id="ceoAiQuotaRemaining"> {{ ai_quota.remaining }} </strong>
+
+          <span>
+            de
+            <strong id="ceoAiQuotaLimit"> {{ ai_quota.limit }} </strong>
+            consultas disponibles
+          </span>
+        </div>
+
+        <div
+          class="ceo-ai-quota-track"
+          role="progressbar"
+          aria-label="Consultas Gemini disponibles"
+          aria-valuemin="0"
+          aria-valuemax="{{ ai_quota.limit }}"
+          aria-valuenow="{{ ai_quota.remaining }}"
+          id="ceoAiQuotaProgress"
+        >
+          <span id="ceoAiQuotaBar"></span>
+        </div>
+
+        <small class="ceo-ai-quota-used">
+          <span id="ceoAiQuotaUsed">{{ ai_quota.used }}</span>
+          utilizadas durante el periodo actual
+        </small>
+        {% else %}
+        <div class="ceo-ai-quota-copy">
+          <strong>∞</strong>
+          <span>Consultas incluidas en tu plan</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <form
+      id="ceoAiForm"
+      class="ceo-ai-form"
+      data-endpoint="/ceo/ia/"
+      data-export-endpoint="{% url 'dashboard:ceo_ai_export_excel' %}"
+      data-draft-endpoint="{% url 'messaging:ai_offer_draft_create' %}"
+    >
+      {% csrf_token %}
+
+      <input type="hidden" name="mode" id="ceoAiMode" value="full" />
+
+      <div class="ceo-ai-modes">
+        <button type="button" class="ceo-ai-mode" data-mode="free">
+          <i class="bi bi-chat-square-text"></i>
+          Consulta libre
+        </button>
+
+        <button type="button" class="ceo-ai-mode" data-mode="sales">
+          <i class="bi bi-graph-up-arrow"></i>
+          Estrategia de venta
+        </button>
+
+        <button type="button" class="ceo-ai-mode" data-mode="churn">
+          <i class="bi bi-person-exclamation"></i>
+          Clientes en riesgo
+        </button>
+
+        <button type="button" class="ceo-ai-mode" data-mode="stock">
+          <i class="bi bi-box-seam"></i>
+          Stock crítico
+        </button>
+
+        <button type="button" class="ceo-ai-mode is-active" data-mode="full">
+          <i class="bi bi-grid"></i>
+          Reporte completo
+        </button>
+      </div>
+
+      <div class="ceo-ai-period-controls">
+        <div class="ceo-ai-period-field">
+          <label for="ceoAiDateFrom">Desde</label>
+          <input type="date" id="ceoAiDateFrom" />
+        </div>
+
+        <div class="ceo-ai-period-field">
+          <label for="ceoAiDateTo">Hasta</label>
+          <input type="date" id="ceoAiDateTo" />
+        </div>
+
+        <button type="button" class="ceo-ai-clear-dates" id="ceoAiClearDates">
+          <i class="bi bi-eraser"></i>
+          Limpiar fechas
+        </button>
+
+        <small>
+          Las fechas seleccionadas tienen prioridad. Si se dejan vacías, PAKIVOX
+          detecta frases como “ayer”, “esta semana”, “últimos 7 días”, “mes
+          pasado” o “del 1 al 14 de julio de 2026”.
+        </small>
+      </div>
+
+      <div class="ceo-ai-scope-hint">
+        <i class="bi bi-buildings"></i>
+        <div>
+          <strong>Alcance multi-bodega inteligente</strong>
+          <span>
+            Gemini combina la pregunta con el selector de Bodega activa. Puede
+            analizar una bodega, comparar varias o consolidar hasta 10 bodegas
+            permitidas de esta empresa.
+          </span>
+        </div>
+      </div>
+
+      <div class="ceo-ai-question-row">
+        <div class="ceo-ai-question">
+          <label for="ceoAiQuestion"> Pregunta para el copiloto </label>
+
+          <textarea
+            id="ceoAiQuestion"
+            maxlength="800"
+            placeholder="Ejemplo: ¿Qué promoción puedo lanzar esta semana sin dañar mi margen?"
+          ></textarea>
+        </div>
+
+        <button type="submit" class="ceo-ai-submit" id="ceoAiSubmit">
+          <i class="bi bi-stars"></i>
+          Generar estrategia
+        </button>
+      </div>
+    </form>
+
+    <div class="ceo-ai-loading" id="ceoAiLoading" hidden>
+      <span class="ceo-ai-spinner"></span>
+      Analizando ventas, inventario y operación por bodega...
+    </div>
+
+    <div class="ceo-ai-error" id="ceoAiError" hidden></div>
+
+    <section class="ceo-ai-results" id="ceoAiResults" hidden>
+      <article class="ceo-ai-answer-card">
+        <div class="ceo-ai-answer-meta">
+          <span>Respuesta directa</span>
+          <div class="ceo-ai-answer-badges">
+            <strong id="ceoAiWarehouseScope" hidden></strong>
+            <strong id="ceoAiResolvedPeriod" hidden></strong>
+          </div>
+        </div>
+        <h3 id="ceoAiDirectAnswer"></h3>
+        <p id="ceoAiSummary"></p>
+
+        <div class="ceo-ai-fallback" id="ceoAiFallback" hidden>
+          <strong id="ceoAiFallbackTitle"></strong>
+          <span>Quizá querías consultar:</span>
+          <div class="ceo-ai-fallback-options" id="ceoAiFallbackOptions"></div>
+          <small>
+            La pregunta seleccionada conservará el periodo y la bodega activa.
+          </small>
+        </div>
+
+        <div class="ceo-ai-export-toolbar">
+          <button
+            type="button"
+            class="ceo-ai-export-excel"
+            id="ceoAiExportExcel"
+            hidden
+          >
+            <i class="bi bi-file-earmark-excel"></i>
+            <span>Exportar Excel profesional</span>
+          </button>
+
+          <small id="ceoAiExportHint" hidden>
+            Incluye resumen, datos, tablas, bodegas, gráficas y auditoría.
+          </small>
+        </div>
+      </article>
+
+      <div class="ceo-ai-result-grid">
+        <article class="ceo-ai-result-card sales" id="ceoAiStrategyCard" hidden>
+          <div class="ceo-ai-result-title">
+            <i class="bi bi-rocket-takeoff"></i>
+
+            <div>
+              <span>Estrategia comercial</span>
+              <h3 id="ceoAiStrategyTitle"></h3>
+            </div>
+          </div>
+
+          <p id="ceoAiStrategyObjective"></p>
+
+          <div class="ceo-ai-highlight">
+            <strong>Promoción sugerida</strong>
+            <p id="ceoAiStrategyPromotion"></p>
+          </div>
+
+          <ul class="ceo-ai-list" id="ceoAiStrategyActions"></ul>
+
+          <div class="ceo-ai-meta">
+            <div>
+              <span>Meta</span>
+              <strong id="ceoAiStrategyGoal"></strong>
+            </div>
+
+            <div>
+              <span>Por qué</span>
+              <strong id="ceoAiStrategyReason"></strong>
+            </div>
+          </div>
+
+          <div
+            class="ceo-ai-pricing-validation"
+            id="ceoAiPricingValidation"
+            hidden
+          >
+            <div>
+              <span>SKU validado</span>
+              <strong id="ceoAiPricingSku">-</strong>
+            </div>
+
+            <div>
+              <span>Precio promedio</span>
+              <strong id="ceoAiPricingAveragePrice">-</strong>
+            </div>
+
+            <div>
+              <span>Costo promedio</span>
+              <strong id="ceoAiPricingAverageCost">-</strong>
+            </div>
+
+            <div>
+              <span>Descuento aprobado</span>
+              <strong id="ceoAiPricingDiscount">-</strong>
+            </div>
+
+            <div>
+              <span>Precio final estimado</span>
+              <strong id="ceoAiPricingFinalPrice">-</strong>
+            </div>
+
+            <div>
+              <span>Margen final estimado</span>
+              <strong id="ceoAiPricingFinalMargin">-</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="ceo-ai-result-card" id="ceoAiChartCard" hidden>
+          <div class="ceo-ai-result-title">
+            <i class="bi bi-bar-chart-fill"></i>
+
+            <div>
+              <span>Visualización sugerida</span>
+              <h3 id="ceoAiChartTitle">Comparación ejecutiva</h3>
+            </div>
+          </div>
+
+          <div class="ceo-ai-chart">
+            <canvas id="ceoAiChart"></canvas>
+          </div>
+
+          <div class="ceo-ai-empty" id="ceoAiChartEmpty" hidden>
+            La consulta no necesitó una gráfica.
+          </div>
+        </article>
+      </div>
+
+      <div class="ceo-ai-result-grid">
+        <article class="ceo-ai-result-card" id="ceoAiCustomersCard" hidden>
+          <div class="ceo-ai-result-title">
+            <i class="bi bi-person-exclamation"></i>
+
+            <div>
+              <span>CRM inteligente</span>
+              <h3>Clientes en riesgo</h3>
+            </div>
+          </div>
+
+          <div class="ceo-ai-stack" id="ceoAiCustomers"></div>
+        </article>
+
+        <article class="ceo-ai-result-card" id="ceoAiStockCard" hidden>
+          <div class="ceo-ai-result-title">
+            <i class="bi bi-box-seam-fill"></i>
+
+            <div>
+              <span>Inventario inteligente</span>
+              <h3>Riesgo de quiebre</h3>
+            </div>
+          </div>
+
+          <div class="ceo-ai-stack" id="ceoAiStock"></div>
+        </article>
+      </div>
+
+      <!-- PASO 12: ANÁLISIS EJECUTIVO AMPLIADO -->
+      <article
+        class="ceo-ai-result-card ceo-ai-deep-analysis"
+        id="ceoAiDeepAnalysisCard"
+        hidden
+      >
+        <div class="ceo-ai-result-title">
+          <i class="bi bi-graph-up-arrow"></i>
+
+          <div>
+            <span>Inteligencia ejecutiva ampliada</span>
+            <h3 id="ceoAiDeepTitle">Análisis ejecutivo ampliado</h3>
+            <small id="ceoAiDeepSubtitle"></small>
+          </div>
+        </div>
+
+        <div class="ceo-ai-deep-kpis" id="ceoAiDeepKpis"></div>
+
+        <div class="ceo-ai-deep-narrative" id="ceoAiDeepNarrative"></div>
+
+        <div class="ceo-ai-deep-columns">
+          <section>
+            <span class="ceo-ai-deep-eyebrow"> Hallazgos clave </span>
+            <ul class="ceo-ai-list" id="ceoAiDeepFindings"></ul>
+          </section>
+
+          <section>
+            <span class="ceo-ai-deep-eyebrow"> Acciones prioritarias </span>
+            <ol class="ceo-ai-list" id="ceoAiDeepActions"></ol>
+          </section>
+        </div>
+
+        <section
+          class="ceo-ai-deep-table-section"
+          id="ceoAiDeepTableSection"
+          hidden
+        >
+          <div class="ceo-ai-deep-table-title">
+            <span>Detalle operativo</span>
+            <h4 id="ceoAiDeepTableTitle"></h4>
+          </div>
+
+          <div class="ceo-ai-deep-table-wrap">
+            <table class="ceo-ai-deep-table">
+              <thead id="ceoAiDeepTableHead"></thead>
+              <tbody id="ceoAiDeepTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="ceo-ai-deep-charts" id="ceoAiDeepCharts"></section>
+      </article>
+
+      <article class="ceo-ai-result-card" id="ceoAiWarningsCard" hidden>
+        <div class="ceo-ai-result-title">
+          <i class="bi bi-info-circle"></i>
+
+          <div>
+            <span>Limitaciones</span>
+            <h3>Observaciones del análisis</h3>
+          </div>
+        </div>
+
+        <ul class="ceo-ai-list" id="ceoAiWarnings"></ul>
+      </article>
+    </section>
+  </section>
+
+  <section class="finance-executive-v8 fnx ceo-view-item" data-ceo-group="finance" id="financeExecutiveV8"
+    data-paid-total="{{ paid_total|default:0 }}" data-balance-due="{{ balance_due_total|default:0 }}"
+    data-month-paid="{{ month_paid_total|default:0 }}" data-month-sales="{{ month_sales_total|default:0 }}"
+    data-month-profit="{{ month_gross_profit_total|default:0 }}">
+
+    <header class="fnx-head">
+      <div>
+        <h2>Finanzas de {{ finance_scope_label }}</h2>
+        <p>{{ finance_period_start|date:"d/m/Y" }} al {{ finance_period_end|date:"d/m/Y" }} · {{ finance_fact_count }} movimientos registrados en el libro financiero</p>
+      </div>
+      <div class="finance-quality-badges" aria-label="Confiabilidad de los datos">
+        <span class="quality-badge quality-{{ finance_sales_quality|lower }}" title="Real: cifra directa del pedido. Atribuido: repartido por bodega según lo surtido. Estimado: repartido de forma proporcional.">Ventas: {{ finance_sales_quality }}</span>
+        <span class="quality-badge quality-{{ finance_collected_quality|lower }}" title="Los pagos se registran por pedido, no por producto o bodega; por eso, al ver una sola bodega, el cobro es una estimación proporcional.">Cobros: {{ finance_collected_quality }}</span>
+      </div>
+    </header>
+
+    {% if finance_has_unassigned %}
+    <div class="fnx-notice" role="status">
+      <i class="bi bi-info-circle"></i>
+      <span><strong>Conciliación histórica:</strong> incluye ${{ finance_unassigned_sales|floatformat:2 }} en ventas y ${{ finance_unassigned_collected|floatformat:2 }} en cobros sin bodega asignada.</span>
+    </div>
+    {% endif %}
+
+    <div class="fnx-hero">
+      <article class="fnx-hero-main">
+        <span class="fnx-label">Utilidad del mes</span>
+        <strong class="fnx-hero-number {% if month_gross_profit_total < 0 %}is-bad{% endif %}">${{ month_gross_profit_total|floatformat:2 }}</strong>
+        <p>de <b>${{ month_sales_total|floatformat:2 }}</b> vendidos en {{ month_orders|default:0 }} pedido{% if month_orders != 1 %}s{% endif %}</p>
+        <div class="fnx-margin">
+          <div class="fnx-margin-bar" role="img" aria-label="Margen del mes {{ month_gross_margin_percent|floatformat:1 }} por ciento"><i data-fnx-margin="{{ month_gross_margin_percent|default:0 }}"></i></div>
+          <span>Margen <b>{{ month_gross_margin_percent|floatformat:1 }}%</b>: de cada $100 vendidos te quedan <b data-fnx-per-100>$0</b></span>
+        </div>
+        <div class="fnx-hero-spark"><canvas id="fnxSparkProfit" aria-hidden="true"></canvas></div>
+      </article>
+
+      <div class="fnx-kpis">
+        <article class="fnx-kpi">
+          <span class="fnx-label"><i class="bi bi-cart3"></i>Ventas del mes</span>
+          <strong>${{ month_sales_total|floatformat:2 }}</strong>
+          <div class="fnx-spark"><canvas id="fnxSparkSales" aria-hidden="true"></canvas></div>
+        </article>
+        <article class="fnx-kpi">
+          <span class="fnx-label"><i class="bi bi-wallet2"></i>Cobrado del mes</span>
+          <strong>${{ month_paid_total|floatformat:2 }}</strong>
+          <div class="fnx-spark"><canvas id="fnxSparkCollected" aria-hidden="true"></canvas></div>
+        </article>
+        <article class="fnx-kpi {% if balance_due_total > 0 %}is-warn{% endif %}">
+          <span class="fnx-label"><i class="bi bi-hourglass-split"></i>Saldo por cobrar</span>
+          <strong>${{ balance_due_total|floatformat:2 }}</strong>
+          <small>dinero que tus clientes todavía te deben</small>
+        </article>
+        <article class="fnx-kpi">
+          <span class="fnx-label"><i class="bi bi-safe"></i>Cobrado acumulado</span>
+          <strong>${{ paid_total|floatformat:2 }}</strong>
+          <small>{{ finance_collected_quality }} · libro financiero</small>
+        </article>
+      </div>
+    </div>
+
+    <article class="fnx-card fnx-trend">
+      <header class="fnx-card-head">
+        <div><h3>Ventas, cobros y utilidad del mes</h3><p>Pasa el cursor sobre un día para ver sus cifras.</p></div>
+        <div class="fnx-switch" role="group" aria-label="Forma de ver la gráfica">
+          <button type="button" class="is-on" data-fnx-mode="daily" aria-pressed="true">Por día</button>
+          <button type="button" data-fnx-mode="cumulative" aria-pressed="false">Acumulado</button>
+        </div>
+      </header>
+      {% if finance_trend_has_data %}
+      <div class="fnx-legend"><span><i class="is-sales"></i>Ventas</span><span><i class="is-collected"></i>Cobrado</span><span><i class="is-profit"></i>Utilidad</span></div>
+      <div class="fnx-chart fnx-chart--trend"><canvas id="profitabilityTrendChartV8" role="img" aria-label="Ventas, cobros y utilidad por día del mes"></canvas></div>
+      {% else %}
+      <div class="fnx-empty"><i class="bi bi-bar-chart-line"></i><strong>Sin movimientos en este periodo</strong><small>La gráfica aparecerá cuando el libro registre actividad financiera.</small></div>
+      {% endif %}
+    </article>
+
+    <div class="fnx-row">
+      <article class="fnx-card">
+        <header class="fnx-card-head"><div><h3>¿A dónde se va cada peso vendido?</h3><p>Acumulado del alcance seleccionado.</p></div></header>
+        {% if sales_total %}
+        <div class="fnx-mix">
+          <div class="fnx-donut"><canvas id="profitabilityMixChartV8" role="img" aria-label="Ventas repartidas entre costo de la mercancía y utilidad"></canvas>
+            <div class="fnx-donut-center"><strong>{{ gross_margin_percent|floatformat:1 }}%</strong><span>es utilidad</span></div>
+          </div>
+          <ul class="fnx-mix-list">
+            <li><i class="is-sales"></i><span>Ventas</span><b>${{ sales_total|floatformat:2 }}</b></li>
+            <li><i class="is-cost"></i><span>Costo de la mercancía</span><b>${{ sales_cost_total|floatformat:2 }}</b></li>
+            <li class="is-result"><i class="is-profit"></i><span>Utilidad bruta</span><b>${{ gross_profit_total|floatformat:2 }}</b></li>
+          </ul>
+        </div>
+        {% else %}
+        <div class="fnx-empty"><i class="bi bi-pie-chart"></i><strong>Sin ventas conciliadas</strong><small>No se dibuja una composición artificial.</small></div>
+        {% endif %}
+      </article>
+
+      <article class="fnx-card">
+        <header class="fnx-card-head"><div><h3>Cobranza</h3><p>Cuánto de lo que te deben ya entró.</p></div></header>
+        <div class="fnx-collect">
+          <div class="fnx-gauge"><canvas id="fnxCollectionGauge" role="img" aria-label="Porcentaje cobrado del total"></canvas>
+            <div class="fnx-gauge-center"><strong data-fnx-collected-pct>0%</strong><span>cobrado</span></div>
+          </div>
+          <ul class="fnx-mix-list">
+            <li><i class="is-collected"></i><span>Cobrado acumulado</span><b>${{ paid_total|floatformat:2 }}</b></li>
+            <li><i class="is-due"></i><span>Saldo por cobrar</span><b>${{ balance_due_total|floatformat:2 }}</b></li>
+          </ul>
+        </div>
+        <p class="fnx-foot-note"><i class="bi bi-info-circle"></i> La liquidez bancaria se habilitará cuando Tesorería tenga saldos conciliados.</p>
+        <div class="fnx-actions"><a href="{% url 'payments:lista_pagos' %}">Revisar cobros</a></div>
+      </article>
+
+      <section class="fnx-card fnx-alerts" aria-label="Alertas prioritarias">
+        <header class="fnx-card-head"><div><h3>Alertas prioritarias</h3><p>Dinero que necesita tu decisión.</p></div></header>
+        <a href="{% url 'sales:pedidos_en_revision_pago' %}" class="fnx-alert {% if pending_payments %}is-warn{% endif %}"><i class="bi bi-credit-card"></i><span><strong>Pagos de clientes por revisar</strong><small>Aprueba o rechaza para que cuenten como cobrados.</small></span><b>{{ pending_payments|default:0 }}</b></a>
+        <a href="{% url 'purchases:lista_compras' %}" class="fnx-alert {% if supplier_payment_pending_count %}is-warn{% endif %}"><i class="bi bi-receipt"></i><span><strong>Pagos a proveedores por aprobar</strong><small>${{ supplier_pending_approval_total|floatformat:2 }} en espera.</small></span><b>{{ supplier_payment_pending_count|default:0 }}</b></a>
+        <a href="{% url 'inventory:lista_stock' %}" class="fnx-alert {% if low_stock_count %}is-bad{% endif %}"><i class="bi bi-box-seam"></i><span><strong>Stock bajo</strong><small>Productos que pueden frenar ventas.</small></span><b>{{ low_stock_count|default:0 }}</b></a>
+      </section>
+    </div>
+
+    <button class="finance-v8-toggle fnx-toggle" type="button" aria-expanded="false" aria-controls="financeV8Details">
+      <span><i class="bi bi-list-check"></i> Ver análisis completo: acumulados y proveedores</span><i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="fnx-details" id="financeV8Details" hidden>
+      <div class="fnx-detail-grid">
+        <article><span>Ventas acumuladas</span><strong>${{ sales_total|floatformat:2 }}</strong><small>{{ finance_sales_quality }}</small></article>
+        <article><span>Costo acumulado</span><strong>${{ sales_cost_total|floatformat:2 }}</strong><small>Mercancía vendida</small></article>
+        <article><span>Utilidad acumulada</span><strong>${{ gross_profit_total|floatformat:2 }}</strong><small>{{ gross_margin_percent|floatformat:2 }}% de margen</small></article>
+        <article><span>Cobrado acumulado</span><strong>${{ paid_total|floatformat:2 }}</strong><small>{{ finance_collected_quality }}</small></article>
+      </div>
+      <div class="fnx-suppliers">
+        <header><h3>Compras y proveedores</h3><a href="{% url 'purchases:lista_compras' %}">Ver compras</a></header>
+        <div><span>Total comprado</span><strong>${{ purchases_total|floatformat:2 }}</strong></div>
+        <div><span>Comprado este mes</span><strong>${{ month_purchases_total|floatformat:2 }}</strong></div>
+        <div><span>Pagado a proveedores</span><strong>${{ supplier_paid_total|floatformat:2 }}</strong></div>
+        <div><span>Pagos por aprobar</span><strong>${{ supplier_pending_approval_total|floatformat:2 }}</strong></div>
+        <div><span>Órdenes por recibir</span><strong>{{ purchase_orders_pending_receipt }}</strong></div>
+        <div><span>Órdenes recibidas</span><strong>{{ purchase_received_orders }}</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero-grid ceo-view-item finance-v8-legacy" data-ceo-group="finance" id="ceoFinancialOverview">
+    <div class="finance-ledger-banner">
+      <div>
+        <span>Alcance financiero</span>
+        <strong>{{ finance_scope_label }}</strong>
+        <small>{{ finance_period_start|date:"d/m/Y" }}–{{ finance_period_end|date:"d/m/Y" }} · {{ finance_fact_count }} hechos conciliables</small>
+      </div>
+      <div class="finance-quality-badges">
+        <span class="quality-badge quality-{{ finance_sales_quality|lower }}">Ventas: {{ finance_sales_quality }}</span>
+        <span class="quality-badge quality-{{ finance_collected_quality|lower }}">Cobros: {{ finance_collected_quality }}</span>
+      </div>
+    </div>
+    {% if finance_has_unassigned %}
+    <div class="finance-ledger-notice" role="status">
+      <i class="bi bi-info-circle"></i>
+      <span><strong>Incluye datos sin asignar:</strong> ${{ finance_unassigned_sales|floatformat:2 }} en ventas y ${{ finance_unassigned_collected|floatformat:2 }} en cobros. “Sin asignar” es conciliación histórica, no una bodega.</span>
+    </div>
+    {% endif %}
+    <div class="hero-card">
+      <span class="eyebrow">Ventas este mes</span>
+      <h2>${{ month_sales_total|floatformat:2 }}</h2>
+      <p>Libro financiero · {{ finance_scope_label }}</p>
+    </div>
+
+    <div class="hero-card success">
+      <span class="eyebrow">Cobrado este mes</span>
+      <h2>${{ month_paid_total|floatformat:2 }}</h2>
+      <p>{{ finance_collected_quality }} · fecha efectiva del cobro</p>
+    </div>
+
+    <div class="hero-card warning">
+      <span class="eyebrow">Utilidad este mes</span>
+      <h2>${{ month_gross_profit_total|floatformat:2 }}</h2>
+      <p>
+        Margen bruto mensual: {{ month_gross_margin_percent|floatformat:2 }}%
+      </p>
+    </div>
+
+    <div class="hero-card purple">
+      <span class="eyebrow">Compras este mes</span>
+      <h2>${{ month_purchases_total|floatformat:2 }}</h2>
+      <p>{{ month_purchase_orders }} órdenes de compra este mes</p>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="finance">
+    <div class="kpi-card">
+      <span>Ventas totales</span>
+      <strong>${{ sales_total|floatformat:2 }}</strong>
+      <small>{{ finance_sales_quality }} · libro financiero acumulado</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Pagos cobrados</span>
+      <strong>${{ paid_total|floatformat:2 }}</strong>
+      <small>{{ finance_collected_quality }} · efectivo registrado</small>
+    </div>
+
+    <div class="kpi-card danger">
+      <span>Saldo por cobrar</span>
+      <strong>${{ balance_due_total|floatformat:2 }}</strong>
+      <small>Dinero pendiente de clientes</small>
+    </div>
+
+    <div class="kpi-card info">
+      <span>Hechos financieros</span>
+      <strong>{{ finance_fact_count }}</strong>
+      <small>Registros inmutables en el alcance</small>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="finance">
+    <div class="kpi-card warning">
+      <span>Costo de ventas</span>
+      <strong>${{ sales_cost_total|floatformat:2 }}</strong>
+      <small>Costo real de mercancía vendida</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Utilidad bruta</span>
+      <strong>${{ gross_profit_total|floatformat:2 }}</strong>
+      <small>Ventas menos costo de mercancía</small>
+    </div>
+
+    <div class="kpi-card purple">
+      <span>Margen promedio</span>
+      <strong>{{ gross_margin_percent|floatformat:2 }}%</strong>
+      <small>Rentabilidad acumulada</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Utilidad mensual</span>
+      <strong>${{ month_gross_profit_total|floatformat:2 }}</strong>
+      <small
+        >{{ month_gross_margin_percent|floatformat:2 }}% margen este mes</small
+      >
+    </div>
+  </section>
+
+  <div class="operation-legacy-summary" hidden aria-hidden="true">
+  <section class="kpi-grid ceo-view-item" data-ceo-group="operation">
+    <div class="kpi-card">
+      <span>Pedidos pagados</span>
+      <strong>{{ paid_orders }}</strong>
+      <small>Listos para operación warehouse</small>
+    </div>
+
+    <div class="kpi-card info">
+      <span>Pedidos en picking</span>
+      <strong>{{ picking_orders_count }}</strong>
+      <small>Separación de mercancía</small>
+    </div>
+
+    <div class="kpi-card cyan">
+      <span>Pedidos enviados</span>
+      <strong>{{ shipped_orders }}</strong>
+      <small>Ya salieron de almacén</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Pedidos entregados</span>
+      <strong>{{ delivered_orders }}</strong>
+      <small>Operación completada</small>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="operation">
+    <div class="kpi-card">
+      <span>Stock físico total</span>
+      <strong>{{ stock_physical }}</strong>
+      <small>Piezas internas físicas</small>
+    </div>
+
+    <div class="kpi-card warning">
+      <span>Stock reservado</span>
+      <strong>{{ stock_reserved }}</strong>
+      <small>Reservado por picking</small>
+    </div>
+
+    <div class="kpi-card purple">
+      <span>Stock comprometido</span>
+      <strong>{{ stock_committed }}</strong>
+      <small>Compromisos operativos</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Stock disponible</span>
+      <strong>{{ stock_available }}</strong>
+      <small>Disponible para venta</small>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="finance">
+    <div class="kpi-card purple">
+      <span>Compras totales</span>
+      <strong>${{ purchases_total|floatformat:2 }}</strong>
+      <small>{{ purchase_orders_total }} órdenes activas</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Pagado a proveedores</span>
+      <strong>${{ supplier_paid_total|floatformat:2 }}</strong>
+      <small
+        >${{ month_supplier_paid_total|floatformat:2 }} pagado este mes</small
+      >
+    </div>
+
+    <div class="kpi-card warning">
+      <span>Por aprobar proveedor</span>
+      <strong>${{ supplier_pending_approval_total|floatformat:2 }}</strong>
+      <small>{{ supplier_payment_pending_count }} pagos pendientes</small>
+    </div>
+
+    <div class="kpi-card danger">
+      <span>Saldo proveedores</span>
+      <strong>${{ supplier_balance_due_total|floatformat:2 }}</strong>
+      <small>Dinero pendiente por pagar</small>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="finance">
+    <div class="kpi-card">
+      <span>Pipeline CRM</span>
+      <strong>${{ pipeline|floatformat:2 }}</strong>
+      <small>Oportunidades abiertas</small>
+    </div>
+
+    <div class="kpi-card">
+      <span>Forecast</span>
+      <strong>${{ forecast|floatformat:2 }}</strong>
+      <small>Valor ponderado</small>
+    </div>
+
+    <div class="kpi-card success">
+      <span>Ganados</span>
+      <strong>${{ won|floatformat:2 }}</strong>
+      <small>Oportunidades cerradas</small>
+    </div>
+
+    <div class="kpi-card danger">
+      <span>Perdidos</span>
+      <strong>${{ lost|floatformat:2 }}</strong>
+      <small>Oportunidades perdidas</small>
+    </div>
+  </section>
+
+  <section class="kpi-grid ceo-view-item" data-ceo-group="operation">
+    <div class="kpi-card">
+      <span>Clientes</span>
+      <strong>{{ customers }}</strong>
+      <small>{{ active_customers }} activos</small>
+    </div>
+
+    <div class="kpi-card">
+      <span>Pedidos</span>
+      <strong>{{ orders }}</strong>
+      <small>Total de pedidos registrados</small>
+    </div>
+
+    <div class="kpi-card">
+      <span>SKUs activos</span>
+      <strong>{{ active_variants }}</strong>
+      <small>{{ inactive_variants }} inactivos</small>
+    </div>
+
+    <div class="kpi-card warning">
+      <span>Productos bajos de stock</span>
+      <strong>{{ low_stock_count }}</strong>
+      <small>SKUs con bajo disponible</small>
+    </div>
+  </section>
+
+  <section class="status-grid ceo-view-item" data-ceo-group="operation">
+    <div class="status-card">
+      <span>Borrador</span>
+      <strong>{{ draft_orders }}</strong>
+    </div>
+
+    <div class="status-card warning">
+      <span>Pendientes</span>
+      <strong>{{ pending_orders }}</strong>
+    </div>
+
+    <div class="status-card success">
+      <span>Pagados</span>
+      <strong>{{ paid_orders }}</strong>
+    </div>
+
+    <div class="status-card info">
+      <span>Picking</span>
+      <strong>{{ picking_orders_count }}</strong>
+    </div>
+
+    <div class="status-card purple">
+      <span>Empacados</span>
+      <strong>{{ packed_orders }}</strong>
+    </div>
+
+    <div class="status-card cyan">
+      <span>Enviados</span>
+      <strong>{{ shipped_orders }}</strong>
+    </div>
+
+    <div class="status-card success">
+      <span>Entregados</span>
+      <strong>{{ delivered_orders }}</strong>
+    </div>
+
+    <div class="status-card danger">
+      <span>Cancelados</span>
+      <strong>{{ cancelled_orders }}</strong>
+    </div>
+  </section>
+  </div>
+
+  <section class="status-grid purchase-status-grid ceo-view-item" data-ceo-group="finance">
+    <div class="status-card">
+      <span>OC borrador</span>
+      <strong>{{ purchase_draft_orders }}</strong>
+    </div>
+
+    <div class="status-card info">
+      <span>OC enviadas</span>
+      <strong>{{ purchase_sent_orders }}</strong>
+    </div>
+
+    <div class="status-card warning">
+      <span>OC parcial</span>
+      <strong>{{ purchase_partially_received_orders }}</strong>
+    </div>
+
+    <div class="status-card success">
+      <span>OC recibidas</span>
+      <strong>{{ purchase_received_orders }}</strong>
+    </div>
+
+    <div class="status-card danger">
+      <span>OC canceladas</span>
+      <strong>{{ purchase_cancelled_orders }}</strong>
+    </div>
+
+    <div class="status-card warning">
+      <span>Por recibir</span>
+      <strong>{{ purchase_orders_pending_receipt }}</strong>
+    </div>
+
+    <div class="status-card success">
+      <span>Pagos aprobados</span>
+      <strong>{{ supplier_payment_approved_count }}</strong>
+    </div>
+
+    <div class="status-card warning">
+      <span>Pagos pendientes</span>
+      <strong>{{ supplier_payment_pending_count }}</strong>
+    </div>
+  </section>
+
+  <section class="operation-details ceo-view-item" data-ceo-group="operation" id="ceoOperationDetails" hidden>
+  <div class="operation-details-heading"><div><span>Información de respaldo</span><h2>Desglose operativo</h2><p>Consulta productos, alertas y existencias solamente cuando necesites investigar el resultado.</p></div><button type="button" data-operation-details-close><i class="bi bi-x-lg"></i><span>Cerrar desglose</span></button></div>
+  <section class="executive-analysis" id="ceoExecutiveAnalysis">
+    <header class="inventory-summary-strip" aria-label="Resumen de inventario">
+      <div><span>Productos</span><strong>{{ inventory_product_count|default:0 }}</strong></div>
+      <div><span>Piezas físicas</span><strong>{{ stock_physical|default:0 }}</strong></div>
+      <div><span>Reservadas</span><strong>{{ stock_reserved|default:0 }}</strong></div>
+      <div><span>Disponibles</span><strong>{{ stock_available|default:0 }}</strong></div>
+    </header>
+    <div class="executive-analysis-grid">
+      <article class="inventory-executive-panel">
+        <header class="executive-section-head"><div><span>Inventario consolidado</span><h3>Productos por urgencia</h3></div><a href="{% url 'inventory:lista_stock' %}">Ver inventario completo <i class="bi bi-arrow-up-right"></i></a></header>
+        <div class="inventory-filter-bar" role="group" aria-label="Filtrar inventario por estado">
+          <button type="button" class="is-active" data-inventory-filter="all">Todos <b>{{ inventory_product_count|default:0 }}</b></button>
+          <button type="button" data-inventory-filter="low">Bajo stock <b>{{ inventory_low_count|default:0 }}</b></button>
+          <button type="button" data-inventory-filter="out">Agotados <b>{{ inventory_out_count|default:0 }}</b></button>
+        </div>
+        <div class="inventory-table-wrap">
+          <table class="inventory-executive-table">
+            <thead><tr><th>Producto</th><th>Bodega</th><th><button type="button" data-inventory-sort aria-label="Ordenar por disponible, actualmente de menor a mayor">Disponible ↑ <small>Reservado debajo</small></button></th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody>
+              {% for row in inventory_executive_rows %}
+              <tr class="inventory-main-row" data-inventory-row data-status="{{ row.status }}" data-available="{{ row.available_internal }}" data-reserved="{{ row.reserved_internal }}">
+                <td data-label="Producto"><strong>{{ row.sku }}</strong><small>{{ row.product_name }}</small></td>
+                <td data-label="Bodega"><span class="warehouse-scope-label" tabindex="0" title="{{ row.warehouse_names }}">{{ row.warehouse_name }}</span>{% if row.warehouses|length > 1 %}<small>{{ row.warehouse_names }}</small>{% endif %}</td>
+                <td data-label="Disponible / Reservado"><strong>{{ row.available_display }}</strong><small>{{ row.reserved_display }} reservadas</small></td>
+                <td data-label="Estado"><span class="inventory-status inventory-status--{{ row.status }}">{{ row.status_label }}</span></td>
+                <td data-label="Acción"><button type="button" class="inventory-detail-button" data-inventory-detail aria-expanded="false">Ver detalle</button></td>
+              </tr>
+              <tr class="inventory-detail-row" data-inventory-detail-row hidden><td colspan="5"><div class="inventory-detail-content"><div class="inventory-detail-metrics"><div><span>Físico</span><strong>{{ row.physical_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}</strong><small>{{ row.physical_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small></div><div><span>Reservado</span><strong>{{ row.reserved_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}</strong><small>{{ row.reserved_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small></div><div><span>Conversión</span><strong>1 {{ row.sales_unit_label }} = {{ row.factor|floatformat:"-2" }}</strong><small>{{ row.internal_unit_label }}</small></div></div>{% if row.warehouses|length > 1 %}<div class="inventory-warehouse-breakdown"><strong>Desglose por bodega</strong>{% for warehouse in row.warehouses %}<div><span>{{ warehouse.name }}</span><b>{{ warehouse.available_sale_units|floatformat:"-2" }} disponibles</b><small>{{ warehouse.reserved_sale_units|floatformat:"-2" }} reservadas</small></div>{% endfor %}</div>{% endif %}</div></td></tr>
+              {% empty %}<tr><td colspan="5" class="inventory-empty">No hay inventario dentro del alcance autorizado.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if inventory_rows_truncated %}<p class="inventory-truncated-note">Se muestran los {{ inventory_executive_rows|length }} productos más urgentes de {{ inventory_product_count }}. <a href="{% url 'inventory:lista_stock' %}">Ver todo el inventario</a></p>{% endif %}
+        <button type="button" class="analysis-expand-button" data-inventory-expand>Ver análisis completo</button>
+      </article>
+      <article class="alerts-executive-panel">
+        <header class="executive-section-head"><div><span>Centro de decisión</span><h3>Alertas ejecutivas</h3></div></header>
+        <div class="alert-priority-counts"><div class="is-critical"><strong>{{ alert_critical_count|default:0 }}</strong><span>críticas</span></div><div class="is-attention"><strong>{{ alert_attention_count|default:0 }}</strong><span>requieren atención</span></div><div class="is-info"><strong>{{ alert_info_count|default:0 }}</strong><span>informativas</span></div></div>
+        <div class="executive-alert-list">
+          {% for alert in executive_alerts %}<div class="executive-alert-row executive-alert-row--{{ alert.type }}" data-executive-alert {% if forloop.counter > 5 %}hidden{% endif %}><span class="executive-alert-priority">{{ alert.priority }}</span><div><strong>{{ alert.title }}</strong><small>{{ alert.message }}</small></div><b>{{ alert.result }}</b>{% if alert.action_url %}<a href="{{ alert.action_url }}">{{ alert.action_verb }} <i class="bi bi-arrow-up-right"></i></a>{% endif %}</div>{% empty %}<div class="executive-alert-empty"><i class="bi bi-check-circle"></i><strong>Sin alertas que requieran decisión</strong><span>La operación no presenta excepciones críticas.</span></div>{% endfor %}
+        </div>
+        {% if executive_alerts|length > 5 %}<button type="button" class="analysis-expand-button" data-alerts-expand>Ver todas las alertas</button>{% endif %}
+      </article>
+    </div>
+  </section>
+  {% comment %}Panel heredado sustituido por la tabla ejecutiva consolidada.
+  <section class="ceo-grid legacy-operation-detail" id="ceoOperationalOverview" hidden aria-hidden="true">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Inventario por producto / volumen</h3>
+        <a class="panel-link" href="{% url 'inventory:lista_stock' %}">
+          Ver stock
+        </a>
+      </div>
+
+      <div class="volume-stock-list">
+        {% for row in volume_stock_rows %}
+        <div class="volume-stock-row">
+          <div>
+            <strong>{{ row.sku }}</strong>
+            <small>{{ row.product_name }} · {{ row.warehouse_name }}</small>
+          </div>
+
+          <div>
+            <span>Stock físico</span>
+            <strong
+              >{{ row.physical_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}</strong
+            >
+            <small
+              >{{ row.physical_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small
+            >
+          </div>
+
+          <div>
+            <span>Reservado</span>
+            <strong
+              >{{ row.reserved_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}</strong
+            >
+            <small
+              >{{ row.reserved_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small
+            >
+          </div>
+
+          <div>
+            <span>Disponible</span>
+            <strong
+              >{{ row.available_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}</strong
+            >
+            <small
+              >{{ row.available_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small
+            >
+          </div>
+
+          <div>
+            <span>Conversión</span>
+            <strong>1 {{ row.sales_unit_label }} = {{ row.factor|floatformat:"-2" }}</strong>
+            <small>{{ row.internal_unit_label }}</small>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-box">No hay stock registrado todavía.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Alertas ejecutivas</h3>
+      </div>
+
+      <div class="alert-list">
+        {% for alert in alerts %}
+        <div class="ceo-alert ceo-alert-{{ alert.type }}">
+          <div class="ceo-alert-copy">
+            <strong>{{ alert.title }}</strong>
+            <p>{{ alert.message }}</p>
+          </div>
+          {% if alert.action_url %}
+          <a class="ceo-alert-detail" href="{{ alert.action_url }}">
+            <span>{{ alert.action_label|default:"Ver detalle" }}</span>
+            <i class="bi bi-arrow-up-right"></i>
+          </a>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="ceo-alert ceo-alert-success">
+          <strong>Operación estable</strong>
+          <p>No hay alertas críticas por el momento.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% endcomment %}
+  <section class="ceo-grid operation-finance-summary" hidden aria-hidden="true">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Rentabilidad ejecutiva</h3>
+      </div>
+
+      <div class="mini-kpi-grid">
+        <div>
+          <span>Ventas activas</span>
+          <strong>${{ sales_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Costo de ventas</span>
+          <strong>${{ sales_cost_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Utilidad bruta</span>
+          <strong>${{ gross_profit_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Margen bruto</span>
+          <strong>{{ gross_margin_percent|floatformat:2 }}%</strong>
+        </div>
+
+        <div>
+          <span>Costo este mes</span>
+          <strong>${{ month_sales_cost_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Utilidad este mes</span>
+          <strong>${{ month_gross_profit_total|floatformat:2 }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Operación Warehouse</h3>
+      </div>
+
+      <div class="mini-kpi-grid">
+        <div>
+          <span>Picking pendientes</span>
+          <strong>{{ pending_pickings }}</strong>
+        </div>
+
+        <div>
+          <span>Picking completos</span>
+          <strong>{{ completed_pickings }}</strong>
+        </div>
+
+        <div>
+          <span>Picking cancelados</span>
+          <strong>{{ cancelled_pickings }}</strong>
+        </div>
+
+        <div>
+          <span>Packing pendientes</span>
+          <strong>{{ pending_packings }}</strong>
+        </div>
+
+        <div>
+          <span>Packing completos</span>
+          <strong>{{ packed_packings }}</strong>
+        </div>
+
+        <div>
+          <span>Shipping pendientes</span>
+          <strong>{{ pending_shippings }}</strong>
+        </div>
+
+        <div>
+          <span>Shipping enviados</span>
+          <strong>{{ shipped_shippings }}</strong>
+        </div>
+
+        <div>
+          <span>Shipping entregados</span>
+          <strong>{{ delivered_shippings }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+  </section>
+
+  <section class="ceo-grid ceo-view-item" data-ceo-group="finance" id="ceoChartsOverview">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Rentabilidad por alcance</h3>
+        <small>{{ finance_scope_label }} · Ventas {{ finance_sales_quality }}</small>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="profitabilityChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Compras / Proveedores</h3>
+        <a class="panel-link" href="{% url 'purchases:lista_compras' %}">
+          Ver compras
+        </a>
+      </div>
+
+      <div class="mini-kpi-grid">
+        <div>
+          <span>Total comprado</span>
+          <strong>${{ purchases_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Comprado este mes</span>
+          <strong>${{ month_purchases_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Pagado proveedores</span>
+          <strong>${{ supplier_paid_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo proveedores</span>
+          <strong>${{ supplier_balance_due_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>Pagos por aprobar</span>
+          <strong>${{ supplier_pending_approval_total|floatformat:2 }}</strong>
+        </div>
+
+        <div>
+          <span>OC pendientes de recibir</span>
+          <strong>{{ purchase_orders_pending_receipt }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ceo-grid ceo-view-item" data-ceo-group="finance">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Estado financiero proveedores</h3>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="supplierPaymentsChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Embudo comercial</h3>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="funnelChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="ceo-grid ceo-view-item" data-ceo-group="finance">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Pagos a proveedores</h3>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="supplierPaymentStatusChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Top SKUs rentables</h3>
+      </div>
+
+      <div class="metric-list">
+        {% if finance_supports_sku_rankings %}
+        {% for sku in top_profitable_skus %}
+        <div>
+          <span>
+            <strong>{{ sku.variant__sku }}</strong><br />
+            <small>
+              {{ sku.variant__product__name }} · {{ sku.quantity_sold }}
+              unidades · Margen {{ sku.margin|floatformat:2 }}%
+            </small>
+          </span>
+          <strong>${{ sku.profit|floatformat:2 }}</strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin utilidad calculada todavía</span>
+          <strong>$0.00</strong>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="finance-scope-empty">
+          <span>Ranking no disponible en este alcance</span>
+          <small>La atribución financiera por SKU requiere hechos por línea. Los totales superiores sí corresponden a {{ finance_scope_label }}.</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="ceo-grid ceo-view-item" data-ceo-group="finance">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>SKUs con margen bajo</h3>
+      </div>
+
+      <div class="metric-list">
+        {% if finance_supports_sku_rankings %}
+        {% for sku in low_margin_skus %}
+        <div>
+          <span>
+            <strong>{{ sku.variant__sku }}</strong><br />
+            <small>
+              {{ sku.variant__product__name }} · Venta ${{ sku.revenue|floatformat:2 }} · Costo ${{ sku.cost|floatformat:2 }}
+            </small>
+          </span>
+          <strong>{{ sku.margin|floatformat:2 }}%</strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin SKUs con margen bajo</span>
+          <strong>OK</strong>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="finance-scope-empty">
+          <span>Análisis de margen por SKU no disponible</span>
+          <small>No se presenta un reparto aproximado como si fuera exacto para {{ finance_scope_label }}.</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Últimas órdenes de compra</h3>
+        <a class="panel-link" href="{% url 'purchases:lista_compras' %}">
+          Ver compras
+        </a>
+      </div>
+
+      <div class="metric-list">
+        {% for purchase in recent_purchase_orders %}
+        <div>
+          <span>
+            <strong>
+              <a href="{% url 'purchases:detalle_orden_compra' purchase.id %}">
+                {{ purchase.folio }}
+              </a> </strong
+            ><br />
+            <small>
+              {{ purchase.supplier.name }} · {{ purchase.get_status_display }} ·
+              Pago: {{ purchase.get_payment_status_display }}
+            </small>
+          </span>
+          <strong>${{ purchase.total|floatformat:2 }}</strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin órdenes de compra recientes</span>
+          <strong>0</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="ceo-grid ceo-view-item" data-ceo-group="finance">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Últimos pagos a proveedores</h3>
+      </div>
+
+      <div class="metric-list">
+        {% for payment in recent_supplier_payments %}
+        <div>
+          <span>
+            <strong>{{ payment.folio }}</strong><br />
+            <small>
+              {{ payment.supplier.name }} · {{ payment.get_method_display }} ·
+              {{ payment.get_status_display }}
+            </small>
+          </span>
+          <strong>${{ payment.amount|floatformat:2 }}</strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin pagos a proveedores recientes</span>
+          <strong>0</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Top SKUs vendidos</h3>
+      </div>
+
+      <div class="metric-list">
+        {% if finance_supports_sku_rankings %}
+        {% for sku in top_skus %}
+        <div>
+          <span>
+            <strong>{{ sku.variant__sku }}</strong><br />
+            <small
+              >{{ sku.variant__product__name }} · {{ sku.quantity_sold }}
+              unidades</small
+            >
+          </span>
+          <strong>${{ sku.revenue|floatformat:2 }}</strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin ventas registradas</span>
+          <strong>0</strong>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="finance-scope-empty">
+          <span>Ranking consolidado oculto</span>
+          <small>Este bloque no se mezcla con cifras atribuidas por bodega.</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {% comment %}Stock bajo y reservado ya viven como estado/columna en la tabla ejecutiva.
+  <section class="ceo-grid ceo-view-item operation-stock-detail" data-ceo-group="operation" hidden>
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Stock bajo</h3>
+        <a
+          class="panel-link"
+          href="{% url 'inventory:lista_stock' %}?status=low"
+        >
+          Ver stock
+        </a>
+      </div>
+
+      <div class="metric-list">
+        {% for row in low_stock %}
+        <div>
+          <span>
+            <strong>{{ row.sku }}</strong><br />
+            <small> {{ row.product_name }} · {{ row.warehouse_name }} </small>
+          </span>
+          <strong>
+            {{ row.available_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}
+            <small
+              >{{ row.available_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small
+            >
+          </strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>Sin SKUs con stock bajo</span>
+          <strong>OK</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Stock reservado</h3>
+        <a
+          class="panel-link"
+          href="{% url 'inventory:lista_stock' %}?status=reserved"
+        >
+          Ver reservas
+        </a>
+      </div>
+
+      <div class="metric-list">
+        {% for row in reserved_stock_rows %}
+        <div>
+          <span>
+            <strong>{{ row.sku }}</strong><br />
+            <small>{{ row.product_name }} · {{ row.warehouse_name }}</small>
+          </span>
+          <strong>
+            {{ row.reserved_sale_units|floatformat:"-2" }} {{ row.sales_unit_label }}
+            <small
+              >{{ row.reserved_internal|floatformat:"-2" }} {{ row.internal_unit_label }}</small
+            >
+          </strong>
+        </div>
+        {% empty %}
+        <div>
+          <span>No hay stock reservado</span>
+          <strong>0</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% endcomment %}
+  <section class="acx ceo-view-item" data-ceo-group="activity" id="ceoActivityOverview">
+    <header class="acx-head">
+      <div>
+        <h2>Actividad de tu negocio</h2>
+        <p>Lo último que pasó en ventas, inventario, clientes y almacén.</p>
+      </div>
+      <div class="acx-head-links">
+        <a href="{% url 'sales:lista_pedidos' %}">Ver pedidos</a>
+        <a href="{% url 'inventory:movimientos_inventario' %}">Ver movimientos</a>
+      </div>
+    </header>
+
+    {% if latest_delivered_summary %}
+    <article class="acx-card acx-delivered" data-acx-sale="{{ latest_delivered_summary.sale_total|default:0 }}" data-acx-cost="{{ latest_delivered_summary.cost_total|default:0 }}">
+      <div class="acx-delivered-main">
+        <span class="acx-tag"><i class="bi bi-check2-circle"></i>Último pedido entregado</span>
+        <h3>{{ latest_delivered_summary.folio }}</h3>
+        <p>El stock se descontó al enviar; la entrega cerró la operación.</p>
+
+        <div class="acx-money">
+          <div><span>Venta</span><strong>${{ latest_delivered_summary.sale_total|floatformat:"2g" }}</strong></div>
+          <div><span>Costo</span><strong>${{ latest_delivered_summary.cost_total|floatformat:"2g" }}</strong></div>
+          <div class="is-profit {% if latest_delivered_summary.profit_total < 0 %}is-bad{% endif %}"><span>Utilidad</span><strong>${{ latest_delivered_summary.profit_total|floatformat:"2g" }}</strong></div>
+        </div>
+
+        <div class="acx-split" role="img" aria-label="Venta dividida en costo y utilidad, margen {{ latest_delivered_summary.margin_percent|floatformat:1 }} por ciento">
+          <i class="is-cost" data-acx-split="cost"></i><i class="is-profit" data-acx-split="profit"></i>
+        </div>
+        <div class="acx-split-legend">
+          <span><i class="is-cost"></i>Costo</span>
+          <span><i class="is-profit"></i>Utilidad · margen <b>{{ latest_delivered_summary.margin_percent|floatformat:1 }}%</b></span>
+        </div>
+
+        <div class="acx-stock">
+          <div><i class="bi bi-box-arrow-up"></i><span>Stock consumido</span><b>{{ latest_delivered_summary.stock_consumed_internal }} pzas</b></div>
+          <div><i class="bi bi-boxes"></i><span>Inventario restante</span><b>{{ latest_delivered_summary.inventory_remaining_internal }} pzas</b></div>
+        </div>
+      </div>
+
+      <div class="acx-lines">
+        <h4>Productos del pedido</h4>
+        <ul>
+          {% for item in latest_delivered_items %}
+          <li>
+            <div class="acx-line-name"><strong>{{ item.product_name }}</strong><small>{{ item.sku }} · 1 {{ item.sales_unit_label }} = {{ item.factor|floatformat:"-2" }} {{ item.internal_unit_label }}</small></div>
+            <div><span>Vendido</span><b>{{ item.quantity|floatformat:"-2" }} {{ item.sales_unit_label }}</b><small>{{ item.internal_quantity|floatformat:"-2" }} {{ item.internal_unit_label }}</small></div>
+            <div><span>Te quedan</span><b>{{ item.remaining_sale_units|floatformat:"-2" }} {{ item.sales_unit_label }}</b><small>{{ item.remaining_internal|floatformat:"-2" }} {{ item.internal_unit_label }}</small></div>
+            <div class="acx-line-profit {% if item.line_profit < 0 %}is-bad{% endif %}"><span>Utilidad</span><b>${{ item.line_profit|floatformat:"2g" }}</b><small>{{ item.line_margin|floatformat:1 }}% margen</small></div>
+          </li>
+          {% empty %}
+          <li class="acx-empty-line">No hay productos en el último pedido entregado.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </article>
+    {% endif %}
+
+    <div class="acx-row">
+      <article class="acx-card acx-orders">
+        <header class="acx-card-head">
+          <div><h3>Utilidad de tus últimos pedidos</h3><p>Cada barra es un pedido. Pasa el cursor para ver cliente, estado y margen.</p></div>
+        </header>
+        {% if recent_orders %}
+        <div class="acx-chart"><canvas id="acxOrdersChart" role="img" aria-label="Utilidad bruta de los pedidos más recientes"></canvas></div>
+        {% else %}
+        <div class="acx-empty"><i class="bi bi-receipt"></i><strong>Sin pedidos recientes</strong><small>La gráfica aparecerá con tu primer pedido.</small></div>
+        {% endif %}
+      </article>
+
+      <article class="acx-card acx-customers">
+        <header class="acx-card-head">
+          <div><h3>Mejores clientes</h3><p>Por compra mensual estimada.</p></div>
+        </header>
+        <ol class="acx-rank">
+          {% for customer in top_customers %}
+          <li data-acx-value="{{ customer.estimated_monthly_purchase|default:0 }}">
+            <span class="acx-rank-pos">{{ forloop.counter }}</span>
+            <div class="acx-rank-body">
+              <div class="acx-rank-top"><strong>{{ customer.full_name }}</strong><b>${{ customer.estimated_monthly_purchase|floatformat:"0g" }}</b></div>
+              <small>{{ customer.business_name|default:"Sin empresa" }}</small>
+              <div class="acx-rank-bar"><i></i></div>
+            </div>
+          </li>
+          {% empty %}
+          <li class="acx-empty-line">Sin clientes registrados.</li>
+          {% endfor %}
+        </ol>
+      </article>
+    </div>
+
+    <article class="acx-card acx-feed">
+      <header class="acx-card-head">
+        <div><h3>Lo que pasó recientemente</h3><p>Todo en una sola línea de tiempo, de lo más nuevo a lo más viejo.</p></div>
+        <div class="acx-filters" role="group" aria-label="Filtrar actividad">
+          <button type="button" class="is-on" data-acx-filter="all" aria-pressed="true">Todo</button>
+          <button type="button" data-acx-filter="orders" aria-pressed="false">Pedidos <b>{{ recent_orders|length }}</b></button>
+          <button type="button" data-acx-filter="stock" aria-pressed="false">Inventario <b>{{ recent_stock_movements|length }}</b></button>
+          <button type="button" data-acx-filter="crm" aria-pressed="false">Clientes <b>{{ activities|length }}</b></button>
+          <button type="button" data-acx-filter="warehouse" aria-pressed="false">Almacén <b>{{ warehouse_logs|length }}</b></button>
+        </div>
+      </header>
+
+      <ol class="acx-timeline" data-acx-timeline>
+        {% for order in recent_orders %}
+        <li class="acx-event is-orders" data-acx-kind="orders" data-acx-ts="{{ order.created_at|date:'U' }}"
+          data-acx-order="{{ order.folio }}" data-acx-profit="{{ order.gross_profit|default:0 }}" data-acx-margin="{{ order.margin_percent|default:0 }}"
+          data-acx-customer="{% if order.customer %}{{ order.customer.full_name }}{% else %}Sin cliente{% endif %}" data-acx-status="{{ order.get_status_display }}">
+          <i class="bi bi-receipt"></i>
+          <div><strong>Pedido {{ order.folio }} · {{ order.get_status_display }}</strong><p>{% if order.customer %}{{ order.customer.full_name }}{% else %}Sin cliente{% endif %} · margen {{ order.margin_percent|floatformat:1 }}%</p></div>
+          <b class="{% if order.gross_profit < 0 %}is-bad{% endif %}">${{ order.gross_profit|floatformat:"2g" }}</b>
+          <time datetime="{{ order.created_at|date:'c' }}">hace {{ order.created_at|timesince }}</time>
+        </li>
+        {% endfor %}
+        {% for movement in recent_stock_movements %}
+        <li class="acx-event is-stock" data-acx-kind="stock" data-acx-ts="{{ movement.created_at|date:'U' }}">
+          <i class="bi {% if movement.movement_type == 'in' or movement.movement_type == 'release' %}bi-box-arrow-in-down{% elif movement.movement_type == 'transfer' %}bi-arrow-left-right{% elif movement.movement_type == 'adjustment' %}bi-sliders{% else %}bi-box-arrow-up{% endif %}"></i>
+          <div><strong>{{ movement.get_movement_type_display }} · {{ movement.variant.sku }}</strong><p>{{ movement.warehouse.name }}</p></div>
+          <b>{{ movement.quantity }} pzas</b>
+          <time datetime="{{ movement.created_at|date:'c' }}">hace {{ movement.created_at|timesince }}</time>
+        </li>
+        {% endfor %}
+        {% for activity in activities %}
+        <li class="acx-event is-crm" data-acx-kind="crm" data-acx-ts="{{ activity.created_at|date:'U' }}">
+          <i class="bi bi-person-lines-fill"></i>
+          <div><strong>{{ activity.get_activity_type_display }}</strong><p>{{ activity.description }}</p></div>
+          <b></b>
+          <time datetime="{{ activity.created_at|date:'c' }}">hace {{ activity.created_at|timesince }}</time>
+        </li>
+        {% endfor %}
+        {% for log in warehouse_logs %}
+        <li class="acx-event is-warehouse" data-acx-kind="warehouse" data-acx-ts="{{ log.created_at|date:'U' }}">
+          <i class="bi bi-building-gear"></i>
+          <div><strong>{{ log.get_action_display }}</strong><p>{{ log.description }}</p></div>
+          <b></b>
+          <time datetime="{{ log.created_at|date:'c' }}">hace {{ log.created_at|timesince }}</time>
+        </li>
+        {% endfor %}
+      </ol>
+      {% if not recent_orders and not recent_stock_movements and not activities and not warehouse_logs %}
+      <div class="acx-empty"><i class="bi bi-clock-history"></i><strong>Todavía no hay actividad</strong><small>Aquí verás pedidos, movimientos, seguimiento a clientes y eventos del almacén.</small></div>
+      {% endif %}
+      <p class="acx-feed-empty" data-acx-filter-empty hidden>No hay eventos recientes de este tipo.</p>
+    </article>
+  </section>
+</section>
+
+{{ funnel_labels|json_script:"ceo-data-funnel_labels" }}
+{{ funnel_counts|json_script:"ceo-data-funnel_counts" }}
+{{ orders_status_labels|json_script:"ceo-data-orders_status_labels" }}
+{{ orders_status_counts|json_script:"ceo-data-orders_status_counts" }}
+{{ warehouse_status_labels|json_script:"ceo-data-warehouse_status_labels" }}
+{{ warehouse_status_counts|json_script:"ceo-data-warehouse_status_counts" }}
+{{ inventory_status_labels|json_script:"ceo-data-inventory_status_labels" }}
+{{ inventory_status_counts|json_script:"ceo-data-inventory_status_counts" }}
+{{ purchase_status_labels|json_script:"ceo-data-purchase_status_labels" }}
+{{ purchase_status_counts|json_script:"ceo-data-purchase_status_counts" }}
+{{ supplier_payment_status_labels|json_script:"ceo-data-supplier_payment_status_labels" }}
+{{ supplier_payment_status_counts|json_script:"ceo-data-supplier_payment_status_counts" }}
+{{ finance_trend_labels|json_script:"ceo-data-finance_trend_labels" }}
+{{ finance_trend_sales|json_script:"ceo-data-finance_trend_sales" }}
+{{ finance_trend_collected|json_script:"ceo-data-finance_trend_collected" }}
+{{ finance_trend_profit|json_script:"ceo-data-finance_trend_profit" }}
+{{ supplier_paid_total|json_script:"ceo-data-supplier_paid_total" }}
+{{ supplier_pending_approval_total|json_script:"ceo-data-supplier_pending_approval_total" }}
+{{ supplier_balance_due_total|json_script:"ceo-data-supplier_balance_due_total" }}
+{{ sales_cost_total|json_script:"ceo-data-sales_cost_total" }}
+{{ gross_profit_total|json_script:"ceo-data-gross_profit_total" }}
+<script src="{% static 'js/tablero_ceo.js' %}" defer></script>
+<script src="{% static 'js/tablero_operacion.js' %}" defer></script>
+<script src="{% static 'js/tablero_finanzas.js' %}" defer></script>
+<script src="{% static 'js/tablero_actividad.js' %}" defer></script>
+
+{% endblock %}

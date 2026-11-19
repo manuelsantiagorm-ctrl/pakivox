@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ receipt.folio }} | Recepción | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Recepción {{ receipt.folio }}
+{% endblock %}
+
+{% block page_subtitle %}
+Confirmar mercancía recibida y entrada real a inventario
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .receipt-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .summary-card,
+  .panel {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .summary-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .summary-card h2 {
+    margin: 8px 0;
+    color: #f8fafc;
+    font-size: 32px;
+  }
+
+  .summary-card p {
+    margin: 0;
+    color: #93c5fd;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    margin-top: 12px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    background: rgba(148, 163, 184, 0.16);
+    color: #e5e7eb;
+  }
+
+  .status-draft { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+  .status-received { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+  .status-cancelled { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+
+  .summary-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .primary-btn,
+  .success-btn,
+  .danger-btn,
+  .ghost-btn,
+  .small-btn {
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-weight: 900;
+    text-decoration: none;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .primary-btn {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .success-btn {
+    background: #22c55e;
+    color: #020617;
+  }
+
+  .danger-btn {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .ghost-btn,
+  .small-btn {
+    background: rgba(15, 23, 42, 0.88);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .kpi-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .kpi-card span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .kpi-card strong {
+    color: #f8fafc;
+    font-size: 22px;
+  }
+
+  .receipt-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) 160px 260px minmax(220px, 0.8fr) auto;
+    gap: 12px;
+    align-items: end;
+    padding: 16px;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    margin-bottom: 12px;
+  }
+
+  .receipt-product strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 17px;
+  }
+
+  .receipt-product small {
+    display: block;
+    margin-top: 5px;
+    color: #94a3b8;
+  }
+
+  .receipt-item label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .receipt-item input,
+  .receipt-item select,
+  .receipt-item textarea {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #030712;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 11px;
+    outline: none;
+  }
+
+  .receipt-item textarea {
+    min-height: 42px;
+    resize: vertical;
+  }
+
+  .readonly-pill {
+    display: inline-flex;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+    font-weight: 900;
+    font-size: 12px;
+  }
+
+  .alert-box {
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    color: #bae6fd;
+  }
+
+  .alert-box.success {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.32);
+    color: #bbf7d0;
+  }
+
+  .alert-box.warning {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.32);
+    color: #fde68a;
+  }
+
+  .inline-form {
+    display: inline;
+  }
+
+  .lot-editor {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    background: rgba(14, 165, 233, 0.06);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .lot-editor-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .lot-editor-head strong { color: #bae6fd; }
+  .lot-editor-head small { color: #94a3b8; }
+
+  .lot-row {
+    display: grid;
+    grid-template-columns: 1.2fr .7fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+    margin-top: 10px;
+  }
+
+  .lot-remove {
+    border: 1px solid rgba(239, 68, 68, .35);
+    background: rgba(239, 68, 68, .12);
+    color: #fecaca;
+    border-radius: 10px;
+    min-height: 42px;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 1200px) {
+    .summary-card {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .receipt-item {
+      grid-template-columns: 1fr;
+    }
+
+    .kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="receipt-page">
+  <div class="summary-card">
+    <div>
+      <span class="eyebrow">Recepción de mercancía</span>
+      <h2>{{ receipt.folio }}</h2>
+
+      <p>
+        OC {{ receipt.purchase_order.folio }} ·
+        {{ receipt.purchase_order.supplier.name }} ·
+        {{ receipt.warehouse.name }}
+      </p>
+
+      <span class="status-pill status-{{ receipt.status }}">
+        {{ receipt.get_status_display }}
+      </span>
+    </div>
+
+    <div class="summary-actions">
+      {% if receipt.status == "draft" %}
+        <form
+          method="post"
+          action="{% url 'purchases:confirmar_recepcion' receipt.id %}"
+          class="inline-form"
+          onsubmit="return confirm('¿Confirmar recepción y agregar mercancía al stock?');"
+        >
+          {% csrf_token %}
+          <button type="submit" class="success-btn">
+            <i class="bi bi-check-circle"></i>
+            Confirmar recepción
+          </button>
+        </form>
+
+        <form
+          method="post"
+          action="{% url 'purchases:cancelar_recepcion' receipt.id %}"
+          class="inline-form"
+          onsubmit="return confirm('¿Cancelar esta recepción?');"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="Recepción cancelada desde pantalla." />
+          <button type="submit" class="danger-btn">
+            Cancelar
+          </button>
+        </form>
+      {% endif %}
+
+      <a
+        href="{% url 'purchases:detalle_orden_compra' receipt.purchase_order.id %}"
+        class="ghost-btn"
+      >
+        Volver a OC
+      </a>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span>Orden</span>
+      <strong>{{ receipt.purchase_order.folio }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Proveedor</span>
+      <strong>{{ receipt.purchase_order.supplier.name }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Bodega</span>
+      <strong>{{ receipt.warehouse.name }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Items</span>
+      <strong>{{ receipt.items.count }}</strong>
+    </div>
+  </div>
+
+  {% if receipt.status == "received" %}
+    <div class="alert-box success">
+      Esta recepción ya fue confirmada. La mercancía ya entró al inventario.
+    </div>
+  {% elif receipt.status == "cancelled" %}
+    <div class="alert-box warning">
+      Esta recepción fue cancelada y no afectó inventario.
+    </div>
+  {% else %}
+    <div class="alert-box">
+      Ajusta cantidades y ubicación antes de confirmar. Al confirmar, aumentará el stock físico.
+    </div>
+  {% endif %}
+
+  <div class="panel">
+    <h3>Productos recibidos</h3>
+
+    {% for item in receipt.items.all %}
+      <form
+        method="post"
+        action="{% url 'purchases:actualizar_item_recepcion' receipt.id item.id %}"
+        class="receipt-item"
+      >
+        {% csrf_token %}
+
+        <div class="receipt-product">
+          <strong>{{ item.variant.sku }}</strong>
+          <small>{{ item.variant.product.name }}</small>
+          <small>
+            Comprado:
+            {{ item.purchase_order_item.quantity_ordered }}
+            · Ya recibido:
+            {{ item.purchase_order_item.quantity_received }}
+            · Pendiente:
+            {{ item.purchase_order_item.pending_quantity }}
+          </small>
+
+          {% if item.added_to_stock %}
+            <span class="readonly-pill">Agregado a stock</span>
+          {% endif %}
+        </div>
+
+        <label>
+          Cantidad recibida
+          <input
+            type="number"
+            name="quantity_received"
+            min="1"
+            value="{{ item.quantity_received }}"
+            {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %}
+            required
+          />
+        </label>
+
+        <label>
+          Ubicación destino
+          <select
+            name="location"
+            {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %}
+          >
+            <option value="">Sin ubicación específica</option>
+            {% for location in locations %}
+              <option
+                value="{{ location.id }}"
+                {% if item.location_id == location.id %}selected{% endif %}
+              >
+                {{ location.bin_code }} · {{ location.aisle }} {{ location.rack }} {{ location.level }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+
+        {% if item.variant.inventory_control != "normal" %}
+          <div class="lot-editor" data-lot-editor>
+            <div class="lot-editor-head">
+              <div>
+                <strong>
+                  {% if item.variant.inventory_control == "lot_expiry" %}
+                    Lotes + caducidad obligatoria
+                  {% else %}
+                    Control por lotes
+                  {% endif %}
+                </strong>
+                <small>
+                  La suma de cantidades por lote debe ser exactamente {{ item.quantity_received }}.
+                </small>
+              </div>
+
+              {% if receipt.status == "draft" and not item.added_to_stock %}
+                <button type="button" class="small-btn" data-add-lot>
+                  + Agregar lote
+                </button>
+              {% endif %}
+            </div>
+
+            <div data-lot-rows>
+              {% for allocation in item.lot_allocations.all %}
+                <div class="lot-row">
+                  <label>
+                    Lote
+                    <input type="text" name="lot_number"
+                           value="{{ allocation.lot_number }}"
+                           {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %}
+                           required />
+                  </label>
+                  <label>
+                    Cantidad
+                    <input type="number" name="lot_quantity" min="1"
+                           value="{{ allocation.quantity_received }}"
+                           {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %}
+                           required />
+                  </label>
+                  <label>
+                    Fabricación
+                    <input type="date" name="manufactured_date"
+                           value="{{ allocation.manufactured_date|date:'Y-m-d' }}"
+                           {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %} />
+                  </label>
+                  <label>
+                    Caducidad
+                    <input type="date" name="expiration_date"
+                           value="{{ allocation.expiration_date|date:'Y-m-d' }}"
+                           {% if item.variant.inventory_control == "lot_expiry" %}required{% endif %}
+                           {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %} />
+                  </label>
+                  {% if receipt.status == "draft" and not item.added_to_stock %}
+                    <button type="button" class="lot-remove" data-remove-lot>Quitar</button>
+                  {% endif %}
+                </div>
+              {% empty %}
+                {% if receipt.status == "draft" and not item.added_to_stock %}
+                  <div class="lot-row">
+                    <label>
+                      Lote
+                      <input type="text" name="lot_number" required />
+                    </label>
+                    <label>
+                      Cantidad
+                      <input type="number" name="lot_quantity" min="1"
+                             value="{{ item.quantity_received }}" required />
+                    </label>
+                    <label>
+                      Fabricación
+                      <input type="date" name="manufactured_date" />
+                    </label>
+                    <label>
+                      Caducidad
+                      <input type="date" name="expiration_date"
+                             {% if item.variant.inventory_control == "lot_expiry" %}required{% endif %} />
+                    </label>
+                    <button type="button" class="lot-remove" data-remove-lot>Quitar</button>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <label>
+          Notas
+          <textarea
+            name="notes"
+            {% if receipt.status != "draft" or item.added_to_stock %}disabled{% endif %}
+          >{{ item.notes }}</textarea>
+        </label>
+
+        {% if receipt.status == "draft" and not item.added_to_stock %}
+          <button type="submit" class="primary-btn">
+            Guardar
+          </button>
+        {% else %}
+          <span class="readonly-pill">Bloqueado</span>
+        {% endif %}
+      </form>
+    {% empty %}
+      <div class="alert-box warning">
+        Esta recepción no tiene productos.
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<script>
+document.addEventListener("click", function (event) {
+  const addButton = event.target.closest("[data-add-lot]");
+  if (addButton) {
+    const editor = addButton.closest("[data-lot-editor]");
+    const rows = editor.querySelector("[data-lot-rows]");
+    const first = rows.querySelector(".lot-row");
+    if (!first) return;
+
+    const clone = first.cloneNode(true);
+    clone.querySelectorAll("input").forEach(function (input) {
+      input.value = "";
+    });
+    rows.appendChild(clone);
+    return;
+  }
+
+  const removeButton = event.target.closest("[data-remove-lot]");
+  if (removeButton) {
+    const rows = removeButton.closest("[data-lot-rows]");
+    const row = removeButton.closest(".lot-row");
+    if (rows.querySelectorAll(".lot-row").length > 1) {
+      row.remove();
+    } else {
+      row.querySelectorAll("input").forEach(function (input) {
+        input.value = "";
+      });
+    }
+  }
+});
+</script>
+{% endblock %}

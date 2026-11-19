@@ -1,0 +1,217 @@
+{% load wms_units %}
+{% for item in order.items.all %}
+      <article class="item-row profitability-item-row">
+        <div class="item-main-info">
+          <div class="order-item-title-row">
+            <div>
+              <strong>{{ item.variant.sku }}</strong>
+
+              {% if item.variant.product %}
+                <p class="order-item-product-name">
+                  {{ item.variant.product.name }}
+                </p>
+              {% endif %}
+            </div>
+
+            {% if item.variant|is_bulk_variant %}
+              <span class="order-unit-badge bulk">
+                Producto por volumen ·
+                1 {{ item.variant|commercial_unit }} =
+                {{ item.variant|conversion_factor_label }}
+                {{ item.variant|base_unit }}
+              </span>
+            {% else %}
+              <span class="order-unit-badge unit">
+                Producto unitario
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="order-item-commercial-summary">
+            <div>
+              <span>Cantidad vendida</span>
+
+              {% if item.variant|is_bulk_variant %}
+                <strong>
+                  {{ item.quantity|clean_qty }}
+                  {{ item.variant|commercial_unit }}
+                </strong>
+
+                <small>
+                  Equivale a
+                  {{ item.quantity|commercial_to_internal:item.variant }}
+                  {{ item.variant|base_unit }} internas
+                </small>
+              {% else %}
+                <strong>
+                  {{ item.quantity|clean_qty }}
+                  {{ item.variant|base_unit }}
+                </strong>
+              {% endif %}
+            </div>
+
+            <div>
+              <span>Precio unitario</span>
+              <strong>${{ item.unit_price|floatformat:2 }}</strong>
+            </div>
+
+            <div>
+              <span>Total venta</span>
+              <strong>${{ item.total|floatformat:2 }}</strong>
+            </div>
+          </div>
+
+          <div class="item-badges">
+            <span>
+              Talla:
+              {{ item.variant.specifications.talla|default:item.variant.size|default:"-" }}
+            </span>
+
+            <span>
+              Color:
+              {{ item.variant.specifications.color|default:item.variant.color|default:"-" }}
+            </span>
+
+            <span>
+              Corte: {{ item.variant.specifications.corte|default:"-" }}
+            </span>
+          </div>
+
+          {% if can_view_costs %}
+          <div class="item-profit-grid">
+            <div>
+              <span>Venta</span>
+              <strong>${{ item.total|floatformat:2 }}</strong>
+            </div>
+
+            <div>
+              <span>Costo unit.</span>
+              <strong>${{ item.unit_cost|floatformat:2 }}</strong>
+            </div>
+
+            <div>
+              <span>Costo total</span>
+              <strong>${{ item.total_cost|floatformat:2 }}</strong>
+            </div>
+
+            <div>
+              <span>Utilidad</span>
+
+              {% if item.gross_profit >= 0 %}
+                <strong class="profit-positive">
+                  ${{ item.gross_profit|floatformat:2 }}
+                </strong>
+              {% else %}
+                <strong class="profit-negative">
+                  ${{ item.gross_profit|floatformat:2 }}
+                </strong>
+              {% endif %}
+            </div>
+
+            <div>
+              <span>Margen</span>
+
+              {% if item.margin_percent >= 30 %}
+                <strong class="margin-pill good">
+                  {{ item.margin_percent|floatformat:2 }}%
+                </strong>
+              {% elif item.margin_percent >= 15 %}
+                <strong class="margin-pill warning">
+                  {{ item.margin_percent|floatformat:2 }}%
+                </strong>
+              {% else %}
+                <strong class="margin-pill danger">
+                  {{ item.margin_percent|floatformat:2 }}%
+                </strong>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="item-total">
+          <strong>${{ item.total|floatformat:2 }}</strong>
+          <small>Venta</small>
+        </div>
+
+        {% if can_edit_products %}
+          <div class="item-actions">
+            <form
+              method="post"
+              action="{% url 'sales:actualizar_producto_pedido' order.id item.id %}"
+              class="item-edit-form"
+            >
+              {% csrf_token %}
+
+              <label class="mini-edit-label">
+                Cantidad
+                {% if item.variant|is_bulk_variant %}
+                  <small>{{ item.variant|commercial_unit }}</small>
+                {% endif %}
+              </label>
+
+              <input
+                type="number"
+                name="quantity"
+                min="1"
+                value="{{ item.quantity }}"
+                required
+                title="Cantidad"
+              />
+
+              <input
+                type="number"
+                name="unit_price"
+                step="0.01"
+                min="0"
+                value="{{ item.unit_price }}"
+                required
+                title="Precio unitario"
+              />
+
+              <button type="submit" class="update-btn">
+                Guardar
+              </button>
+            </form>
+
+            <form
+              method="post"
+              action="{% url 'sales:eliminar_producto_pedido' order.id item.id %}"
+              onsubmit="return confirm('¿Eliminar este producto del pedido?');"
+            >
+              {% csrf_token %}
+              <button type="submit" class="delete-btn">
+                Eliminar
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <button type="button" class="delete-btn disabled" disabled>
+            Bloqueado
+          </button>
+        {% endif %}
+      </article>
+    {% empty %}
+      <div class="ps6b-products-empty">
+        <div class="ps6b-empty-visual">
+          <i class="bi bi-box-seam"></i>
+        </div>
+
+        <div class="ps6b-empty-content">
+          <span>PRODUCTOS DEL PEDIDO</span>
+          <h4>Este pedido todavía está vacío</h4>
+
+          <p>
+            Agrega al menos un producto para continuar con la preparación,
+            cobro y surtido del pedido.
+          </p>
+
+          {% if can_edit_products %}
+            <a href="#agregar-productos-pedido" class="ps6b-empty-action">
+              <i class="bi bi-plus-circle"></i>
+              Agregar productos
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %} {% load crm_extras %} {% block title %}Kanban CRM |
+WMS360{% endblock %} {% block page_title %}CRM Kanban{% endblock %} {% block
+page_subtitle %}Embudo comercial con oportunidades arrastrables por etapa{%
+endblock %} {% block content %}
+
+<div class="kanban-toolbar">
+  <a href="/crm/" class="btn btn-sm btn-outline-light">← Volver al CRM</a>
+  <a href="/admin/crm/deal/add/" class="btn btn-sm btn-primary"
+    >Nueva oportunidad</a
+  >
+  <a href="/admin/crm/pipelinestage/add/" class="btn btn-sm btn-success"
+    >Nueva etapa</a
+  >
+</div>
+
+<section class="kanban-board">
+  {% for stage in stages %}
+  <div class="kanban-column">
+    <div class="kanban-column-header">
+      <h3>{{ stage.name }}</h3>
+      <span>{{ deals_by_stage|get_item:stage.id|length }}</span>
+    </div>
+
+    <div class="kanban-dropzone" data-stage-id="{{ stage.id }}">
+      {% for deal in deals_by_stage|get_item:stage.id %}
+      <div class="deal-card" data-deal-id="{{ deal.id }}">
+        <div class="deal-top">
+          <strong>{{ deal.title }}</strong>
+          <span>${{ deal.amount }}</span>
+        </div>
+
+        <p>{{ deal.customer.full_name }}</p>
+
+        <div class="deal-meta">
+          <small>Probabilidad: {{ deal.probability }}%</small>
+          <small>{{ deal.assigned_to|default:"Sin asignar" }}</small>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-stage">Sin oportunidades</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="panel">
+    <h3>No hay etapas creadas</h3>
+    <p class="text-muted">
+      Crea etapas como: Nuevo, Contactado, Cotización enviada, Negociación,
+      Ganado.
+    </p>
+    <a href="/admin/crm/pipelinestage/add/" class="btn btn-primary"
+      >Crear primera etapa</a
+    >
+  </div>
+  {% endfor %}
+</section>
+<section class="crm-chart-grid">
+  <div class="panel crm-chart-panel">
+    <div class="panel-header">
+      <div>
+        <h3>Pipeline por etapa</h3>
+        <p class="panel-subtitle">
+          Distribución comercial de oportunidades abiertas
+        </p>
+      </div>
+    </div>
+
+    <canvas id="crmPipelineChart"></canvas>
+  </div>
+</section>
+
+{{ chart_stage_labels|json_script:"chart-stage-labels" }} {{
+chart_stage_counts|json_script:"chart-stage-counts" }} {{
+chart_stage_amounts|json_script:"chart-stage-amounts" }}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = "{{ csrf_token }}";
+
+    document.querySelectorAll(".kanban-dropzone").forEach(function (zone) {
+      new Sortable(zone, {
+        group: "crm-kanban",
+        animation: 180,
+        ghostClass: "deal-ghost",
+
+        onAdd: function (event) {
+          const dealId = event.item.dataset.dealId;
+          const stageId = event.to.dataset.stageId;
+
+          fetch("{% url 'update_deal_stage' %}", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrfToken,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              deal_id: dealId,
+              stage_id: stageId,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (!data.success) {
+                alert("No se pudo actualizar la oportunidad.");
+              }
+            })
+            .catch(() => {
+              alert("Error al actualizar la oportunidad.");
+            });
+        },
+      });
+    });
+  });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const chartCanvas = document.getElementById("crmPipelineChart");
+
+    if (!chartCanvas) {
+        return;
+    }
+
+    const labels = JSON.parse(document.getElementById("chart-stage-labels").textContent);
+    const counts = JSON.parse(document.getElementById("chart-stage-counts").textContent);
+    const amounts = JSON.parse(document.getElementById("chart-stage-amounts").textContent);
+
+    new Chart(chartCanvas, {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: "Oportunidades",
+                    data: counts,
+                    backgroundColor: "rgba(37, 99, 235, 0.75)",
+                    borderColor: "rgba(96, 165, 250, 1)",
+                    borderWidth: 1,
+                    borderRadius: 8,
+                },
+                {
+                    label: "Monto estimado",
+                    data: amounts,
+                    backgroundColor: "rgba(34, 197, 94, 0.55)",
+                    borderColor: "rgba(74, 222, 128, 1)",
+                    borderWidth: 1,
+                    borderRadius: 8,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#cbd5e1",
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: "#94a3b8",
+                    },
+                    grid: {
+                        color: "rgba(255, 255, 255, 0.06)",
+                    },
+                },
+                y: {
+                    ticks: {
+                        color: "#94a3b8",
+                    },
+                    grid: {
+                        color: "rgba(255, 255, 255, 0.06)",
+                    },
+                },
+            },
+        },
+    });
+});
+</script>
+
+{% endblock %}

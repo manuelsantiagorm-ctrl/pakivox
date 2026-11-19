@@ -1,0 +1,2060 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+{{ purchase_order.folio }} | Orden de compra | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Orden de compra {{ purchase_order.folio }}
+{% endblock %}
+
+{% block page_subtitle %}
+Detalle de compra, productos, proveedor y recepciones
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .purchase-detail-page {
+    display: grid;
+    gap: 18px;
+  }
+
+  .summary-card,
+  .panel {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .summary-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .summary-card h2 {
+    margin: 8px 0;
+    font-size: 32px;
+    color: #f8fafc;
+  }
+
+  .summary-card p {
+    color: #93c5fd;
+    margin: 0;
+  }
+
+  .status-row {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    background: rgba(148, 163, 184, 0.16);
+    color: #e5e7eb;
+  }
+
+  .status-draft {
+    background: rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+  }
+
+  .status-sent {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+  }
+
+  .status-partially_received {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+  }
+
+  .status-received {
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+  }
+
+  .status-cancelled {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+  }
+
+  .summary-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .primary-btn,
+  .success-btn,
+  .danger-btn,
+  .ghost-btn,
+  .small-btn {
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-weight: 900;
+    text-decoration: none;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .primary-btn {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .success-btn {
+    background: #22c55e;
+    color: #020617;
+  }
+
+  .danger-btn {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .ghost-btn,
+  .small-btn {
+    background: rgba(15, 23, 42, 0.88);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .kpi-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .kpi-card span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .kpi-card strong {
+    color: #f8fafc;
+    font-size: 22px;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.8fr);
+    gap: 18px;
+  }
+
+  .panel h3 {
+    margin: 0 0 14px;
+    color: #f8fafc;
+    font-size: 22px;
+  }
+
+  .items-table,
+  .receipts-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .items-table th,
+  .receipts-table th {
+    text-align: left;
+    padding: 12px;
+    color: #38bdf8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .items-table td,
+  .receipts-table td {
+    padding: 13px 12px;
+    color: #e5e7eb;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    vertical-align: middle;
+  }
+
+  .items-table strong {
+    color: #f8fafc;
+  }
+
+  .items-table small {
+    display: block;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .form-panel form {
+    display: grid;
+    gap: 13px;
+  }
+
+  .form-panel label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .form-panel input,
+  .form-panel textarea {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    outline: none;
+  }
+
+  .form-panel textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+
+  .product-picker-btn {
+    width: 100%;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: rgba(14, 165, 233, 0.12);
+    color: #f8fafc;
+    border-radius: 14px;
+    padding: 14px;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    gap: 5px;
+  }
+
+  .product-picker-btn span {
+    font-weight: 950;
+    color: #7dd3fc;
+  }
+
+  .product-picker-btn small {
+    color: #93c5fd;
+  }
+
+  .live-subtotal-card {
+    padding: 14px;
+    border-radius: 14px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    display: grid;
+    gap: 5px;
+  }
+
+  .live-subtotal-card span {
+    color: #93c5fd;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .live-subtotal-card strong {
+    color: #f8fafc;
+    font-size: 24px;
+  }
+
+  .live-subtotal-card small {
+    color: #94a3b8;
+  }
+
+  .alert-box {
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    color: #bae6fd;
+  }
+
+  .alert-box.success {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.32);
+    color: #bbf7d0;
+  }
+
+  .alert-box.warning {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.32);
+    color: #fde68a;
+  }
+
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .inline-form {
+    display: inline;
+  }
+
+  .purchase-product-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+  }
+
+  .purchase-product-modal.open {
+    display: block;
+  }
+
+  .purchase-product-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.78);
+    backdrop-filter: blur(8px);
+  }
+
+  .purchase-product-card {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, calc(100vw - 36px));
+    max-height: calc(100vh - 48px);
+    margin: 24px auto;
+    border-radius: 22px;
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .purchase-product-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .purchase-product-header h3 {
+    margin: 6px 0;
+    color: #f8fafc;
+    font-size: 26px;
+  }
+
+  .purchase-product-header p {
+    margin: 0;
+    color: #93c5fd;
+  }
+
+  .modal-close-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: #020617;
+    color: #f8fafc;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .purchase-search-box {
+    margin: 16px 20px;
+    position: relative;
+  }
+
+  .purchase-search-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #38bdf8;
+  }
+
+  .purchase-search-box input {
+    width: 100%;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 14px;
+    padding: 14px 14px 14px 42px;
+    outline: none;
+    font-weight: 800;
+  }
+
+  .purchase-product-body {
+    overflow: auto;
+    padding: 0 20px 20px;
+  }
+
+  .product-category-group {
+    margin-bottom: 18px;
+  }
+
+  .category-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 2px;
+    color: #e0f2fe;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .category-title span {
+    font-weight: 950;
+  }
+
+  .category-title small {
+    color: #38bdf8;
+    font-weight: 900;
+  }
+
+  .product-option-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .product-option {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 16px;
+    padding: 14px;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    gap: 12px;
+    transition: 0.18s ease;
+  }
+
+  .product-option:hover {
+    border-color: rgba(56, 189, 248, 0.65);
+    transform: translateY(-1px);
+  }
+
+  .product-option-main strong {
+    display: block;
+    color: #7dd3fc;
+    font-size: 15px;
+  }
+
+  .product-option-main span {
+    display: block;
+    color: #f8fafc;
+    margin-top: 4px;
+    font-weight: 850;
+  }
+
+  .product-option-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .product-option-meta span {
+    border-radius: 999px;
+    padding: 6px 8px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #cbd5e1;
+    font-size: 11px;
+  }
+
+  .product-option-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .product-option-footer small {
+    color: #94a3b8;
+  }
+
+  .stock-pill {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .stock-pill.success {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+  }
+
+  .stock-pill.danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+  }
+
+  .purchase-toast {
+    display: none;
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 10000;
+    min-width: 280px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .purchase-toast.show {
+    display: grid;
+    gap: 4px;
+  }
+
+  .purchase-toast strong {
+    color: #7dd3fc;
+  }
+
+  .purchase-toast span {
+    color: #cbd5e1;
+  }
+
+  @media (max-width: 1100px) {
+    .supplier-payment-grid,
+    .supplier-payment-layout {
+      grid-template-columns: 1fr;
+    }
+    .summary-card,
+    .content-grid {
+      grid-template-columns: 1fr;
+      display: grid;
+    }
+
+    .kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .items-table,
+    .receipts-table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .product-option-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+    .supplier-payment-panel {
+    display: grid;
+    gap: 16px;
+  }
+
+  .supplier-payment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .supplier-payment-card {
+    padding: 15px;
+    border-radius: 15px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .supplier-payment-card span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 7px;
+    font-weight: 900;
+  }
+
+  .supplier-payment-card strong {
+    color: #f8fafc;
+    font-size: 22px;
+  }
+
+  .supplier-payment-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
+    gap: 16px;
+  }
+
+  .supplier-payment-form {
+    display: grid;
+    gap: 13px;
+  }
+
+  .supplier-payment-form label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .supplier-payment-form input,
+  .supplier-payment-form select,
+  .supplier-payment-form textarea {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: #020617;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    outline: none;
+  }
+
+  .supplier-payment-form textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+
+  .supplier-payment-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .supplier-payment-table th {
+    text-align: left;
+    padding: 12px;
+    color: #38bdf8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .supplier-payment-table td {
+    padding: 13px 12px;
+    color: #e5e7eb;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    vertical-align: middle;
+  }
+
+  .payment-status-pending {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .payment-status-approved {
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+  }
+
+  .payment-status-rejected {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+  }
+
+  .payment-status-cancelled {
+    background: rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+  }
+
+  .payment-actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="purchase-detail-page">
+
+  {# ========================================================= #}
+  {# RESUMEN DE LA ORDEN                                       #}
+  {# ========================================================= #}
+
+  <div class="summary-card">
+    <div>
+      <span class="eyebrow">Orden de compra</span>
+
+      <h2>{{ purchase_order.folio }}</h2>
+
+      <p>
+        {{ purchase_order.supplier.name }}
+        ·
+        {{ purchase_order.warehouse.name }}
+      </p>
+
+      <div class="status-row">
+        <span class="status-pill status-{{ purchase_order.status }}">
+          {{ purchase_order.get_status_display }}
+        </span>
+
+        {% if can_view_supplier_payments %}
+          <span class="status-pill">
+            Pago: {{ purchase_order.get_payment_status_display }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="summary-actions">
+
+      {# ===================================================== #}
+      {# ENVIAR ORDEN                                          #}
+      {# Backend protegido por purchases.approve + APPROVE     #}
+      {# ===================================================== #}
+
+      {% if purchase_order.status == "draft" %}
+        <form
+          method="post"
+          action="{% url 'purchases:enviar_orden_compra' purchase_order.id %}"
+          class="inline-form"
+          onsubmit="return confirm('¿Enviar esta orden al proveedor?');"
+        >
+          {% csrf_token %}
+
+          <button
+            type="submit"
+            class="primary-btn"
+          >
+            <i class="bi bi-send"></i>
+            Enviar al proveedor
+          </button>
+        </form>
+      {% endif %}
+
+      {# ===================================================== #}
+      {# CREAR RECEPCIÓN                                       #}
+      {# Backend protegido por receiving.execute               #}
+      {# ===================================================== #}
+
+      {% if purchase_order.can_receive %}
+        <form
+          method="post"
+          action="{% url 'purchases:crear_recepcion' purchase_order.id %}"
+          class="inline-form"
+        >
+          {% csrf_token %}
+
+          <button
+            type="submit"
+            class="success-btn"
+          >
+            <i class="bi bi-box-arrow-in-down"></i>
+            Crear recepción
+          </button>
+        </form>
+      {% endif %}
+
+      {# ===================================================== #}
+      {# CANCELAR ORDEN                                        #}
+      {# Backend protegido por purchases.cancel + APPROVE      #}
+      {# ===================================================== #}
+
+      {% if purchase_order.can_cancel %}
+        <form
+          method="post"
+          action="{% url 'purchases:cancelar_orden_compra' purchase_order.id %}"
+          class="inline-form"
+          onsubmit="return confirm('¿Cancelar esta orden de compra?');"
+        >
+          {% csrf_token %}
+
+          <input
+            type="hidden"
+            name="reason"
+            value="Cancelada desde pantalla de compras."
+          />
+
+          <button
+            type="submit"
+            class="danger-btn"
+          >
+            Cancelar
+          </button>
+        </form>
+      {% endif %}
+
+      <a
+        href="{% url 'purchases:lista_compras' %}"
+        class="ghost-btn"
+      >
+        Volver
+      </a>
+    </div>
+  </div>
+
+
+  {# ========================================================= #}
+  {# KPIs                                                      #}
+  {# ========================================================= #}
+
+  <div class="kpi-grid">
+
+    {% if can_view_purchase_costs %}
+
+      <div class="kpi-card">
+        <span>Total</span>
+
+        <strong>
+          ${{ purchase_order.total|floatformat:2 }}
+        </strong>
+      </div>
+
+      <div class="kpi-card">
+        <span>Subtotal</span>
+
+        <strong>
+          ${{ purchase_order.subtotal|floatformat:2 }}
+        </strong>
+      </div>
+
+    {% else %}
+
+      <div class="kpi-card">
+        <span>Información financiera</span>
+
+        <strong>
+          Restringida
+        </strong>
+      </div>
+
+    {% endif %}
+
+    <div class="kpi-card">
+      <span>Comprado</span>
+
+      <strong>
+        {{ purchase_order.ordered_quantity_total }}
+      </strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Recibido</span>
+
+      <strong>
+        {{ purchase_order.received_quantity_total }}
+      </strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Pendiente</span>
+
+      <strong>
+        {{ purchase_order.pending_quantity_total }}
+      </strong>
+    </div>
+
+  </div>
+
+
+  {# ========================================================= #}
+  {# MENSAJES DE ESTADO                                        #}
+  {# ========================================================= #}
+
+  {% if purchase_order.status == "received" %}
+
+    <div class="alert-box success">
+      Esta orden ya fue recibida completamente.
+      El stock ya entró al inventario.
+    </div>
+
+  {% elif purchase_order.status == "cancelled" %}
+
+    <div class="alert-box warning">
+      Esta orden fue cancelada y ya no puede recibir mercancía.
+    </div>
+
+  {% elif purchase_order.status == "draft" %}
+
+    <div class="alert-box">
+      Agrega productos y después envía la orden al proveedor
+      para poder recibir mercancía.
+    </div>
+
+  {% endif %}
+
+
+  {# ========================================================= #}
+  {# PRODUCTOS + FORMULARIO AGREGAR PRODUCTO                   #}
+  {# ========================================================= #}
+
+  <div class="content-grid">
+
+    {# ======================================================= #}
+    {# PRODUCTOS DE LA ORDEN                                   #}
+    {# ======================================================= #}
+
+    <div class="panel">
+      <h3>Productos de la orden</h3>
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Cantidad</th>
+            <th>Recibido</th>
+            <th>Pendiente</th>
+
+            {% if can_view_purchase_costs %}
+              <th>Costo</th>
+              <th>Total</th>
+            {% endif %}
+
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for item in purchase_order.items.all %}
+            <tr>
+
+              <td>
+                <strong>
+                  {{ item.variant.sku }}
+                </strong>
+
+                <small>
+                  {{ item.variant.product.name }}
+                </small>
+              </td>
+
+              <td>
+                {{ item.quantity_ordered }}
+              </td>
+
+              <td>
+                {{ item.quantity_received }}
+              </td>
+
+              <td>
+                {{ item.pending_quantity }}
+              </td>
+
+              {# ============================================= #}
+              {# COSTOS                                       #}
+              {# ============================================= #}
+
+              {% if can_view_purchase_costs %}
+
+                <td>
+                  ${{ item.unit_cost|floatformat:2 }}
+                </td>
+
+                <td>
+                  ${{ item.line_total|floatformat:2 }}
+                </td>
+
+              {% endif %}
+
+              {# ============================================= #}
+              {# ACCIONES                                     #}
+              {# ============================================= #}
+
+              <td>
+
+                {% if purchase_order.can_edit and can_edit_purchase_costs %}
+
+                  <details>
+                    <summary class="small-btn">
+                      Editar
+                    </summary>
+
+                    <form
+                      method="post"
+                      action="{% url 'purchases:actualizar_producto_orden' purchase_order.id item.id %}"
+                      style="
+                        display:grid;
+                        gap:8px;
+                        margin-top:10px;
+                        min-width:240px;
+                      "
+                    >
+                      {% csrf_token %}
+
+                      <label
+                        style="
+                          display:grid;
+                          gap:6px;
+                          color:#cbd5e1;
+                          font-size:12px;
+                          font-weight:900;
+                        "
+                      >
+                        Cantidad
+
+                        <input
+                          type="number"
+                          name="quantity_ordered"
+                          min="1"
+                          value="{{ item.quantity_ordered }}"
+                          required
+                          style="
+                            background:#020617;
+                            color:#f8fafc;
+                            border:1px solid rgba(148,163,184,.25);
+                            border-radius:10px;
+                            padding:10px;
+                          "
+                        />
+                      </label>
+
+                      <label
+                        style="
+                          display:grid;
+                          gap:6px;
+                          color:#cbd5e1;
+                          font-size:12px;
+                          font-weight:900;
+                        "
+                      >
+                        Costo unitario
+
+                        <input
+                          type="number"
+                          name="unit_cost"
+                          min="0"
+                          step="0.01"
+                          value="{{ item.unit_cost }}"
+                          required
+                          style="
+                            background:#020617;
+                            color:#f8fafc;
+                            border:1px solid rgba(148,163,184,.25);
+                            border-radius:10px;
+                            padding:10px;
+                          "
+                        />
+                      </label>
+
+                      <label
+                        style="
+                          display:grid;
+                          gap:6px;
+                          color:#cbd5e1;
+                          font-size:12px;
+                          font-weight:900;
+                        "
+                      >
+                        Notas
+
+                        <textarea
+                          name="notes"
+                          placeholder="Notas"
+                          style="
+                            background:#020617;
+                            color:#f8fafc;
+                            border:1px solid rgba(148,163,184,.25);
+                            border-radius:10px;
+                            padding:10px;
+                            min-height:60px;
+                          "
+                        >{{ item.notes }}</textarea>
+                      </label>
+
+                      <button
+                        type="submit"
+                        class="primary-btn"
+                      >
+                        Guardar
+                      </button>
+                    </form>
+                  </details>
+
+
+                  <form
+                    method="post"
+                    action="{% url 'purchases:eliminar_producto_orden' purchase_order.id item.id %}"
+                    style="margin-top:8px;"
+                    onsubmit="return confirm('¿Eliminar este producto de la orden?');"
+                  >
+                    {% csrf_token %}
+
+                    <button
+                      type="submit"
+                      class="danger-btn"
+                    >
+                      Eliminar
+                    </button>
+                  </form>
+
+                {% elif purchase_order.can_edit %}
+
+                  <span class="status-pill">
+                    Costos restringidos
+                  </span>
+
+                {% else %}
+
+                  <span class="status-pill">
+                    Bloqueado
+                  </span>
+
+                {% endif %}
+
+              </td>
+            </tr>
+
+          {% empty %}
+
+            <tr>
+              <td
+                colspan="{% if can_view_purchase_costs %}7{% else %}5{% endif %}"
+              >
+                <div class="empty-state">
+                  Esta orden todavía no tiene productos.
+                </div>
+              </td>
+            </tr>
+
+          {% endfor %}
+
+        </tbody>
+      </table>
+    </div>
+
+
+    {# ======================================================= #}
+    {# AGREGAR PRODUCTO                                        #}
+    {# ======================================================= #}
+
+    <div class="panel form-panel">
+      <h3>Agregar producto</h3>
+
+      {% if purchase_order.can_edit and can_edit_purchase_costs %}
+
+        <form
+          method="post"
+          action="{% url 'purchases:agregar_producto_orden' purchase_order.id %}"
+          id="purchaseAddProductForm"
+        >
+          {% csrf_token %}
+
+          <label>
+            Variante / SKU
+
+            <input
+              type="hidden"
+              name="variant"
+              id="purchaseSelectedVariantInput"
+              required
+            />
+
+            <button
+              type="button"
+              class="product-picker-btn"
+              onclick="openPurchaseProductModal()"
+            >
+              <span id="purchaseSelectedVariantText">
+                Seleccionar producto
+              </span>
+
+              <small id="purchaseSelectedVariantHelp">
+                Buscar por SKU, nombre, categoría,
+                talla, color o corte
+              </small>
+            </button>
+          </label>
+
+          <label>
+            Cantidad comprada
+
+            <input
+              type="number"
+              name="quantity_ordered"
+              id="purchaseQuantityInput"
+              min="1"
+              value="1"
+              required
+              oninput="calculatePurchaseSubtotal()"
+            />
+          </label>
+
+          <label>
+            Costo unitario
+
+            <input
+              type="number"
+              name="unit_cost"
+              id="purchaseUnitCostInput"
+              min="0"
+              step="0.01"
+              value="0.00"
+              required
+              oninput="calculatePurchaseSubtotal()"
+            />
+          </label>
+
+          <div class="live-subtotal-card">
+            <span>
+              Subtotal estimado
+            </span>
+
+            <strong id="purchaseLiveSubtotal">
+              $0.00
+            </strong>
+
+            <small id="purchaseLiveSubtotalHelp">
+              Selecciona producto, cantidad y costo
+              para calcular.
+            </small>
+          </div>
+
+          <label>
+            Notas
+
+            <textarea
+              name="notes"
+            ></textarea>
+          </label>
+
+          <button
+            type="submit"
+            class="primary-btn"
+          >
+            Agregar producto
+          </button>
+        </form>
+
+      {% elif not purchase_order.can_edit %}
+
+        <div class="alert-box warning">
+          Esta orden ya no permite agregar productos.
+        </div>
+
+      {% else %}
+
+        <div class="alert-box warning">
+          No tienes autorización para capturar
+          o modificar costos de compra.
+        </div>
+
+      {% endif %}
+    </div>
+
+  </div>
+
+
+  {# ========================================================= #}
+  {# PAGOS A PROVEEDOR                                         #}
+  {# ========================================================= #}
+
+  {% if can_view_supplier_payments %}
+
+    <div class="panel supplier-payment-panel">
+
+      <div>
+        <h3>Pagos a proveedor</h3>
+
+        <div class="alert-box">
+          Registra pagos hechos al proveedor.
+          Solo los pagos aprobados actualizan el estado
+          financiero de la orden.
+        </div>
+      </div>
+
+
+      {# ===================================================== #}
+      {# KPIs DE PAGOS                                         #}
+      {# ===================================================== #}
+
+      <div class="supplier-payment-grid">
+
+        <div class="supplier-payment-card">
+          <span>Total OC</span>
+
+          <strong>
+            ${{ purchase_order.total|floatformat:2 }}
+          </strong>
+        </div>
+
+        <div class="supplier-payment-card">
+          <span>Pagado aprobado</span>
+
+          <strong>
+            ${{ payment_totals.approved_total|floatformat:2 }}
+          </strong>
+        </div>
+
+        <div class="supplier-payment-card">
+          <span>Pendiente aprobación</span>
+
+          <strong>
+            ${{ payment_totals.pending_total|floatformat:2 }}
+          </strong>
+        </div>
+
+        <div class="supplier-payment-card">
+          <span>Saldo proveedor</span>
+
+          <strong>
+            ${{ payment_totals.balance_due|floatformat:2 }}
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div class="supplier-payment-layout">
+
+        {# =================================================== #}
+        {# REGISTRAR PAGO                                      #}
+        {# =================================================== #}
+
+        <div class="panel form-panel">
+          <h3>Registrar pago</h3>
+
+          {% if can_create_supplier_payments %}
+
+            {% if purchase_order.total > 0 and payment_totals.available_to_register > 0 and purchase_order.status != "cancelled" %}
+
+              <form
+                method="post"
+                enctype="multipart/form-data"
+                action="{% url 'purchases:registrar_pago_proveedor' purchase_order.id %}"
+                class="supplier-payment-form"
+              >
+                {% csrf_token %}
+
+                <label>
+                  Monto
+
+                  <input
+                    type="number"
+                    name="amount"
+                    min="0.01"
+                    step="0.01"
+                    max="{{ payment_totals.available_to_register }}"
+                    value="{{ payment_totals.available_to_register|floatformat:2 }}"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Método
+
+                  <select
+                    name="method"
+                    required
+                  >
+                    {% for value, label in supplier_payment_methods %}
+                      <option value="{{ value }}">
+                        {{ label }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </label>
+
+                <label>
+                  Referencia
+
+                  <input
+                    type="text"
+                    name="reference"
+                    placeholder="Folio transferencia, cheque, comprobante..."
+                  />
+                </label>
+
+                <label>
+                  Comprobante
+
+                  <input
+                    type="file"
+                    name="receipt_file"
+                  />
+                </label>
+
+                <label>
+                  Notas
+
+                  <textarea
+                    name="notes"
+                    placeholder="Observaciones del pago..."
+                  ></textarea>
+                </label>
+
+                <button
+                  type="submit"
+                  class="primary-btn"
+                >
+                  Registrar pago a proveedor
+                </button>
+              </form>
+
+            {% elif purchase_order.total <= 0 %}
+
+              <div class="alert-box warning">
+                Esta orden no tiene total por pagar.
+                Agrega productos con costo unitario.
+              </div>
+
+            {% elif payment_totals.balance_due <= 0 %}
+
+              <div class="alert-box success">
+                Esta orden ya está completamente pagada
+                al proveedor.
+              </div>
+
+            {% else %}
+
+              <div class="alert-box warning">
+                No puedes registrar pagos en una orden cancelada.
+              </div>
+
+            {% endif %}
+
+          {% else %}
+
+            <div class="alert-box warning">
+              No tienes autorización para registrar
+              pagos a proveedores.
+            </div>
+
+          {% endif %}
+
+        </div>
+
+
+        {# =================================================== #}
+        {# HISTORIAL DE PAGOS                                   #}
+        {# =================================================== #}
+
+        <div class="panel">
+          <h3>Historial de pagos</h3>
+
+          <table class="supplier-payment-table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Estado</th>
+                <th>Referencia</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {% for payment in supplier_payments %}
+
+                <tr>
+
+                  <td>
+                    <strong>
+                      {{ payment.folio }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    ${{ payment.amount|floatformat:2 }}
+                  </td>
+
+                  <td>
+                    {{ payment.get_method_display }}
+                  </td>
+
+                  <td>
+                    <span class="status-pill payment-status-{{ payment.status }}">
+                      {{ payment.get_status_display }}
+                    </span>
+                  </td>
+
+                  <td>
+                    {% if payment.reference %}
+                      {{ payment.reference }}
+                    {% else %}
+                      Sin referencia
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if payment.payment_date %}
+
+                      {{ payment.payment_date|date:"d/m/Y H:i" }}
+
+                    {% else %}
+
+                      {{ payment.created_at|date:"d/m/Y H:i" }}
+
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <div class="payment-actions">
+
+                      {# ===================================== #}
+                      {# APROBAR                               #}
+                      {# ===================================== #}
+
+                      {% if payment.status == "pending" and can_approve_supplier_payments %}
+
+                        <form
+                          method="post"
+                          action="{% url 'purchases:aprobar_pago_proveedor' payment.id %}"
+                          onsubmit="return confirm('¿Aprobar este pago a proveedor?');"
+                        >
+                          {% csrf_token %}
+
+                          <button
+                            type="submit"
+                            class="success-btn"
+                          >
+                            Aprobar
+                          </button>
+                        </form>
+
+                      {% endif %}
+
+
+                      {# ===================================== #}
+                      {# RECHAZAR                              #}
+                      {# ===================================== #}
+
+                      {% if payment.status == "pending" and can_reject_supplier_payments %}
+
+                        <form
+                          method="post"
+                          action="{% url 'purchases:rechazar_pago_proveedor' payment.id %}"
+                          onsubmit="return confirm('¿Rechazar este pago?');"
+                        >
+                          {% csrf_token %}
+
+                          <input
+                            type="hidden"
+                            name="reason"
+                            value="Pago rechazado desde orden de compra."
+                          />
+
+                          <button
+                            type="submit"
+                            class="danger-btn"
+                          >
+                            Rechazar
+                          </button>
+                        </form>
+
+                      {% endif %}
+
+
+                      {# ===================================== #}
+                      {# CANCELAR                              #}
+                      {# ===================================== #}
+
+                      {% if can_cancel_supplier_payments %}
+
+                        {% if payment.status == "pending" or payment.status == "approved" %}
+
+                          <form
+                            method="post"
+                            action="{% url 'purchases:cancelar_pago_proveedor' payment.id %}"
+                            onsubmit="return confirm('¿Cancelar este pago?');"
+                          >
+                            {% csrf_token %}
+
+                            <input
+                              type="hidden"
+                              name="reason"
+                              value="Pago cancelado desde orden de compra."
+                            />
+
+                            <button
+                              type="submit"
+                              class="ghost-btn"
+                            >
+                              Cancelar
+                            </button>
+                          </form>
+
+                        {% endif %}
+
+                      {% endif %}
+
+
+                      {# ===================================== #}
+                      {# COMPROBANTE                           #}
+                      {# ===================================== #}
+
+                      {% if can_view_supplier_payment_proof and payment.receipt_file %}
+
+                        <a
+                          href="{% url 'purchases:ver_comprobante_pago_proveedor' payment.id %}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="small-btn"
+                        >
+                          Comprobante
+                        </a>
+
+                      {% endif %}
+
+                    </div>
+                  </td>
+
+                </tr>
+
+              {% empty %}
+
+                <tr>
+                  <td colspan="7">
+                    <div class="empty-state">
+                      No hay pagos registrados para esta orden.
+                    </div>
+                  </td>
+                </tr>
+
+              {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  {% endif %}
+
+
+  {# ========================================================= #}
+  {# RECEPCIONES                                                #}
+  {# ========================================================= #}
+
+  <div class="panel">
+    <h3>Recepciones de mercancía</h3>
+
+    <table class="receipts-table">
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Estado</th>
+          <th>Bodega</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for receipt in receipts %}
+
+          <tr>
+            <td>
+              {{ receipt.folio }}
+            </td>
+
+            <td>
+              <span class="status-pill status-{{ receipt.status }}">
+                {{ receipt.get_status_display }}
+              </span>
+            </td>
+
+            <td>
+              {{ receipt.warehouse.name }}
+            </td>
+
+            <td>
+              {{ receipt.created_at|date:"d/m/Y H:i" }}
+            </td>
+
+            <td>
+              <a
+                href="{% url 'purchases:detalle_recepcion' receipt.id %}"
+                class="small-btn"
+              >
+                Ver recepción
+              </a>
+            </td>
+          </tr>
+
+        {% empty %}
+
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                No hay recepciones creadas para esta orden.
+              </div>
+            </td>
+          </tr>
+
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+
+
+  {# ========================================================= #}
+  {# MODAL PRODUCTOS                                           #}
+  {# Solo tiene sentido cuando puede agregar productos         #}
+  {# ========================================================= #}
+
+  {% if purchase_order.can_edit and can_edit_purchase_costs %}
+
+    <div
+      id="purchaseProductModal"
+      class="purchase-product-modal"
+    >
+      <div
+        class="purchase-product-backdrop"
+        onclick="closePurchaseProductModal()"
+      ></div>
+
+      <div class="purchase-product-card">
+
+        <div class="purchase-product-header">
+          <div>
+            <span class="eyebrow">
+              Catálogo de productos
+            </span>
+
+            <h3>
+              Seleccionar producto para compra
+            </h3>
+
+            <p>
+              Busca por SKU, producto, categoría,
+              marca, talla, color o corte.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="modal-close-btn"
+            onclick="closePurchaseProductModal()"
+          >
+            ×
+          </button>
+        </div>
+
+
+        <div class="purchase-search-box">
+          <i class="bi bi-search"></i>
+
+          <input
+            type="text"
+            id="purchaseProductSearchInput"
+            placeholder="Buscar producto, SKU, talla, color..."
+            autocomplete="off"
+            oninput="filterPurchaseProducts()"
+          />
+        </div>
+
+
+        <div class="purchase-product-body">
+
+          {% regroup variants by product.category.name as category_groups %}
+
+          {% for category in category_groups %}
+
+            <section class="product-category-group">
+
+              <div class="category-title">
+                <span>
+                  {{ category.grouper|default:"Sin categoría" }}
+                </span>
+
+                <small>
+                  {{ category.list|length }} SKUs
+                </small>
+              </div>
+
+
+              <div class="product-option-grid">
+
+                {% for variant in category.list %}
+
+                  <button
+                    type="button"
+                    class="product-option"
+                    data-search="{{ variant.sku|default:'' }} {{ variant.product.name|default:'' }} {{ variant.product.category.name|default:'' }} {{ variant.product.brand.name|default:'' }} {{ variant.color|default:'' }} {{ variant.size|default:'' }} {{ variant.presentation|default:'' }} {{ variant.specifications.talla|default:'' }} {{ variant.specifications.color|default:'' }} {{ variant.specifications.corte|default:'' }}"
+                    data-variant-id="{{ variant.id }}"
+                    data-variant-label="{{ variant.sku }} - {{ variant.product.name }}"
+                    data-stock="{{ variant.available_stock_total }}"
+                    onclick="selectPurchaseVariant(this)"
+                  >
+
+                    <div class="product-option-main">
+                      <strong>
+                        {{ variant.sku }}
+                      </strong>
+
+                      <span>
+                        {{ variant.product.name }}
+                      </span>
+                    </div>
+
+
+                    <div class="product-option-meta">
+
+                      <span>
+                        Talla:
+                        <b>
+                          {{ variant.specifications.talla|default:variant.size|default:"-" }}
+                        </b>
+                      </span>
+
+                      <span>
+                        Color:
+                        <b>
+                          {{ variant.specifications.color|default:variant.color|default:"-" }}
+                        </b>
+                      </span>
+
+                      <span>
+                        Corte:
+                        <b>
+                          {{ variant.specifications.corte|default:"-" }}
+                        </b>
+                      </span>
+
+                    </div>
+
+
+                    <div class="product-option-footer">
+
+                      <small>
+                        {{ variant.product.category.name|default:"Sin categoría" }}
+                      </small>
+
+                      {% if variant.available_stock_total > 0 %}
+
+                        <span class="stock-pill success">
+                          Stock actual:
+                          {{ variant.available_stock_total }}
+                        </span>
+
+                      {% else %}
+
+                        <span class="stock-pill danger">
+                          Sin stock actual
+                        </span>
+
+                      {% endif %}
+
+                    </div>
+
+                  </button>
+
+                {% endfor %}
+
+              </div>
+
+            </section>
+
+          {% empty %}
+
+            <div class="empty-state">
+              No hay productos disponibles.
+            </div>
+
+          {% endfor %}
+
+        </div>
+      </div>
+    </div>
+
+  {% endif %}
+
+
+  {# ========================================================= #}
+  {# TOAST                                                     #}
+  {# ========================================================= #}
+
+  <div
+    id="purchaseToast"
+    class="purchase-toast"
+  >
+    <strong id="purchaseToastTitle">
+      Aviso
+    </strong>
+
+    <span id="purchaseToastMessage">
+      Mensaje
+    </span>
+  </div>
+
+</section>
+{% endblock %}
+{% block extra_js %}
+<script>
+  function showPurchaseToast(title, message) {
+    const toast = document.getElementById("purchaseToast");
+    const toastTitle = document.getElementById("purchaseToastTitle");
+    const toastMessage = document.getElementById("purchaseToastMessage");
+
+    if (!toast || !toastTitle || !toastMessage) {
+      return;
+    }
+
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    toast.classList.add("show");
+
+    setTimeout(function () {
+      toast.classList.remove("show");
+    }, 2600);
+  }
+
+  function openPurchaseProductModal() {
+    const modal = document.getElementById("purchaseProductModal");
+    const searchInput = document.getElementById("purchaseProductSearchInput");
+
+    if (!modal) {
+      return;
+    }
+
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+
+    setTimeout(function () {
+      if (searchInput) {
+        searchInput.value = "";
+        filterPurchaseProducts();
+        searchInput.focus();
+      }
+    }, 80);
+  }
+
+  function closePurchaseProductModal() {
+    const modal = document.getElementById("purchaseProductModal");
+
+    if (!modal) {
+      return;
+    }
+
+    modal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function normalizePurchaseText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
+
+  function filterPurchaseProducts() {
+    const input = document.getElementById("purchaseProductSearchInput");
+    const query = normalizePurchaseText(input ? input.value : "");
+    const options = document.querySelectorAll(".product-option");
+    const groups = document.querySelectorAll(".product-category-group");
+
+    options.forEach(function (option) {
+      const searchText = normalizePurchaseText(option.dataset.search || "");
+      const isVisible = !query || searchText.includes(query);
+      option.style.display = isVisible ? "" : "none";
+    });
+
+    groups.forEach(function (group) {
+      const visibleOptions = group.querySelectorAll('.product-option:not([style*="display: none"])');
+      group.style.display = visibleOptions.length ? "" : "none";
+    });
+  }
+
+  function selectPurchaseVariant(button) {
+    const variantId = button.dataset.variantId || "";
+    const label = button.dataset.variantLabel || "Producto seleccionado";
+    const stock = button.dataset.stock || "0";
+
+    const selectedInput = document.getElementById("purchaseSelectedVariantInput");
+    const selectedText = document.getElementById("purchaseSelectedVariantText");
+    const selectedHelp = document.getElementById("purchaseSelectedVariantHelp");
+
+    if (selectedInput) {
+      selectedInput.value = variantId;
+    }
+
+    if (selectedText) {
+      selectedText.textContent = label;
+    }
+
+    if (selectedHelp) {
+      selectedHelp.textContent = "Stock actual disponible: " + stock + ". Ingresa cantidad y costo de compra.";
+    }
+
+    closePurchaseProductModal();
+    calculatePurchaseSubtotal();
+
+    showPurchaseToast("Producto seleccionado", label);
+  }
+
+  function calculatePurchaseSubtotal() {
+    const quantityInput = document.getElementById("purchaseQuantityInput");
+    const unitCostInput = document.getElementById("purchaseUnitCostInput");
+    const subtotalAmount = document.getElementById("purchaseLiveSubtotal");
+    const subtotalHelp = document.getElementById("purchaseLiveSubtotalHelp");
+
+    const quantity = Number(quantityInput ? quantityInput.value : 0);
+    const unitCost = Number(unitCostInput ? unitCostInput.value : 0);
+    const subtotal = quantity * unitCost;
+
+    if (subtotalAmount) {
+      subtotalAmount.textContent = "$" + subtotal.toFixed(2);
+    }
+
+    if (subtotalHelp) {
+      if (quantity > 0 && unitCost >= 0) {
+        subtotalHelp.textContent = quantity + " piezas x $" + unitCost.toFixed(2);
+      } else {
+        subtotalHelp.textContent = "Selecciona producto, cantidad y costo para calcular.";
+      }
+    }
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closePurchaseProductModal();
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("purchaseAddProductForm");
+
+    if (form) {
+      form.addEventListener("submit", function (event) {
+        const selectedInput = document.getElementById("purchaseSelectedVariantInput");
+
+        if (!selectedInput || !selectedInput.value) {
+          event.preventDefault();
+          showPurchaseToast("Selecciona producto", "Primero elige un producto del catálogo.");
+          openPurchaseProductModal();
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    calculatePurchaseSubtotal();
+  });
+</script>
+{% endblock %}

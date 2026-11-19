@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}{% include "warehouse/transfers/_styles.html" %}
+<main class="wt"><section class="wt-head"><h1>Confirmar despacho</h1><div>{{ transfer.folio }}</div></section><section class="wt-card"><p>Se descontará del inventario físico y reservado de <b>{{ transfer.origin_warehouse.name }}</b>.</p>
+<div class="wt-table"><table><thead><tr><th>SKU</th><th>Lote</th><th>Ubicación origen</th><th>Cantidad</th></tr></thead><tbody>
+{% for i in transfer.items.all %}
+  {% if i.variant.inventory_control == "normal" %}
+    <tr><td>{{ i.variant.sku }}</td><td>—</td><td>Flujo NORMAL</td><td>{{ i.reserved_quantity }}</td></tr>
+  {% else %}
+    {% for a in i.lot_allocations.all %}
+      {% if a.status == "reserved" %}
+      <tr><td>{{ i.variant.sku }}</td><td><b>{{ a.lot.lot_number }}</b></td><td>{{ a.source_balance.location.bin_code }}</td><td>{{ a.quantity }}</td></tr>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+</tbody></table></div><form method="post" action="{% url 'warehouse:transfer_dispatch' transfer.pk %}">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><div class="wt-actions"><button class="wt-btn danger">Confirmar salida</button><a class="wt-btn alt" href="{% url 'warehouse:transfer_detail' transfer.pk %}">Volver</a></div></form></section></main>
+{% endblock %}

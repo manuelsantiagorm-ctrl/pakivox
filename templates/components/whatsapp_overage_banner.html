@@ -1,0 +1,95 @@
+{% comment %}
+=============================================================
+LETRERO: MENSAJES DE WHATSAPP DETENIDOS
+
+Se muestra unicamente cuando se cumplen las dos condiciones:
+
+  1. Quien mira puede autorizar (rol owner o admin). Un
+     almacenista no puede hacer nada con este aviso, asi que
+     mostrarselo solo seria ruido.
+  2. Hay mensajes de verdad detenidos en la cola.
+
+El orden importa: al evaluar primero el rol, la consulta de
+conteo solo se ejecuta para duenos y administradores, no en
+cada carga de pagina de cada empleado.
+=============================================================
+{% endcomment %}
+
+{% if request.user.profile.role == "owner" or request.user.profile.role == "admin" %}
+  {% with whatsapp_pending_count=warehouse_company.whatsapp_pending_messages.count %}
+    {% if whatsapp_pending_count %}
+
+      <div
+        role="alert"
+        style="
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 14px;
+          margin: 0 0 18px;
+          padding: 14px 18px;
+          border-radius: 16px;
+          background:
+            linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(250, 204, 21, 0.06)),
+            rgba(2, 6, 23, 0.55);
+          border: 1px solid rgba(251, 191, 36, 0.34);
+        "
+      >
+        <i
+          class="bi bi-exclamation-triangle-fill"
+          style="font-size: 20px; color: #f59e0b;"
+          aria-hidden="true"
+        ></i>
+
+        <div style="flex: 1 1 280px; min-width: 0;">
+          <strong
+            style="
+              display: block;
+              color: #fef3c7;
+              font-size: 14px;
+              font-weight: 800;
+              line-height: 1.3;
+            "
+          >
+            Tienes {{ whatsapp_pending_count }} mensaje{{ whatsapp_pending_count|pluralize:"s" }} de WhatsApp sin enviar
+          </strong>
+
+          <span
+            style="
+              display: block;
+              margin-top: 3px;
+              color: #fde68a;
+              font-size: 13px;
+              line-height: 1.45;
+            "
+          >
+            Se alcanzó el límite de mensajes incluido en tu plan. No se perdió
+            ninguno: están guardados esperando tu autorización para salir.
+          </span>
+        </div>
+
+        <a
+          href="{% url 'subscriptions:authorize_whatsapp_overage' %}"
+          style="
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 0 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f59e0b, #facc15);
+            border: 1px solid rgba(250, 204, 21, 0.35);
+            color: #111827;
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration: none;
+            white-space: nowrap;
+          "
+        >
+          Revisar y autorizar
+        </a>
+      </div>
+
+    {% endif %}
+  {% endwith %}
+{% endif %}

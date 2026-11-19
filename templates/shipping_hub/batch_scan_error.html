@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Lote no disponible | PAKIVOX{% endblock %}{% block content %}
+<main style="max-width:700px;margin:auto;padding:24px">
+<a href="{% url 'shipping_hub:my_pending_batches' %}" style="color:#94a3b8;text-decoration:none;display:inline-block;margin-bottom:14px">← Mis lotes pendientes</a>
+<section style="background:#1e293b;border:1px solid rgba(148,163,184,.25);border-radius:18px;padding:22px;color:#e2e8f0">
+<h1 style="color:#f1f5f9">No se pudo abrir el lote</h1>
+<p style="color:#94a3b8">{{ error }}</p>
+</section>
+</main>{% endblock %}

@@ -1,0 +1,63 @@
+﻿{% extends "base.html" %}
+{% block title %}Tracking {{ shipment.master_tracking_number }} | PAKIVOX{% endblock %}
+{% block page_title %}Timeline logístico{% endblock %}
+{% block page_subtitle %}Seguimiento completo y auditable del envío{% endblock %}
+{% block content %}
+<style>
+.track-page{display:grid;gap:18px}.track-card{background:#0f1a31;border:1px solid #253654;border-radius:18px;padding:22px}.track-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.track-head h1{margin:0;color:#fff}.track-meta{color:#91a8ca;margin-top:7px}.track-number{color:#41d98b;font-size:20px;font-weight:900}.track-actions{display:flex;gap:10px;flex-wrap:wrap}.track-actions a{background:#12304d;color:#78dcff;border:1px solid #315179;padding:11px 14px;border-radius:10px;text-decoration:none;font-weight:800}.progress-track{display:grid;grid-template-columns:repeat(5,1fr);position:relative;margin:18px 0}.progress-track:before{content:"";position:absolute;top:16px;left:9%;right:9%;height:3px;background:#263a5b}.progress-step{position:relative;text-align:center;color:#6f85a8;font-size:12px;z-index:1}.progress-dot{width:33px;height:33px;border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;background:#14213a;border:2px solid #314a70}.progress-step.complete{color:#76e7b0}.progress-step.complete .progress-dot{background:#123d35;border-color:#31d98a}.progress-step.current{color:#75d9ff}.progress-step.current .progress-dot{background:#12334a;border-color:#39bff0;box-shadow:0 0 0 5px rgba(57,191,240,.12)}.timeline{position:relative;display:grid;gap:0;margin-top:12px}.timeline:before{content:"";position:absolute;left:15px;top:15px;bottom:15px;width:2px;background:#2a4167}.timeline-item{position:relative;padding:0 0 24px 48px}.timeline-dot{position:absolute;left:5px;top:4px;width:22px;height:22px;border-radius:50%;background:#153653;border:3px solid #45c9f4}.timeline-item:first-child .timeline-dot{background:#164b3d;border-color:#41d98b}.timeline-title{color:#fff;font-weight:900;font-size:16px}.timeline-time,.timeline-source{color:#7791b8;font-size:12px;margin-top:4px}.timeline-description{color:#b5c6df;margin-top:7px}.timeline-location{color:#6fd6ff;margin-top:5px;font-size:13px}.empty{color:#91a8ca;text-align:center;padding:40px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.summary-item{background:#0a1529;border:1px solid #233654;border-radius:12px;padding:14px}.summary-item small{color:#7892b8}.summary-item strong{display:block;color:#fff;margin-top:6px}@media(max-width:800px){.track-head{display:grid}.summary-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.summary-grid{grid-template-columns:1fr}.progress-step span{display:none}}
+</style>
+
+<div class="track-page">
+  <section class="track-card">
+    <div class="track-head">
+      <div>
+        <h1>Pedido {{ shipment.shipping_order.order.folio }}</h1>
+        <div class="track-meta">{{ shipment.shipping_order.order.customer }} · {{ shipment.carrier_name }} {{ shipment.service_name }}</div>
+      </div>
+      <div>
+        <div class="track-number">{{ shipment.master_tracking_number }}</div>
+        <div class="track-meta">{{ shipment.get_status_display }}</div>
+      </div>
+      <div class="track-actions">
+        <a href="{% url 'shipping_hub_dispatch:dispatch_center' %}?tab=transit">Volver</a>
+        {% if shipment.master_tracking_url %}<a href="{{ shipment.master_tracking_url }}" target="_blank" rel="noopener">Tracking externo</a>{% endif %}
+        {% if shipment.primary_package and shipment.primary_package.label_url %}<a href="{{ shipment.primary_package.label_url }}" target="_blank" rel="noopener">Abrir etiqueta</a>{% endif %}
+      </div>
+    </div>
+
+    <div class="progress-track">
+      {% for step in shipment.dispatch_progress %}
+        <div class="progress-step {{ step.state }}">
+          <div class="progress-dot">{% if step.state == "complete" %}✓{% elif step.state == "current" %}●{% else %}○{% endif %}</div>
+          <span>{{ step.label }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item"><small>Bodega</small><strong>{{ shipment.shipping_order.packing_order.picking_order.warehouse }}</strong></div>
+      <div class="summary-item"><small>Bultos</small><strong>{{ shipment.packages.all|length }}</strong></div>
+      <div class="summary-item"><small>Última ubicación</small><strong>{% if shipment.latest_tracking_event %}{{ shipment.latest_tracking_event.location|default:"No informada" }}{% else %}Sin eventos{% endif %}</strong></div>
+      <div class="summary-item"><small>Tiempo en tránsito</small><strong>{% if shipment.transit_days is not None %}{{ shipment.transit_days }} día(s){% else %}Pendiente{% endif %}</strong></div>
+    </div>
+  </section>
+
+  <section class="track-card">
+    <h2 style="color:#fff;margin-top:0">Historial del envío</h2>
+    <div class="timeline">
+      {% for item in timeline %}
+        <article class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-title">{{ item.title }}</div>
+          <div class="timeline-time">{{ item.occurred_at|date:"d/m/Y H:i:s" }}</div>
+          {% if item.description %}<div class="timeline-description">{{ item.description }}</div>{% endif %}
+          {% if item.location %}<div class="timeline-location">📍 {{ item.location }}</div>{% endif %}
+          <div class="timeline-source">Origen: {{ item.source }}</div>
+        </article>
+      {% empty %}
+        <div class="empty">Aún no existen eventos de seguimiento.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

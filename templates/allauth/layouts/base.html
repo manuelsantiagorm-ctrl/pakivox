@@ -1,0 +1,32 @@
+{% load static i18n %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block head_title %}{% endblock head_title %} | PAKIVOX</title>
+  <link rel="icon" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="{% static 'style/acceso_cuenta.css' %}">
+  {% block extra_head %}{% endblock extra_head %}
+</head>
+<body class="acceso-cuenta">
+  <main class="acceso-cuenta__marco">
+    <div class="acceso-cuenta__tarjeta">
+      <a class="acceso-cuenta__marca" href="{% url 'landing' %}">
+        <img src="{% static 'branding/pakivox_icon.png' %}" alt="" width="36" height="36">
+        <span>PAKIVOX</span>
+      </a>
+      {% block body %}
+        {% if messages %}
+        <ul class="acceso-cuenta__avisos" role="status">
+          {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% block content %}{% endblock content %}
+      {% endblock body %}
+      <p class="acceso-cuenta__volver"><a href="{% url 'accounts:login' %}">← Volver a iniciar sesión</a></p>
+    </div>
+  </main>
+  {% block extra_body %}{% endblock extra_body %}
+</body>
+</html>

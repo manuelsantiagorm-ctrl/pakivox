@@ -1,0 +1,404 @@
+{% load static %}<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAKIVOX | Sistema para mayoristas: ventas, bodega y envíos</title>
+  <meta name="description" content="Sistema para mayoristas de ropa y de cualquier producto: pedidos, inventario por bodega, picking, packing, guías de paquetería con rastreo, avisos a tus clientes sin costo y finanzas en un solo lugar.">
+  <meta name="theme-color" content="#052659">
+  <meta property="og:title" content="PAKIVOX | Vende, surte y envía desde un solo sistema">
+  <meta property="og:description" content="Pedidos, inventario, picking, packing, guías de rastreo y finanzas para mayoristas. Sin costo por mensaje.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{% static 'branding/pakivox_logo_full.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'branding/pakivox_icon.png' %}">
+  <link rel="stylesheet" href="{% static 'legal/legal.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'style/inicio.css' %}">
+</head>
+<body>
+
+<svg class="sprite" width="0" height="0" aria-hidden="true">
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2a9.9 9.9 0 0 0-8.53 14.96L2 22l5.2-1.47A9.9 9.9 0 1 0 12.04 2Zm0 18.06a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.08.87.83-3-.2-.31a8.16 8.16 0 1 1 6.93 3.77Zm4.48-6.11c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.96-.15.17-.29.19-.53.06a6.7 6.7 0 0 1-3.32-2.9c-.25-.43.25-.4.72-1.33.08-.16.04-.3-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47a.9.9 0 0 0-.66.31 2.77 2.77 0 0 0-.86 2.06 4.8 4.8 0 0 0 1 2.55 11 11 0 0 0 4.2 3.7c1.56.68 2.18.73 2.96.62.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.15-1.18-.06-.1-.22-.16-.47-.29Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.2 4.2L19 7"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 5.5h16v10H9l-5 4v-14Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8 9.5h8M8 12.5h5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3 3.5 7.5v9L12 21l8.5-4.5v-9L12 3ZM3.5 7.5 12 12l8.5-4.5M12 12v9"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M7.5 9v6M10.5 9v6M13.5 9v6M16.5 9v6"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M2.5 6h11v10h-11zM13.5 9.5h4l3 3.5V16h-7"/><circle cx="7" cy="18" r="1.7" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="18" r="1.7" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6.5 9a6.5 6.5 0 0 1 13 0M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 11v5.5M12 7.6v.01"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-in">
+      <a class="brand" href="{% url 'landing' %}"><img src="{% static 'branding/pakivox_icon.png' %}" alt="">PAKIVOX</a>
+      <nav class="main-nav" aria-label="Secciones">
+        <a href="#modulos">Módulos</a>
+        <a href="#bodega">Bodega</a>
+        <a href="#envios">Envíos</a>
+        <a href="#precios">Precios</a>
+        <a href="#preguntas">Preguntas</a>
+      </nav>
+      <div class="top-act">
+        <a class="login" href="{% url 'accounts:login' %}">Iniciar sesión</a>
+        <a class="btn btn-primary" href="{% url 'accounts:company_register' %}">Probar gratis</a>
+        <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav" aria-label="Abrir menú">☰</button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobileNav" aria-label="Menú">
+      <a href="#modulos">Módulos</a>
+      <a href="#bodega">Bodega</a>
+      <a href="#envios">Envíos</a>
+      <a href="#precios">Precios</a>
+      <a href="#preguntas">Preguntas</a>
+      <a href="{% url 'accounts:login' %}">Iniciar sesión</a>
+      <a href="{% url 'accounts:company_register' %}">Probar {{ trial_days }} días gratis</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1 id="hero-title">El sistema para mayoristas que venden, surten y envían todos los días.</h1>
+        <p class="sub">Captura en segundos los pedidos que te llegan por WhatsApp, controla tu inventario por bodega, surte y empaca sin errores, genera guías de paquetería con rastreo y mira tus finanzas. Todo en un solo lugar.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="{% url 'accounts:company_register' %}">Probar {{ trial_days }} días gratis</a>
+          {% if sales_whatsapp_url %}
+          <a class="btn btn-outline btn-wa" href="{{ sales_whatsapp_url }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg>Agendar una demostración</a>
+          {% else %}
+          <a class="btn btn-outline" href="#modulos">Ver los módulos</a>
+          {% endif %}
+        </div>
+        <p class="hero-note">Sin tarjeta para la prueba. Funciona en computadora, tableta y celular.</p>
+        <div class="sectors" aria-label="Giros"><b>Para mayoristas de</b><span>Ropa y textiles</span><span>Calzado</span><span>Abarrotes</span><span>Ferretería</span><span>Papelería</span><span>Cosméticos</span><span>y cualquier producto</span></div>
+      </div>
+
+      <div class="app" role="img" aria-label="Ejemplo de la pantalla de pedidos del día en PAKIVOX, con pedidos por surtir, en picking, empacados, con guía y en camino">
+        <div class="app-bar"><span class="dots"><i></i><i></i><i></i></span><span>pakivox.com · Pedidos</span></div>
+        <div class="app-body">
+          <div class="app-side">
+            <span>Inicio</span><span class="on">Pedidos</span><span>WhatsApp</span><span>Inventario</span><span>Picking y packing</span><span>Envíos y guías</span><span>Clientes</span><span>Finanzas</span>
+          </div>
+          <div class="app-main">
+            <div class="app-head"><h2>Pedidos de hoy</h2><small>Datos de ejemplo</small></div>
+            <div class="stats">
+              <div class="stat"><small>Pedidos</small><strong>38</strong></div>
+              <div class="stat"><small>Por surtir</small><strong>9</strong></div>
+              <div class="stat"><small>En camino</small><strong>14</strong></div>
+              <div class="stat"><small>Vendido hoy</small><strong>$86,420</strong></div>
+            </div>
+            <table class="orders">
+              <thead><tr><th>Pedido</th><th>Cliente</th><th class="hide-sm">Productos</th><th>Estado</th><th class="tot hide-sm">Total</th></tr></thead>
+              <tbody>
+                <tr><td class="tnum"><svg class="src" aria-hidden="true"><use href="#i-wa"/></svg>#2081</td><td class="who">Boutique Valeria</td><td class="what hide-sm">6 docenas de playera básica</td><td><span class="pill p-wait">Por surtir</span></td><td class="tot hide-sm">$8,640</td></tr>
+                <tr><td class="tnum"><svg class="src" aria-hidden="true"><use href="#i-wa"/></svg>#2080</td><td class="who">Moda Express Puebla</td><td class="what hide-sm">40 jeans dama, tallas 7 a 13</td><td><span class="pill p-pick">En picking</span></td><td class="tot hide-sm">$11,200</td></tr>
+                <tr><td class="tnum">#2079</td><td class="who">Ferretería El Tornillo</td><td class="what hide-sm">25 cajas de pija 1/2"</td><td><span class="pill p-pack">Empacado</span></td><td class="tot hide-sm">$4,375</td></tr>
+                <tr><td class="tnum"><svg class="src" aria-hidden="true"><use href="#i-wa"/></svg>#2078</td><td class="who">Uniformes del Bajío</td><td class="what hide-sm">120 polos bordadas</td><td><span class="pill p-label">Guía generada</span></td><td class="tot hide-sm">$21,600</td></tr>
+                <tr><td class="tnum">#2077</td><td class="who">Abarrotes La Esperanza</td><td class="what hide-sm">10 cajas de jabón 1 kg</td><td><span class="pill p-go">En camino</span></td><td class="tot hide-sm">$2,480</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="modules" id="modulos" aria-labelledby="mod-title">
+    <div class="wrap">
+      <h2 class="h2" id="mod-title">Todo tu negocio, en seis módulos conectados</h2>
+      <p class="lede">Cada área de tu equipo trabaja en su parte, y todas ven el mismo pedido. Lo que pasa en uno se refleja en los demás.</p>
+      <div class="mod-grid">
+        <a class="mod" href="#whatsapp"><svg aria-hidden="true"><use href="#i-chat"/></svg><h3>Ventas y avisos</h3><p>Captura el pedido, aparta la mercancía y avisa a tu cliente desde tu propio WhatsApp, sin pagar mensajes.</p><span class="go">Ver ventas</span></a>
+        <a class="mod" href="#bodega"><svg aria-hidden="true"><use href="#i-box"/></svg><h3>Inventario y bodegas</h3><p>Existencias por bodega, ubicación, talla o lote. Traspasos entre bodegas.</p><span class="go">Ver inventario</span></a>
+        <a class="mod" href="#bodega"><svg aria-hidden="true"><use href="#i-scan"/></svg><h3>Picking y packing</h3><p>Surtido por ubicación con escáner, revisión y empaque de cada pedido.</p><span class="go">Ver bodega</span></a>
+        <a class="mod" href="#envios"><svg aria-hidden="true"><use href="#i-truck"/></svg><h3>Envíos y guías</h3><p>Cotiza paqueterías, genera la guía, imprime la etiqueta y rastrea el envío.</p><span class="go">Ver envíos</span></a>
+        <a class="mod" href="#finanzas"><svg aria-hidden="true"><use href="#i-users"/></svg><h3>Clientes y cobranza</h3><p>Historial de cada cliente, pagos recibidos y lo que cada quien te debe.</p><span class="go">Ver cobranza</span></a>
+        <a class="mod" href="#finanzas"><svg aria-hidden="true"><use href="#i-chart"/></svg><h3>Finanzas y reportes</h3><p>Ventas por bodega, contabilidad y tableros para tomar decisiones.</p><span class="go">Ver finanzas</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="area" id="whatsapp" aria-labelledby="wa-title">
+    <div class="wrap area-in">
+      <div class="area-copy">
+        <span class="area-tag"><svg aria-hidden="true"><use href="#i-chat"/></svg>Ventas por WhatsApp</span>
+        <h2 class="h2" id="wa-title">Del chat al pedido, sin copiar y pegar</h2>
+        <ul class="checks">
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Arma el pedido en segundos</b> con lo que tu cliente te pidió por WhatsApp, y la mercancía queda apartada al momento.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Correos automáticos</b> a tu cliente cuando registras su pedido, apruebas su pago, sale y se entrega.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Avisa sin pagar mensajes:</b> tu cliente sigue su pedido con un link, recibe correos en cada paso y tu vendedor le manda el mensaje listo desde su propio WhatsApp con un clic.</span></li>
+        </ul>
+      </div>
+      <div class="panel wa-mock" role="img" aria-label="Ejemplo de conversación de WhatsApp convertida en pedido">
+        <div class="wa-chat" aria-hidden="true">
+          <div class="bub in">Buenas tardes, ¿me surte 3 docenas de playera básica negra talla M y 2 de talla G?<time>12:05</time></div>
+          <div class="bub out">Claro, Valeria. Quedan apartadas. Total $7,200. ¿Se la mando por paquetería?<time>12:06</time></div>
+          <div class="bub in">Sí, por favor. Ya le transferí 👍<time>12:08</time></div>
+        </div>
+        <div class="wa-order">
+          <h4>Pedido #2081</h4>
+          <p class="cust">Boutique Valeria · Querétaro</p>
+          <table class="lines">
+            <tr><td>3 doc. playera negra M</td><td>$4,320</td></tr>
+            <tr><td>2 doc. playera negra G</td><td>$2,880</td></tr>
+            <tr class="sum"><td>Total</td><td>$7,200</td></tr>
+          </table>
+          <span class="pill p-wait">Pago en revisión</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="area flip" id="bodega" aria-labelledby="pick-title">
+    <div class="wrap area-in">
+      <div class="area-copy">
+        <span class="area-tag"><svg aria-hidden="true"><use href="#i-scan"/></svg>Inventario, picking y packing</span>
+        <h2 class="h2" id="pick-title">Tu bodega surte rápido y sin equivocarse</h2>
+        <ul class="checks">
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Picking por ubicación:</b> el almacenista ve en el celular qué tomar y de qué pasillo, en orden.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Escaneo con código de barras o QR</b> para confirmar que toma el producto y la talla correctos.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Packing con revisión:</b> se verifica lo surtido antes de cerrar la caja.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Inventario al día</b> en cada bodega, con lotes y caducidades para lo que vence.</span></li>
+        </ul>
+      </div>
+      <div class="pick-wrap">
+        <div class="phone" role="img" aria-label="Ejemplo de pantalla de picking en el celular del almacenista">
+          <div class="phone-in" aria-hidden="true">
+            <div class="ph-top"><b>Picking · Pedido #2080</b><small>Moda Express Puebla · 20 de 40 piezas</small><div class="bar"><i></i></div></div>
+            <ul class="pick">
+              <li class="done"><span class="loc">A-03-1</span><span>Jean dama azul T7</span><span class="qty">8</span></li>
+              <li class="done"><span class="loc">A-03-2</span><span>Jean dama azul T9</span><span class="qty">12</span></li>
+              <li class="now"><span class="loc">A-04-1</span><span>Jean dama azul T11</span><span class="qty">12</span></li>
+              <li><span class="loc">A-04-2</span><span>Jean dama azul T13</span><span class="qty">8</span></li>
+            </ul>
+            <div class="scan">Escanea el código de A-04-1</div>
+          </div>
+        </div>
+        <figure class="photo">
+          <img src="{% static 'branding/inicio-v1/pedidos-1536.webp' %}" srcset="{% static 'branding/inicio-v1/pedidos-768.webp' %} 768w, {% static 'branding/inicio-v1/pedidos-1536.webp' %} 1536w" sizes="(max-width:1080px) 50vw, 30vw" width="1536" height="1024" loading="lazy" decoding="async" alt="Dos personas empacando prendas en una caja dentro de una bodega de ropa.">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="area" id="envios" aria-labelledby="ship-title">
+    <div class="wrap area-in">
+      <div class="area-copy">
+        <span class="area-tag"><svg aria-hidden="true"><use href="#i-truck"/></svg>Envíos y guías de rastreo</span>
+        <h2 class="h2" id="ship-title">Genera la guía desde el pedido y rastrea cada envío</h2>
+        <ul class="checks">
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Cotiza y compra guías</b> con Envia.com y Skydropx sin salir de PAKIVOX.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Imprime la etiqueta</b> y despacha los paquetes escaneándolos.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Rastreo de todos tus envíos</b> en una sola pantalla, con incidencias a la vista.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Reparto propio</b> con foto y firma de quien recibe como evidencia de entrega.</span></li>
+        </ul>
+      </div>
+      <div class="ship-stack">
+        <div class="panel" role="img" aria-label="Ejemplo de cotización de guías para un pedido">
+          <div class="panel-head"><b>Guía para el pedido #2078</b><small>Datos de ejemplo</small></div>
+          <table class="quote" aria-hidden="true">
+            <thead><tr><th>Servicio</th><th>Entrega</th><th>Costo</th></tr></thead>
+            <tbody>
+              <tr><td>Terrestre<span class="via">vía Envia.com</span></td><td>3 a 5 días</td><td><b>$189</b></td></tr>
+              <tr class="pick-row"><td>Día siguiente<span class="via">vía Skydropx</span></td><td>1 día</td><td><b>$264</b></td></tr>
+              <tr><td>Express<span class="via">vía Envia.com</span></td><td>1 a 2 días</td><td><b>$298</b></td></tr>
+            </tbody>
+          </table>
+          <div class="ship-foot"><span>Caja 40 × 30 × 30 cm · 9 kg</span><span class="btn btn-primary" aria-hidden="true">Generar guía</span></div>
+        </div>
+        <div class="panel" role="img" aria-label="Ejemplo de rastreo de un envío">
+          <div class="panel-head"><b>Rastreo · Uniformes del Bajío</b><span class="pill p-go">En camino</span></div>
+          <ol class="track" aria-hidden="true">
+            <li>Guía generada<small>Lunes 10:42</small></li>
+            <li>Recolectado por la paquetería<small>Lunes 16:10</small></li>
+            <li>En tránsito a León, Gto.<small>Martes 07:55</small></li>
+            <li class="next">Entregado</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="area flip" id="finanzas" aria-labelledby="fin-title">
+    <div class="wrap area-in">
+      <div class="area-copy">
+        <span class="area-tag"><svg aria-hidden="true"><use href="#i-chart"/></svg>Finanzas y reportes</span>
+        <h2 class="h2" id="fin-title">Sabe cómo va tu negocio sin preguntarle a nadie</h2>
+        <ul class="checks">
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Ventas del día, la semana y el mes</b>, por bodega.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Cobranza clara:</b> qué está pagado, qué está en revisión y quién te debe.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Contabilidad y tableros de finanzas</b> para decidir qué comprar y dónde crecer.</span></li>
+        </ul>
+      </div>
+      <div class="panel" role="img" aria-label="Ejemplo de tablero de finanzas con ventas, cobranza y ventas por bodega">
+        <div class="panel-head"><b>Resumen de octubre</b><small>Datos de ejemplo</small></div>
+        <div class="kpis">
+          <div class="kpi"><small>Ventas</small><strong>$1,482,350</strong><em>12% más que septiembre</em></div>
+          <div class="kpi"><small>Por cobrar</small><strong>$141,200</strong><em class="warn">23 pedidos</em></div>
+          <div class="kpi"><small>Pedidos entregados</small><strong>1,126</strong><em>98% a tiempo</em></div>
+          <div class="kpi"><small>Ticket promedio</small><strong>$4,180</strong><em>por pedido</em></div>
+        </div>
+        <div class="bars">
+          <h4>Ventas por bodega</h4>
+          <div class="brow"><span>CDMX Centro</span><i class="w100"></i><span>$652,900</span></div>
+          <div class="brow"><span>Puebla</span><i class="w72"></i><span>$470,700</span></div>
+          <div class="brow"><span>Guadalajara</span><i class="w55"></i><span>$358,750</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flow" aria-labelledby="flow-title">
+    <div class="wrap">
+      <h2 class="h2" id="flow-title">Así avanza cada pedido</h2>
+      <p class="lede">Cada paso queda registrado con quién lo hizo y a qué hora.</p>
+      <ol class="steps">
+        <li><h3>Pedido</h3><p>Llega por WhatsApp o lo captura un vendedor.</p></li>
+        <li><h3>Pago</h3><p>Transferencia, efectivo o tarjeta, aprobado por administración.</p></li>
+        <li><h3>Picking</h3><p>La bodega surte por ubicación y escanea cada producto.</p></li>
+        <li><h3>Packing</h3><p>Se revisa lo surtido y se empaca.</p></li>
+        <li><h3>Guía</h3><p>Se genera la guía y se imprime la etiqueta.</p></li>
+        <li><h3>Entrega</h3><p>El rastreo confirma que llegó a tu cliente.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="pricing" id="precios" aria-labelledby="price-title">
+    <div class="wrap">
+      <div class="price-head">
+        <h2 class="h2" id="price-title">Planes mensuales en pesos mexicanos</h2>
+        <p class="lede">Todos los planes incluyen picking, packing, guías de paquetería con rastreo y avisos a tus clientes sin costo por mensaje. Empieza con {{ trial_days }} días gratis.</p>
+      </div>
+      <div class="plans">
+        {% for plan in plans %}
+        <article class="plan{% if plan.recommended %} rec{% endif %}" aria-labelledby="plan-{{ plan.slug }}">
+          {% if plan.recommended %}<span class="badge">Recomendado</span>{% endif %}
+          <h3 id="plan-{{ plan.slug }}">{{ plan.name }}</h3>
+          <p class="for">{{ plan.tagline }}</p>
+          <p class="price"><strong>${{ plan.price_display }}</strong><span>MXN al mes</span></p>
+          <p class="for">o ${{ plan.annual_display }} al año: 2 meses gratis</p>
+          <ul>
+            {% for feature in plan.features %}
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>{{ feature }}</li>
+            {% endfor %}
+          </ul>
+          <a class="btn {% if plan.recommended %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'accounts:company_register' %}">Empezar prueba gratis</a>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="notice">
+        <svg aria-hidden="true"><use href="#i-info"/></svg>
+        <p><b>Sin cobros por mensaje ni por pedido.</b> Tus avisos salen por correo, por el link de seguimiento o desde el WhatsApp de tu equipo. Te ayudamos a cargar tu catálogo y tus clientes desde Excel sin costo. <b>Próximamente:</b> WhatsApp conectado al sistema, como extra opcional.</p>
+      </div>
+      <p class="price-foot">
+        La prueba gratis incluye todos los módulos. Para pagar anual o si necesitas más de {{ largest_plan_warehouses }} bodegas o {{ largest_plan_users }} usuarios, escríbenos a <a href="mailto:{{ sales_email }}">{{ sales_email }}</a> y lo armamos contigo.
+      </p>
+    </div>
+  </section>
+
+  <section class="faq" id="preguntas" aria-labelledby="faq-title">
+    <div class="wrap faq-in">
+      <div>
+        <h2 class="h2" id="faq-title">Preguntas frecuentes</h2>
+        <p class="lede">{% if sales_whatsapp_url %}¿Otra duda? <a href="{{ sales_whatsapp_url }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.{% else %}¿Otra duda? Inicia tu prueba y te ayudamos a configurarlo.{% endif %}</p>
+      </div>
+      <div>
+        <details>
+          <summary>¿Sirve para mi giro?</summary>
+          <p>PAKIVOX está hecho para negocios que venden al mayoreo: ropa y textiles, calzado, abarrotes, ferretería, papelería, cosméticos o cualquier producto que se surta desde una bodega y se envíe a otros negocios.</p>
+        </details>
+        <details>
+          <summary>¿Puedo manejar tallas, colores o lotes?</summary>
+          <p>Sí. Puedes registrar tus productos con sus variantes y llevar el inventario por bodega y por ubicación. Para productos que caducan, también controlas lotes y fechas de caducidad.</p>
+        </details>
+        <details>
+          <summary>¿Con qué paqueterías puedo generar guías?</summary>
+          <p>Desde PAKIVOX cotizas y compras guías con Envia.com y Skydropx, que te dan acceso a varias paqueterías nacionales. Si repartes con tus propias camionetas, también lo controlas desde el sistema, con evidencia de entrega.</p>
+        </details>
+        <details>
+          <summary>¿Me cobran por mensaje o por pedido?</summary>
+          <p>No. Pagas solo tu plan mensual o anual. Los avisos a tus clientes (link de seguimiento, correos y mensajes listos para tu WhatsApp) no tienen costo extra.</p>
+        </details>
+        <details>
+          <summary>¿Hay descuento por pago anual?</summary>
+          <p>Sí. Pagas 10 meses y usas 12: Esencial ${{ plans.0.annual_display }}, Profesional ${{ plans.1.annual_display }} y Máximo ${{ plans.2.annual_display }} al año. Escríbenos a <a href="mailto:{{ sales_email }}">{{ sales_email }}</a> para contratarlo.</p>
+        </details>
+        <details>
+          <summary>¿Puedo avisarle a mis clientes sin pagar mensajes de WhatsApp?</summary>
+          <p>Sí. Cada pedido tiene un link de seguimiento que tu cliente abre desde su celular, sin cuenta ni contraseña. Además recibe un correo cuando registras su pedido, cuando apruebas su pago, cuando sale y cuando se entrega. Y si prefieres WhatsApp, PAKIVOX te arma el mensaje con el número correcto y lo abres en tu propio WhatsApp con un clic: no se cobra por mensaje.</p>
+        </details>
+        <details>
+          <summary>¿Tengo que instalar algo?</summary>
+          <p>No. PAKIVOX funciona en internet: entras desde el navegador de tu computadora, tableta o celular con tu correo y contraseña.</p>
+        </details>
+        <details>
+          <summary>Ya tengo mis productos en Excel. ¿Los capturo uno por uno?</summary>
+          <p>No. Subes tu archivo de Excel o CSV y PAKIVOX te ayuda a acomodar las columnas y a detectar productos repetidos.</p>
+        </details>
+        <details>
+          <summary>¿Otra empresa puede ver mi información?</summary>
+          <p>No. Cada empresa tiene su información separada, y dentro de tu empresa cada empleado ve solo lo que su puesto y su bodega le permiten.</p>
+        </details>
+        <details>
+          <summary>¿Qué pasa cuando terminan los {{ trial_days }} días de prueba?</summary>
+          <p>Eliges el plan que te acomode y sigues trabajando con todo lo que ya capturaste. No necesitas tarjeta para empezar la prueba.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final" aria-labelledby="final-title">
+    <div class="wrap final-in">
+      <div>
+        <h2 id="final-title">Pon orden en tus ventas, tu bodega y tus envíos.</h2>
+        <p>Prueba PAKIVOX {{ trial_days }} días gratis con tus propios productos y tu equipo.</p>
+        <div class="hero-cta">
+          <a class="btn btn-light" href="{% url 'accounts:company_register' %}">Probar {{ trial_days }} días gratis</a>
+          {% if sales_whatsapp_url %}
+          <a class="btn btn-ghost-light" href="{{ sales_whatsapp_url }}" target="_blank" rel="noopener">Agendar una demostración</a>
+          {% else %}
+          <a class="btn btn-ghost-light" href="{% url 'accounts:login' %}">Ya tengo cuenta</a>
+          {% endif %}
+        </div>
+      </div>
+      <img src="{% static 'branding/inicio-cierre-entrega-v2/entrega-1536.webp' %}" srcset="{% static 'branding/inicio-cierre-entrega-v2/entrega-768.webp' %} 768w, {% static 'branding/inicio-cierre-entrega-v2/entrega-1536.webp' %} 1536w" sizes="(max-width:1080px) 100vw, 45vw" width="1536" height="1024" loading="lazy" decoding="async" alt="Una mayorista entrega una caja a un comerciante junto a una camioneta de reparto.">
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="{% url 'landing' %}"><img src="{% static 'branding/pakivox_icon.png' %}" alt="">PAKIVOX</a>
+        <p>Sistema para mayoristas: ventas, inventario, picking, packing, envíos con guía y rastreo, avisos a tus clientes y finanzas en un solo lugar.</p>
+      </div>
+      <div class="foot-links">
+        <a href="#modulos">Módulos</a>
+        <a href="#precios">Precios</a>
+        <a href="#preguntas">Preguntas</a>
+        <a href="{% url 'accounts:login' %}">Iniciar sesión</a>
+        <a href="{% url 'legal:document' 'aviso-privacidad' %}">Privacidad</a>
+        <a href="{% url 'legal:document' 'terminos-condiciones' %}">Términos</a>
+        <a href="{% url 'legal:document' 'politica-cookies' %}">Cookies</a>
+        <button type="button" class="foot-cookie" data-cookie-settings>Configurar cookies</button>
+      </div>
+    </div>
+    <div class="copy">© {% now "Y" %} PAKIVOX. Todos los derechos reservados.</div>
+  </div>
+</footer>
+
+{% if sales_whatsapp_url %}
+<a class="wa-float" href="{{ sales_whatsapp_url }}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp"><svg aria-hidden="true"><use href="#i-wa"/></svg></a>
+{% endif %}
+
+{% include 'legal/_cookie_banner.html' %}
+<script src="{% static 'legal/cookie-consent.js' %}" defer></script>
+<script src="{% static 'js/inicio.js' %}" defer></script>
+</body>
+</html>

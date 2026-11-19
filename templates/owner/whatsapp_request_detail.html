@@ -1,0 +1,393 @@
+﻿{% extends "owner/base_owner.html" %}
+
+{% block title %}{{ channel.channel_name }} | Owner PAKIVOX{% endblock %}
+{% block page_title %}Administrar canal WhatsApp{% endblock %}
+{% block page_subtitle %}Configuración privada, credenciales y estado de activación{% endblock %}
+
+{% block content %}
+
+<style>
+  .wa-detail-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .wa-detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .wa-back,
+  .wa-save {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 18px;
+    border-radius: 13px;
+    font-size: 12px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .wa-back {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+
+  .wa-save {
+    border: 0;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #111827;
+  }
+
+  .wa-channel-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 23px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 23px;
+    background:
+      radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 32%),
+      #0f172a;
+  }
+
+  .wa-channel-head h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 25px;
+    font-weight: 950;
+  }
+
+  .wa-channel-head p {
+    margin: 8px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+
+  .wa-status {
+    height: fit-content;
+    display: inline-flex;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .wa-status.pending_activation {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fbbf24;
+  }
+
+  .wa-status.verifying {
+    background: rgba(59, 130, 246, 0.14);
+    color: #60a5fa;
+  }
+
+  .wa-status.active {
+    background: rgba(34, 197, 94, 0.14);
+    color: #4ade80;
+  }
+
+  .wa-status.suspended {
+    background: rgba(239, 68, 68, 0.14);
+    color: #f87171;
+  }
+
+  .wa-info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .wa-info-card {
+    padding: 17px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 18px;
+    background: #0f172a;
+  }
+
+  .wa-info-card span {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .wa-info-card strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .wa-form-panel {
+    padding: 23px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 23px;
+    background: #0f172a;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  }
+
+  .wa-form-panel h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .wa-form-panel > p {
+    margin: 7px 0 21px;
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .wa-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .wa-form-field {
+    min-width: 0;
+  }
+
+  .wa-form-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .wa-form-field input:not([type="checkbox"]),
+  .wa-form-field select,
+  .wa-form-field textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 13px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 13px;
+    outline: none;
+    background: #020617;
+    color: #e5e7eb;
+  }
+
+  .wa-form-field input:focus,
+  .wa-form-field select:focus,
+  .wa-form-field textarea:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+  }
+
+  .wa-checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 11px 13px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 13px;
+    background: #020617;
+  }
+
+  .wa-checkbox-field input {
+    width: 18px;
+    height: 18px;
+    accent-color: #f59e0b;
+  }
+
+  .wa-checkbox-field label {
+    margin: 0;
+  }
+
+  .wa-help {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .wa-error {
+    margin: 7px 0 0;
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    font-size: 11px;
+  }
+
+  .wa-form-errors {
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 14px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #fca5a5;
+    font-size: 12px;
+  }
+
+  .wa-warning {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 15px;
+    background: rgba(245, 158, 11, 0.07);
+    color: #fde68a;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .wa-submit-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
+  }
+
+  @media (max-width: 1000px) {
+    .wa-info-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .wa-channel-head,
+    .wa-info-grid,
+    .wa-form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .wa-detail-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>
+
+<section class="wa-detail-shell">
+
+  <div class="wa-detail-actions">
+    <a href="{% url 'owner:whatsapp_requests_list' %}" class="wa-back">
+      ← Volver a solicitudes
+    </a>
+  </div>
+
+  <div class="wa-channel-head">
+    <div>
+      <h2>{{ channel.channel_name }}</h2>
+      <p>
+        {{ channel.company.name }} ·
+        {{ channel.display_number|default:"Número pendiente de capturar" }}
+      </p>
+    </div>
+
+    <span class="wa-status {{ channel.activation_status }}">
+      {{ channel.get_activation_status_display }}
+    </span>
+  </div>
+
+  <div class="wa-info-grid">
+    <div class="wa-info-card">
+      <span>Empresa</span>
+      <strong>{{ channel.company.name }}</strong>
+    </div>
+
+    <div class="wa-info-card">
+      <span>Bodega</span>
+      <strong>
+        {% if channel.warehouse %}
+          {{ channel.warehouse.name }}
+        {% else %}
+          Sin bodega
+        {% endif %}
+      </strong>
+    </div>
+
+    <div class="wa-info-card">
+      <span>Solicitud recibida</span>
+      <strong>
+        {% if channel.activation_requested_at %}
+          {{ channel.activation_requested_at|date:"d/m/Y H:i" }}
+        {% else %}
+          Sin fecha
+        {% endif %}
+      </strong>
+    </div>
+
+    <div class="wa-info-card">
+      <span>Estado operativo</span>
+      <strong>
+        {% if channel.is_active %}
+          Canal activo
+        {% else %}
+          Canal inactivo
+        {% endif %}
+      </strong>
+    </div>
+  </div>
+
+  <form method="post" class="wa-form-panel">
+    {% csrf_token %}
+
+    <h3>Configuración privada del canal</h3>
+    <p>
+      Estas credenciales solamente pueden ser administradas desde el panel Owner.
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="wa-form-errors">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="wa-form-grid">
+      {% for field in form %}
+        <div class="wa-form-field">
+
+          {% if field.field.widget.input_type == "checkbox" %}
+            <div class="wa-checkbox-field">
+              {{ field }}
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+          {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+          {% endif %}
+
+          {% if field.help_text %}
+            <span class="wa-help">{{ field.help_text|safe }}</span>
+          {% endif %}
+
+          {% for error in field.errors %}
+            <div class="wa-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="wa-warning">
+      Para activar Meta deben estar completos el Phone Number ID, el Meta Access
+      Token y la opción Meta habilitada. El campo <strong>is_active</strong> se
+      actualizará automáticamente según el estado de activación.
+    </div>
+
+    <div class="wa-submit-row">
+      <button type="submit" class="wa-save">
+        Guardar configuración
+      </button>
+    </div>
+  </form>
+
+</section>
+
+{% endblock %}

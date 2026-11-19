@@ -1,0 +1,28 @@
+{% if wms_nav.show %}
+<nav class="wms-global-nav" aria-label="Navegación contextual" data-navegacion data-contextos="{{ wms_nav.contextos_json }}">
+  <a
+    class="wms-global-nav__back"
+    href="{{ wms_nav.back_url }}"
+    aria-label="{{ wms_nav.back_label }}"
+  >
+    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+    <span>{{ wms_nav.back_label }}</span>
+  </a>
+
+  {% if wms_nav.breadcrumbs %}
+  <ol class="wms-global-nav__crumbs" aria-label="Ruta de navegación">
+    {% for crumb in wms_nav.breadcrumbs %}
+      <li class="wms-global-nav__crumb{% if crumb.current %} is-current{% endif %}">
+        {% if crumb.url and not crumb.current %}
+          <a href="{{ crumb.url }}">{{ crumb.label }}</a>
+        {% else %}
+          <span aria-current="{% if crumb.current %}page{% else %}false{% endif %}">
+            {{ crumb.label }}
+          </span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</nav>
+{% endif %}

@@ -1,0 +1,10 @@
+﻿{% extends "base.html" %}
+{% block title %}Impresión #{{ job.pk }} | PAKIVOX{% endblock %}
+{% block content %}
+<style>
+  .pj-wrap{max-width:1200px;margin:0 auto;padding:22px}.pj-head{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:18px}.pj-actions{display:flex;gap:10px}.pj-btn{border:0;border-radius:10px;padding:11px 16px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}.pj-btn.done{background:#16a34a}.pj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px}.pj-label{background:#fff;border:1px solid #cbd5e1;border-radius:14px;overflow:hidden}.pj-meta{padding:10px 13px;background:#0f172a;color:#fff;display:flex;justify-content:space-between}.pj-frame{width:100%;height:570px;border:0;background:#fff}.pj-zpl{white-space:pre-wrap;padding:16px;min-height:520px;color:#111;background:#fff}
+  @media print{body *{visibility:hidden}.pj-grid,.pj-grid *{visibility:visible}.pj-grid{position:absolute;inset:0;display:block}.pj-label{break-after:page;border:0;border-radius:0}.pj-meta{display:none}.pj-frame{width:100%;height:100vh}}
+</style>
+<div class="pj-wrap"><div class="pj-head"><div><h1>Trabajo de impresión #{{ job.pk }}</h1><p>{{ warehouse.name }} · {{ job.item_count }} etiqueta{{ job.item_count|pluralize }}</p></div><div class="pj-actions"><button class="pj-btn" onclick="window.print()">Imprimir</button><form method="post" action="{% url 'shipping_hub:print_job_complete' job.pk %}">{% csrf_token %}<button class="pj-btn done">Marcar completado</button></form></div></div>
+<div class="pj-grid">{% for item in items %}<article class="pj-label"><div class="pj-meta"><span>{{ item.sequence }} / {{ job.item_count }}</span><span>{% if item.was_reprint %}REIMPRESIÓN{% else %}ORIGINAL{% endif %}</span></div>{% if item.label_format_snapshot == 'zpl' %}<iframe class="pj-frame" src="{% url 'shipping_hub:print_item_asset' job.pk item.pk %}"></iframe>{% else %}<iframe class="pj-frame" src="{% url 'shipping_hub:print_item_asset' job.pk item.pk %}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"></iframe>{% endif %}</article>{% endfor %}</div></div>
+{% endblock %}

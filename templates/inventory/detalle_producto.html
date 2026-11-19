@@ -1,0 +1,1115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} | PAKIVOX{% endblock %}
+
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block page_subtitle %}
+Detalle de producto, variantes, stock, ubicaciones y movimientos
+{% endblock %}
+
+{% block content %}
+<section class="product-detail-page">
+  <div class="product-summary">
+    <div class="product-summary-left">
+      <div class="product-image-box">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+        {% else %}
+          <div class="product-image-empty">
+            <i class="bi bi-image"></i>
+            <span>Sin imagen</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div>
+        <span class="eyebrow">Producto</span>
+        <h2>{{ product.name }}</h2>
+        <p>{{ product.company.name }} · {{ product.base_sku }}</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="{% url 'inventory:editar_producto' product.id %}" class="edit-product-btn">
+        <i class="bi bi-pencil-square"></i>
+        Editar producto
+      </a>
+
+      <a href="{% url 'inventory:lista_stock' %}" class="ghost-btn">
+        Ver stock global
+      </a>
+
+      <a href="{% url 'inventory:movimientos_inventario' %}" class="ghost-btn">
+        Movimientos
+      </a>
+
+      <a href="{% url 'inventory:lista_productos' %}" class="back-btn">
+        Volver
+      </a>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span>Categoría</span>
+      <strong>{{ product.category.name|default:"Sin categoría" }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Marca</span>
+      <strong>{{ product.brand.name|default:"Sin marca" }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Precio venta</span>
+      <strong>${{ product.sale_price|floatformat:2 }}</strong>
+    </div>
+
+    <div class="kpi-card">
+      <span>Precio mayoreo</span>
+      <strong>${{ product.wholesale_price|floatformat:2 }}</strong>
+    </div>
+  </div>
+
+  <div class="stock-kpi-grid">
+    <div class="stock-kpi-card">
+      <span>Stock físico</span>
+      <strong>{{ stock_summary.physical }}</strong>
+      <small>Total físico del producto</small>
+    </div>
+
+    <div class="stock-kpi-card reserved">
+      <span>Reservado</span>
+      <strong>{{ stock_summary.reserved }}</strong>
+      <small>Apartado por picking</small>
+    </div>
+
+    <div class="stock-kpi-card committed">
+      <span>Comprometido</span>
+      <strong>{{ stock_summary.committed }}</strong>
+      <small>Compromiso operativo</small>
+    </div>
+
+    <div class="stock-kpi-card available">
+      <span>Disponible</span>
+      <strong>{{ stock_summary.available }}</strong>
+      <small>Libre para vender</small>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Variantes / SKUs</h3>
+          <p>SKUs activos con atributos dinámicos.</p>
+        </div>
+      </div>
+
+      {% for variant in variants %}
+        <article class="variant-row">
+          <div>
+            <strong>{{ variant.sku }}</strong>
+
+            <small>
+              Color: {{ variant.color|default:"-" }} ·
+              Talla: {{ variant.size|default:"-" }} ·
+              Presentación: {{ variant.presentation|default:"-" }}
+            </small>
+
+            <div class="spec-list">
+              <span class="spec-chip">
+                Control: {{ variant.get_inventory_control_display }}
+              </span>
+              {% if can_manage_inventory and variant.inventory_control == "normal" and not variant.is_bundle %}
+                <a class="mini-link"
+                   href="{% url 'inventory:adoptar_control_lotes' variant.id %}">
+                  Activar lotes
+                </a>
+              {% endif %}
+            </div>
+
+            {% if variant.specifications %}
+              <div class="spec-list">
+                {% for key, value in variant.specifications.items %}
+                  <span class="spec-chip">{{ key }}: {{ value }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="variant-price">
+            <span>${{ variant.sale_price|floatformat:2 }}</span>
+            <small>Disponible: {{ variant.available_stock_total }}</small>
+          </div>
+        </article>
+      {% empty %}
+        <div class="empty-state">
+          <p>Este producto todavía no tiene variantes.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'inventory:agregar_variante' product.id %}" class="panel form-panel">
+      {% csrf_token %}
+
+      <h3>Agregar variante / SKU</h3>
+
+      <label>
+        SKU
+        <input type="text" name="sku" placeholder="{{ product.base_sku }}-M" required />
+      </label>
+
+      <label>
+        Código de barras
+        <input type="text" name="barcode" />
+      </label>
+
+      <div class="form-grid">
+        <label>
+          Color base
+          <input type="text" name="color" placeholder="Azul" />
+        </label>
+
+        <label>
+          Talla / Medida base
+          <input type="text" name="size" placeholder="32" />
+        </label>
+      </div>
+
+      <label>
+        Presentación
+        <input type="text" name="presentation" placeholder="Caja, pieza, paquete" />
+      </label>
+
+      {% if dynamic_attributes %}
+        <div class="dynamic-fields">
+          <div class="dynamic-header">
+            <span>Atributos dinámicos</span>
+            <small>{{ product.category.name }}</small>
+          </div>
+
+          {% for attr in dynamic_attributes %}
+            {% if attr.field_type == "select" %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <select name="spec_{{ attr.key }}" {% if attr.is_required %}required{% endif %}>
+                  <option value="">Selecciona {{ attr.name }}</option>
+
+                  {% for option in attr.options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                  {% endfor %}
+                </select>
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+
+            {% elif attr.field_type == "multiselect" %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <select name="spec_{{ attr.key }}" multiple {% if attr.is_required %}required{% endif %}>
+                  {% for option in attr.options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                  {% endfor %}
+                </select>
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+
+            {% elif attr.field_type == "number" %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <input type="number" name="spec_{{ attr.key }}" {% if attr.is_required %}required{% endif %} />
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+
+            {% elif attr.field_type == "decimal" %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <input type="number" step="0.01" name="spec_{{ attr.key }}" {% if attr.is_required %}required{% endif %} />
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+
+            {% elif attr.field_type == "date" %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <input type="date" name="spec_{{ attr.key }}" {% if attr.is_required %}required{% endif %} />
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+
+            {% elif attr.field_type == "boolean" %}
+              <label class="checkbox-row">
+                <input type="checkbox" name="spec_{{ attr.key }}" />
+                <span>
+                  {{ attr.name }}
+                  {% if attr.is_required %}<b>*</b>{% endif %}
+                </span>
+              </label>
+
+              {% if attr.help_text %}
+                <small class="field-help">{{ attr.help_text }}</small>
+              {% endif %}
+
+            {% else %}
+              <label>
+                {{ attr.name }}
+                {% if attr.is_required %}<b>*</b>{% endif %}
+
+                <input
+                  type="text"
+                  name="spec_{{ attr.key }}"
+                  placeholder="{{ attr.name }}"
+                  {% if attr.is_required %}required{% endif %}
+                />
+
+                {% if attr.help_text %}
+                  <small class="field-help">{{ attr.help_text }}</small>
+                {% endif %}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="dynamic-empty">
+          <strong>Sin atributos dinámicos</strong>
+          <p>Este producto no tiene categoría o la categoría no tiene atributos configurados.</p>
+        </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <label>
+          Costo
+          <input type="number" name="cost_price" step="0.01" placeholder="{{ product.cost_price }}" />
+        </label>
+
+        <label>
+          Venta
+          <input type="number" name="sale_price" step="0.01" placeholder="{{ product.sale_price }}" />
+        </label>
+      </div>
+
+      <label>
+        Mayoreo
+        <input type="number" name="wholesale_price" step="0.01" placeholder="{{ product.wholesale_price }}" />
+      </label>
+
+      <button type="submit">Agregar variante</button>
+    </form>
+  </div>
+
+  <div class="content-grid stock-section">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Stock por bodega</h3>
+          <p>Físico, reservado, comprometido y disponible.</p>
+        </div>
+
+        <a class="mini-link" href="{% url 'inventory:lista_stock' %}">
+          Ver todo
+        </a>
+      </div>
+
+      {% for stock in stocks %}
+        <article class="stock-row enhanced">
+          <div>
+            <strong>{{ stock.variant.sku }}</strong>
+            <small>{{ stock.warehouse.name }}</small>
+          </div>
+
+          <div class="stock-metrics">
+            <span class="metric physical">
+              <b>{{ stock.physical_stock }}</b>
+              Físico
+            </span>
+
+            <span class="metric reserved">
+              <b>{{ stock.reserved_stock }}</b>
+              Reservado
+            </span>
+
+            <span class="metric committed">
+              <b>{{ stock.committed_stock }}</b>
+              Comprometido
+            </span>
+
+            <span class="metric available">
+              <b>{{ stock.available_stock }}</b>
+              Disponible
+            </span>
+          </div>
+
+          <form method="post" action="{% url 'inventory:ajustar_stock' stock.id %}" class="quick-stock-form">
+            {% csrf_token %}
+
+            <input type="number" name="physical_stock" min="0" value="{{ stock.physical_stock }}" title="Stock físico" required />
+            <input type="number" name="reserved_stock" min="0" value="{{ stock.reserved_stock }}" title="Stock reservado" required />
+            <input type="number" name="committed_stock" min="0" value="{{ stock.committed_stock }}" title="Stock comprometido" required />
+
+            <button type="submit" onclick="return confirm('¿Actualizar este stock manualmente?');">
+              Ajustar
+            </button>
+          </form>
+        </article>
+      {% empty %}
+        <div class="empty-state">
+          <p>Este producto todavía no tiene stock registrado.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'inventory:agregar_stock' product.id %}" class="panel form-panel">
+      {% csrf_token %}
+
+      <h3>Registrar / actualizar stock</h3>
+
+      <div class="stock-warning">
+        <strong>Importante</strong>
+        <p>
+          Reserved stock normalmente lo controla Warehouse. Úsalo manualmente solo para correcciones.
+        </p>
+      </div>
+
+      <label>
+        Variante / SKU
+        <select name="variant" required>
+          <option value="">Selecciona un SKU</option>
+
+          {% for variant in variants %}
+            <option value="{{ variant.id }}"
+                    {% if variant.inventory_control != "normal" %}disabled{% endif %}>
+              {{ variant.sku }}
+              {% if variant.inventory_control != "normal" %}
+                · {{ variant.get_inventory_control_display }}
+              {% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Bodega / Warehouse
+        <select name="warehouse" required>
+          <option value="">Selecciona una bodega</option>
+
+          {% for warehouse in warehouses %}
+            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Stock físico
+        <input type="number" name="physical_stock" min="0" value="0" />
+      </label>
+
+      <label>
+        Stock reservado
+        <input type="number" name="reserved_stock" min="0" value="0" />
+      </label>
+
+      <label>
+        Stock comprometido
+        <input type="number" name="committed_stock" min="0" value="0" />
+      </label>
+
+      <button type="submit">Actualizar stock</button>
+    </form>
+  </div>
+
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Ubicaciones del producto</h3>
+          <p>Ubicaciones físicas, virtuales, merma y cuarentena.</p>
+        </div>
+      </div>
+
+      {% for item in variant_locations %}
+        <article class="location-row">
+          <div>
+            <strong>{{ item.variant.sku }}</strong>
+
+            <small>
+              {{ item.location.warehouse.name }} ·
+              {{ item.location.bin_code }} ·
+              Pasillo {{ item.location.aisle }} ·
+              Anaquel {{ item.location.rack }} ·
+              Nivel {{ item.location.level|default:"-" }}
+              {% if item.is_primary %} · Principal{% endif %}
+            </small>
+
+            <div class="location-badges">
+              <span class="location-status status-{{ item.location.status }}">
+                {{ item.location.get_status_display }}
+              </span>
+
+              {% if item.location.is_virtual %}
+                <span class="location-status virtual">Virtual</span>
+              {% endif %}
+
+              {% if item.is_pickable %}
+                <span class="location-status pickable">Pickeable</span>
+              {% else %}
+                <span class="location-status no-pickable">No pickeable</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="location-qty">
+            <span>{{ item.quantity }} pzas.</span>
+          </div>
+        </article>
+      {% empty %}
+        <div class="empty-state">
+          <p>Este producto todavía no tiene ubicación física asignada.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'inventory:asignar_ubicacion_variante' product.id %}" class="panel form-panel">
+      {% csrf_token %}
+
+      <h3>Asignar ubicación</h3>
+
+      <label>
+        Variante / SKU
+        <select name="variant" required>
+          <option value="">Selecciona un SKU</option>
+
+          {% for variant in variants %}
+            <option value="{{ variant.id }}">{{ variant.sku }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Ubicación / Location
+        <select name="location" required>
+          <option value="">Selecciona una ubicación</option>
+
+          {% for location in warehouse_locations %}
+            <option value="{{ location.id }}">
+              {{ location.warehouse.name }} · {{ location.bin_code }} · {{ location.get_status_display }}
+              {% if location.is_virtual %} · Virtual{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Cantidad en ubicación
+        <input type="number" name="quantity" min="0" value="0" required />
+      </label>
+
+      <label class="checkbox-row">
+        <input type="checkbox" name="is_primary" checked />
+        <span>Ubicación principal / Primary location</span>
+      </label>
+
+      <button type="submit">Asignar ubicación</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3>Movimientos recientes</h3>
+        <p>Últimos movimientos de inventario para este producto.</p>
+      </div>
+
+      <a class="mini-link" href="{% url 'inventory:movimientos_inventario' %}?q={{ product.base_sku }}">
+        Ver movimientos
+      </a>
+    </div>
+
+    <div class="movement-list">
+      {% for movement in stock_movements %}
+        <article class="movement-row">
+          <div>
+            <strong>{{ movement.variant.sku }}</strong>
+            <small>
+              {{ movement.get_movement_type_display }} ·
+              {{ movement.warehouse.name }} ·
+              {{ movement.created_at|date:"d/m/Y H:i" }}
+            </small>
+          </div>
+
+          <div>
+            <span>{{ movement.quantity }}</span>
+            <small>{{ movement.reference|default:"Sin referencia" }}</small>
+          </div>
+        </article>
+      {% empty %}
+        <div class="empty-state">
+          <p>Sin movimientos recientes para este producto.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if product.description %}
+    <div class="panel">
+      <h3>Descripción</h3>
+      <p class="description">{{ product.description }}</p>
+    </div>
+  {% endif %}
+</section>
+
+<style>
+  .product-detail-page {
+    display: grid;
+    gap: 24px;
+  }
+
+  .product-summary,
+  .panel,
+  .kpi-card,
+  .stock-kpi-card {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    background:
+      radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 32%),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94));
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  }
+
+  .product-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 24px;
+    border-radius: 26px;
+  }
+
+  .product-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .product-image-box {
+    width: 92px;
+    height: 92px;
+    border-radius: 22px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: #020817;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    flex: 0 0 auto;
+  }
+
+  .product-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .product-image-empty {
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .product-image-empty i {
+    font-size: 26px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    margin-bottom: 6px;
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .product-summary h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 32px;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+  }
+
+  .product-summary p {
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .ghost-btn,
+  .back-btn,
+  .edit-product-btn,
+  .mini-link,
+  .form-panel button,
+  .quick-stock-form button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    border-radius: 13px;
+    font-size: 13px;
+    font-weight: 950;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    cursor: pointer;
+  }
+
+  .ghost-btn,
+  .back-btn,
+  .mini-link {
+    min-height: 42px;
+    padding: 0 14px;
+    color: #e5e7eb;
+    background: #020817;
+  }
+
+  .edit-product-btn {
+    min-height: 42px;
+    padding: 0 15px;
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #facc15);
+    border-color: rgba(250, 204, 21, 0.38);
+    box-shadow: 0 14px 28px rgba(245, 158, 11, 0.22);
+  }
+
+  .kpi-grid,
+  .stock-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .kpi-card,
+  .stock-kpi-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .kpi-card span,
+  .stock-kpi-card span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .kpi-card strong,
+  .stock-kpi-card strong {
+    display: block;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 24px;
+    font-weight: 950;
+  }
+
+  .stock-kpi-card small {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .stock-kpi-card.available strong {
+    color: #86efac;
+  }
+
+  .stock-kpi-card.reserved strong {
+    color: #fbbf24;
+  }
+
+  .stock-kpi-card.committed strong {
+    color: #f87171;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+    gap: 20px;
+  }
+
+  .panel {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .panel h3,
+  .form-panel h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 20px;
+    font-weight: 950;
+    letter-spacing: -0.03em;
+  }
+
+  .panel-header p,
+  .dynamic-empty p,
+  .stock-warning p {
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .variant-row,
+  .stock-row,
+  .location-row,
+  .movement-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 15px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.58);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    margin-top: 10px;
+  }
+
+  .variant-row strong,
+  .stock-row strong,
+  .location-row strong,
+  .movement-row strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .variant-row small,
+  .stock-row small,
+  .location-row small,
+  .movement-row small {
+    display: block;
+    margin-top: 5px;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .variant-price {
+    text-align: right;
+  }
+
+  .variant-price span {
+    display: block;
+    color: #86efac;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .spec-list,
+  .location-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .spec-chip,
+  .location-status {
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    background: rgba(30, 64, 175, 0.18);
+    color: #bfdbfe;
+    border: 1px solid rgba(96, 165, 250, 0.24);
+  }
+
+  .location-status.pickable,
+  .location-status.status_available {
+    background: rgba(22, 101, 52, 0.18);
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, 0.24);
+  }
+
+  .location-status.no-pickable {
+    background: rgba(127, 29, 29, 0.18);
+    color: #fecaca;
+    border-color: rgba(239, 68, 68, 0.24);
+  }
+
+  .location-status.virtual {
+    background: rgba(88, 28, 135, 0.22);
+    color: #e9d5ff;
+    border-color: rgba(168, 85, 247, 0.24);
+  }
+
+  .location-qty span {
+    display: inline-flex;
+    padding: 8px 11px;
+    border-radius: 999px;
+    color: #86efac;
+    background: rgba(22, 101, 52, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.24);
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .form-panel {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  label {
+    display: grid;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 13px;
+    border-radius: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: #020817;
+    color: #f8fafc;
+    outline: none;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  select[multiple] {
+    min-height: 110px;
+    padding: 10px 13px;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: rgba(56, 189, 248, 0.54);
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .checkbox-row input {
+    width: 16px;
+    height: 16px;
+    min-height: auto;
+    accent-color: #38bdf8;
+  }
+
+  .form-panel button {
+    min-height: 48px;
+    padding: 0 16px;
+    color: #111827;
+    background: linear-gradient(135deg, #38bdf8, #22c55e);
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .dynamic-fields {
+    display: grid;
+    gap: 13px;
+    padding: 15px;
+    border-radius: 18px;
+    background: rgba(30, 64, 175, 0.12);
+    border: 1px solid rgba(96, 165, 250, 0.18);
+  }
+
+  .dynamic-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dynamic-header span,
+  .dynamic-empty strong,
+  .stock-warning strong {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .dynamic-header small,
+  .field-help {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .dynamic-empty,
+  .stock-warning,
+  .empty-state {
+    padding: 15px;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.58);
+    border: 1px dashed rgba(148, 163, 184, 0.18);
+  }
+
+  .empty-state p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+
+  .stock-row.enhanced {
+    display: grid;
+    gap: 14px;
+  }
+
+  .stock-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .metric {
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .metric b {
+    display: block;
+    color: #f8fafc;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .quick-stock-form {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .quick-stock-form button {
+    color: #111827;
+    background: linear-gradient(135deg, #f59e0b, #facc15);
+  }
+
+  .movement-row > div:last-child {
+    text-align: right;
+  }
+
+  .movement-row span {
+    color: #f8fafc;
+    font-weight: 950;
+  }
+
+  .description {
+    color: #cbd5e1;
+    line-height: 1.7;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 1100px) {
+    .content-grid,
+    .kpi-grid,
+    .stock-kpi-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .product-summary {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .header-actions {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .content-grid,
+    .kpi-grid,
+    .stock-kpi-grid,
+    .form-grid,
+    .stock-metrics,
+    .quick-stock-form {
+      grid-template-columns: 1fr;
+    }
+
+    .product-summary-left {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .header-actions,
+    .ghost-btn,
+    .back-btn,
+    .edit-product-btn {
+      width: 100%;
+    }
+
+    .variant-row,
+    .location-row,
+    .movement-row {
+      flex-direction: column;
+    }
+
+    .variant-price,
+    .movement-row > div:last-child {
+      text-align: left;
+    }
+  }
+</style>
+{% endblock %} 

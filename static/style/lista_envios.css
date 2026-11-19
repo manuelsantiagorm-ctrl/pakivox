@@ -1,0 +1,293 @@
+/*
+  Almacén · envíos (warehouse/lista_shipping.html)
+  Estilos movidos desde la plantilla.
+*/
+
+    .packing-ready-section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.packing-ready-header h2 {
+  color: #facc15;
+  font-size: 16px;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.packing-ready-header p {
+  color: #94a3b8;
+  margin: 0;
+  font-size: 13px;
+}
+
+.packing-ready-head,
+.packing-ready-row {
+  grid-template-columns: 1fr 1.4fr 1fr .9fr auto !important;
+}
+
+.packing-ready-row {
+  border-color: rgba(250, 204, 21, .28) !important;
+}
+
+  .shipping-list-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .shipping-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 800;
+  }
+
+  .shipping-toolbar h2 {
+    color: #f8fafc;
+    margin: 6px 0 0;
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .filters a {
+    color: #94a3b8;
+    text-decoration: none;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+
+  .filters a.active,
+  .filters a:hover {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .shipping-table {
+    display: grid;
+    gap: 10px;
+  }
+
+  .table-head,
+  .table-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1.4fr .8fr .9fr 1fr .9fr auto;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .table-head {
+    color: #38bdf8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 0 16px;
+  }
+
+  .table-row {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 16px;
+    color: #cbd5e1;
+  }
+
+  .table-row strong {
+    color: #f8fafc;
+    display: block;
+  }
+
+  .table-row small {
+    color: #94a3b8;
+  }
+
+  .status-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  .status-pill.pending {
+    background: #334155;
+    color: #e5e7eb;
+  }
+
+  .status-pill.ready {
+    background: #facc15;
+    color: #422006;
+  }
+
+  .status-pill.shipped {
+    background: #38bdf8;
+    color: #020617;
+  }
+
+  .status-pill.delivered {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .status-pill.cancelled {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .actions a {
+    display: inline-block;
+    text-decoration: none;
+    background: #38bdf8;
+    color: #020617;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-weight: 800;
+  }
+
+  .empty-state {
+    background: #111827;
+    border: 1px dashed rgba(148, 163, 184, .35);
+    border-radius: 10px;
+    padding: 24px;
+    color: #cbd5e1;
+  }
+
+  .empty-state h3 {
+    color: #f8fafc;
+  }
+
+  @media (max-width: 920px) {
+    .shipping-toolbar {
+      display: grid;
+    }
+
+    .table-head {
+      display: none;
+    }
+
+    .table-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+
+  /* =====================================================
+     MULTIBODEGA / SOLO CONSULTA
+  ====================================================== */
+
+  .warehouse-global-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid rgba(250, 204, 21, .35);
+    border-radius: 12px;
+    background: rgba(250, 204, 21, .08);
+    color: #fef3c7;
+  }
+
+  .warehouse-global-warning__icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    flex: 0 0 38px;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(250, 204, 21, .16);
+    color: #facc15;
+    font-size: 18px;
+  }
+
+  .warehouse-global-warning strong {
+    color: #fef9c3;
+  }
+
+  .warehouse-global-warning p {
+    margin: 5px 0 0;
+    color: #d6d3d1;
+    line-height: 1.5;
+  }
+
+  .warehouse-scope-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 9px;
+    padding: 6px 9px;
+    border: 1px solid rgba(56, 189, 248, .3);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, .08);
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .warehouse-scope-badge.global {
+    border-color: rgba(250, 204, 21, .32);
+    background: rgba(250, 204, 21, .08);
+    color: #fde047;
+  }
+
+  .shipping-table .table-head,
+  .shipping-table .table-row {
+    grid-template-columns:
+      minmax(135px, .9fr)
+      minmax(190px, 1.2fr)
+      minmax(145px, 1fr)
+      minmax(100px, .7fr)
+      minmax(105px, .8fr)
+      minmax(120px, .9fr)
+      minmax(125px, .8fr)
+      auto !important;
+  }
+
+  .warehouse-cell strong {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #7dd3fc;
+  }
+
+  .warehouse-cell small {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+/* Celular: cada pedido como tarjeta de una columna (la regla de escritorio usa !important) */
+@media (max-width: 720px) {
+  .shipping-table .table-head { display: none; }
+  .shipping-table .table-row { grid-template-columns: 1fr !important; }
+}
+
+/* Accesos a lotes e incidencias (antes con estilos en línea) */
+.envios-accesos { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 20px; }
+.envios-acceso {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border: 1px solid rgba(125, 160, 202, .3); border-radius: 12px;
+  background: rgba(193, 232, 255, .06); color: #C1E8FF; font-weight: 700; text-decoration: none;
+}
+.envios-acceso:hover { border-color: #C1E8FF; color: #C1E8FF; background: rgba(193, 232, 255, .12); }
+.envios-acceso.is-principal { background: #C1E8FF; border-color: #C1E8FF; color: #021024; }
+
+/* Tablet: dos columnas por envío */
+@media (min-width: 721px) and (max-width: 1180px) {
+  .shipping-table .table-head { display: none; }
+  .shipping-table .table-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}

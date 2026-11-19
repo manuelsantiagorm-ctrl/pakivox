@@ -1,0 +1,324 @@
+﻿{% extends "owner/base_owner.html" %}
+
+{% block title %}
+Editar {{ company.name }} | Owner PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Editar empresa SaaS
+{% endblock %}
+
+{% block page_subtitle %}
+Actualiza la información corporativa de {{ company.name }}
+{% endblock %}
+
+{% block content %}
+<section class="owner-edit-page">
+  <header class="owner-edit-hero">
+    <div>
+      <span>Cliente SaaS #{{ company.id }}</span>
+      <h2>{{ company.name }}</h2>
+      <p>
+        Los cambios afectan únicamente a esta empresa.
+      </p>
+    </div>
+
+    <a
+      href="{% url 'owner:company_profile' company.id %}"
+      class="owner-edit-button secondary"
+    >
+      ← Volver al perfil
+    </a>
+  </header>
+
+  <div class="owner-edit-layout">
+    <form method="post" class="owner-edit-card" novalidate>
+      {% csrf_token %}
+
+      <header>
+        <span>Información corporativa</span>
+        <h3>Datos de la empresa</h3>
+      </header>
+
+      {% if form.non_field_errors %}
+        <div class="owner-edit-alert">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="owner-edit-grid">
+        {% for field in form %}
+          <label class="{% if field.name == 'address' or field.name == 'business_lines' %}full{% endif %}">
+            <span>{{ field.label }}</span>
+
+            {% if field.name == "business_lines" %}
+              <div class="owner-business-checkboxes">
+                {{ field }}
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+
+            {% for error in field.errors %}
+              <small class="field-error">{{ error }}</small>
+            {% endfor %}
+          </label>
+        {% endfor %}
+      </div>
+
+      <footer>
+        <a
+          href="{% url 'owner:company_profile' company.id %}"
+          class="owner-edit-button secondary"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="owner-edit-button primary"
+        >
+          Guardar cambios
+        </button>
+      </footer>
+    </form>
+
+    <aside class="owner-edit-side">
+      <article>
+        <span>Modo Owner</span>
+        <strong>Administración global</strong>
+        <p>
+          Estás modificando la empresa desde el panel propietario de PAKIVOX.
+        </p>
+      </article>
+
+      <article class="secure">
+        <span>Seguridad</span>
+        <p>
+          La empresa se valida por su ID y esta vista exige un superusuario.
+        </p>
+      </article>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .owner-edit-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .owner-edit-hero,
+  .owner-edit-card,
+  .owner-edit-side article {
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 19px;
+    background: #0f172a;
+  }
+
+  .owner-edit-hero {
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .owner-edit-hero span,
+  .owner-edit-card header span,
+  .owner-edit-side article > span,
+  .owner-edit-grid label > span {
+    color: #f59e0b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .owner-edit-hero h2,
+  .owner-edit-card h3 {
+    margin: 6px 0;
+    color: #f8fafc;
+  }
+
+  .owner-edit-hero p,
+  .owner-edit-side p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .owner-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .owner-edit-card {
+    overflow: hidden;
+  }
+
+  .owner-edit-card > header,
+  .owner-edit-card > footer {
+    padding: 20px;
+  }
+
+  .owner-edit-card > header {
+    border-bottom: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .owner-edit-card > footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    border-top: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .owner-edit-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .owner-edit-grid label {
+    display: grid;
+    gap: 7px;
+  }
+
+  .owner-edit-grid label.full {
+    grid-column: 1 / -1;
+  }
+
+  .company-form-control {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, .2);
+    border-radius: 11px;
+    outline: none;
+    color: #f8fafc;
+    background: #020617;
+  }
+
+  .company-form-control:focus {
+    border-color: rgba(245, 158, 11, .7);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, .1);
+  }
+
+  .owner-business-checkboxes ul {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    list-style: none;
+  }
+
+  .owner-business-checkboxes label {
+    padding: 10px;
+    display: flex !important;
+    align-items: center;
+    gap: 8px !important;
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .15);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, .45);
+  }
+
+  .field-error {
+    color: #fca5a5;
+  }
+
+  .owner-edit-alert {
+    margin: 16px 20px 0;
+    padding: 12px;
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-radius: 11px;
+    background: rgba(127, 29, 29, .14);
+  }
+
+  .owner-edit-alert p {
+    margin: 0;
+  }
+
+  .owner-edit-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .owner-edit-button.primary {
+    border: 0;
+    color: #111827;
+    background: #f59e0b;
+  }
+
+  .owner-edit-button.secondary {
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .2);
+    background: transparent;
+  }
+
+  .owner-edit-side {
+    display: grid;
+    gap: 12px;
+  }
+
+  .owner-edit-side article {
+    padding: 17px;
+  }
+
+  .owner-edit-side strong {
+    display: block;
+    margin: 8px 0 5px;
+    color: #f8fafc;
+  }
+
+  .owner-edit-side article.secure {
+    border-color: rgba(245, 158, 11, .22);
+    background: rgba(120, 53, 15, .08);
+  }
+
+  @media (max-width: 900px) {
+    .owner-edit-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .owner-edit-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .owner-edit-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .owner-edit-grid label.full {
+      grid-column: auto;
+    }
+
+    .owner-business-checkboxes ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}

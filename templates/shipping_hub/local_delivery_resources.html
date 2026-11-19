@@ -1,0 +1,15 @@
+﻿{% extends "base.html" %}
+{% block title %}Flotilla propia | PAKIVOX{% endblock %}
+{% block content %}
+<style>
+  .fleet{min-height:100vh;background:#020617;color:#f8fafc;padding:32px 20px}.fleet-wrap{max-width:1100px;margin:auto}.fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:#0f172a;border:1px solid #334155;border-radius:18px;padding:24px}.form-control{width:100%;padding:11px;border:1px solid #334155;border-radius:10px;background:#020617;color:#fff;margin:6px 0 14px}.btn{border:0;border-radius:10px;padding:12px 18px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}.rows{margin-top:16px}.row{padding:12px 0;border-top:1px solid #1e293b;color:#cbd5e1}.muted{color:#94a3b8}.errorlist{color:#fca5a5}@media(max-width:760px){.fleet-grid{grid-template-columns:1fr}}
+</style>
+<main class="fleet"><div class="fleet-wrap">
+    <a href="{% url 'shipping_hub:tracking_center' %}" class="muted">← Volver al centro</a>
+  <h1>Choferes y vehículos</h1><p class="muted">Recursos exclusivos de tu empresa para reparto propio.</p>
+  <div class="fleet-grid">
+    <section class="card"><h2>Nuevo chofer</h2><form method="post">{% csrf_token %}<input type="hidden" name="resource" value="driver">{{ driver_form.as_p }}<button class="btn">Guardar chofer</button></form><div class="rows">{% for item in drivers %}<div class="row"><strong>{{ item.name }}</strong><br><span class="muted">{{ item.phone|default:"Sin teléfono" }} · {% if item.is_active %}Activo{% else %}Inactivo{% endif %}</span></div>{% empty %}<div class="row muted">Sin choferes registrados.</div>{% endfor %}</div></section>
+    <section class="card"><h2>Nuevo vehículo</h2><form method="post">{% csrf_token %}<input type="hidden" name="resource" value="vehicle">{{ vehicle_form.as_p }}<button class="btn">Guardar vehículo</button></form><div class="rows">{% for item in vehicles %}<div class="row"><strong>{{ item.name }}</strong><br><span class="muted">{{ item.plate }} · {{ item.vehicle_type|default:"Sin tipo" }} · {% if item.is_active %}Activo{% else %}Inactivo{% endif %}</span></div>{% empty %}<div class="row muted">Sin vehículos registrados.</div>{% endfor %}</div></section>
+  </div>
+</div></main>
+{% endblock %}

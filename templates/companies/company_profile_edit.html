@@ -1,0 +1,351 @@
+﻿{% extends "base.html" %}
+
+{% block title %}
+Editar empresa | PAKIVOX
+{% endblock %}
+
+{% block page_title %}
+Editar empresa
+{% endblock %}
+
+{% block page_subtitle %}
+Actualiza la identidad corporativa de {{ company.name }}
+{% endblock %}
+
+{% block content %}
+<section class="company-edit-page">
+  <header class="company-edit-hero">
+    <div>
+      <span>Configuración corporativa</span>
+      <h2>{{ company.name }}</h2>
+      <p>
+        Los cambios se aplican únicamente a tu empresa dentro de PAKIVOX.
+      </p>
+    </div>
+
+    <a
+      href="{% url 'companies:profile' %}"
+      class="company-edit-button secondary"
+    >
+      <i class="bi bi-arrow-left"></i>
+      Volver al perfil
+    </a>
+  </header>
+
+  <div class="company-edit-layout">
+    <form method="post" class="company-edit-card" novalidate>
+      {% csrf_token %}
+
+      <header>
+        <span>Información de la empresa</span>
+        <h3>Datos corporativos</h3>
+        <p>
+          Completa los datos que identifican a tu organización.
+        </p>
+      </header>
+
+      {% if form.non_field_errors %}
+        <div class="company-edit-alert">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="company-edit-grid">
+        {% for field in form %}
+          <label class="{% if field.name == 'address' or field.name == 'business_lines' %}full{% endif %}">
+            <span>{{ field.label }}</span>
+
+            {% if field.name == "business_lines" %}
+              <div class="business-checkboxes">
+                {{ field }}
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+
+            {% for error in field.errors %}
+              <small class="field-error">{{ error }}</small>
+            {% endfor %}
+          </label>
+        {% endfor %}
+      </div>
+
+      <footer>
+        <a
+          href="{% url 'companies:profile' %}"
+          class="company-edit-button secondary"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="company-edit-button primary"
+        >
+          <i class="bi bi-check2-circle"></i>
+          Guardar cambios
+        </button>
+      </footer>
+    </form>
+
+    <aside class="company-edit-side">
+      <article>
+        <span>Empresa actual</span>
+        <strong>{{ company.name }}</strong>
+        <p>RFC: {{ company.rfc|default:"Pendiente" }}</p>
+      </article>
+
+      <article class="secure">
+        <span>
+          <i class="bi bi-shield-check"></i>
+          Seguridad multiempresa
+        </span>
+        <p>
+          No se recibe un ID de empresa desde el navegador. La empresa se
+          obtiene directamente del perfil del usuario autenticado.
+        </p>
+      </article>
+
+      <article class="notice">
+        <span>Permisos</span>
+        <p>
+          Solo los roles Dueño y Administrador pueden modificar estos datos.
+        </p>
+      </article>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .company-edit-page {
+    display: grid;
+    gap: 16px;
+  }
+
+  .company-edit-hero,
+  .company-edit-card,
+  .company-edit-side article {
+    border: 1px solid rgba(148, 163, 184, .15);
+    border-radius: 19px;
+    background: #0f172a;
+  }
+
+  .company-edit-hero {
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .company-edit-hero span,
+  .company-edit-card header span,
+  .company-edit-side article > span,
+  .company-edit-grid label > span {
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .company-edit-hero h2,
+  .company-edit-card h3 {
+    margin: 6px 0;
+    color: #f8fafc;
+  }
+
+  .company-edit-hero p,
+  .company-edit-card header p,
+  .company-edit-side p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  .company-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .company-edit-card {
+    overflow: hidden;
+  }
+
+  .company-edit-card > header,
+  .company-edit-card > footer {
+    padding: 20px;
+  }
+
+  .company-edit-card > header {
+    border-bottom: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .company-edit-card > footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    border-top: 1px solid rgba(148, 163, 184, .1);
+  }
+
+  .company-edit-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .company-edit-grid label {
+    display: grid;
+    gap: 7px;
+  }
+
+  .company-edit-grid label.full {
+    grid-column: 1 / -1;
+  }
+
+  .company-form-control {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, .2);
+    border-radius: 11px;
+    outline: none;
+    color: #f8fafc;
+    background: #020617;
+  }
+
+  textarea.company-form-control {
+    resize: vertical;
+  }
+
+  .company-form-control:focus {
+    border-color: rgba(34, 197, 94, .7);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .1);
+  }
+
+  .business-checkboxes ul {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    list-style: none;
+  }
+
+  .business-checkboxes label {
+    padding: 10px;
+    display: flex !important;
+    align-items: center;
+    gap: 8px !important;
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .15);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, .45);
+  }
+
+  .field-error {
+    color: #fca5a5;
+  }
+
+  .company-edit-alert {
+    margin: 16px 20px 0;
+    padding: 12px;
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-radius: 11px;
+    background: rgba(127, 29, 29, .15);
+  }
+
+  .company-edit-alert p {
+    margin: 0;
+  }
+
+  .company-edit-button {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .company-edit-button.primary {
+    border: 0;
+    color: #052e16;
+    background: #22c55e;
+  }
+
+  .company-edit-button.secondary {
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, .2);
+    background: transparent;
+  }
+
+  .company-edit-side {
+    display: grid;
+    gap: 12px;
+  }
+
+  .company-edit-side article {
+    padding: 17px;
+  }
+
+  .company-edit-side strong {
+    display: block;
+    margin: 8px 0 5px;
+    color: #f8fafc;
+  }
+
+  .company-edit-side article.secure {
+    border-color: rgba(56, 189, 248, .24);
+    background: rgba(14, 116, 144, .08);
+  }
+
+  .company-edit-side article.notice {
+    border-color: rgba(245, 158, 11, .2);
+    background: rgba(120, 53, 15, .08);
+  }
+
+  .company-edit-side article.notice > span {
+    color: #fde68a;
+  }
+
+  @media (max-width: 900px) {
+    .company-edit-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .company-edit-hero {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .company-edit-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .company-edit-grid label.full {
+      grid-column: auto;
+    }
+
+    .business-checkboxes ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}

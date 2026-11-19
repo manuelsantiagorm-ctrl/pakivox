@@ -1,0 +1,395 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Registrar guía externa | PAKIVOX{% endblock %}
+
+{% block content %}
+<style>
+  .external-page {
+    min-height: calc(100vh - 80px);
+    padding: 32px 20px;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+  .external-container {
+    width: min(900px, 100%);
+    margin: 0 auto;
+  }
+
+  .external-header {
+    margin-bottom: 24px;
+  }
+
+  .external-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .external-back:hover {
+    color: #ffffff;
+  }
+
+  .external-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #60a5fa;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+
+  .external-header h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 4vw, 2.35rem);
+    font-weight: 900;
+  }
+
+  .external-header p {
+    margin: 9px 0 0;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .external-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .summary-card {
+    padding: 16px;
+    border: 1px solid rgba(71, 85, 105, 0.55);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.82);
+  }
+
+  .summary-card span {
+    display: block;
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .summary-card strong {
+    color: #f8fafc;
+    font-size: 0.94rem;
+    overflow-wrap: anywhere;
+  }
+
+  .external-panel {
+    padding: 26px;
+    border: 1px solid rgba(71, 85, 105, 0.55);
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  }
+
+  .external-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .form-group {
+    min-width: 0;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 850;
+  }
+
+  .form-control,
+  .form-select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 13px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    outline: none;
+    background: #020617;
+    color: #f8fafc;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+  }
+
+  input[type="file"].form-control {
+    padding: 9px;
+  }
+
+  input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: #1e40af;
+    color: #ffffff;
+    font-weight: 750;
+    cursor: pointer;
+  }
+
+  .help-text {
+    display: block;
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 0.72rem;
+  }
+
+  .field-error,
+  .form-errors {
+    margin-top: 7px;
+    color: #fca5a5;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .form-errors {
+    margin-bottom: 18px;
+    padding: 13px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    background: rgba(127, 29, 29, 0.2);
+  }
+
+  .external-warning {
+    margin-top: 20px;
+    padding: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 11px;
+    background: rgba(245, 158, 11, 0.08);
+    color: #fcd34d;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .external-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 11px;
+    margin-top: 24px;
+  }
+
+  .external-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 45px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 850;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .external-button-secondary {
+    border: 1px solid #334155;
+    background: transparent;
+    color: #cbd5e1;
+  }
+
+  .external-button-primary {
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  @media (max-width: 650px) {
+    .external-summary,
+    .external-form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-group.full-width {
+      grid-column: auto;
+    }
+
+    .external-panel {
+      padding: 18px;
+    }
+
+    .external-actions {
+      flex-direction: column-reverse;
+    }
+
+    .external-button {
+      width: 100%;
+    }
+  }
+</style>
+
+<main class="external-page">
+  <div class="external-container">
+
+    <header class="external-header">
+      <a
+        href="{% url 'shipping_hub:shipping_cubication' shipping_order.id %}"
+        class="external-back"
+      >
+        ← Volver a cubicación
+      </a>
+
+      <span class="external-eyebrow">ENVÍO EXTERNO</span>
+
+      <h1>Registrar guía externa</h1>
+
+      <p>
+        Registra una guía adquirida directamente con una paquetería.
+      </p>
+    </header>
+
+    <section class="external-summary">
+      <article class="summary-card">
+        <span>Orden de envío</span>
+        <strong>#{{ shipping_order.id }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Empresa</span>
+        <strong>{{ company.name|default:company }}</strong>
+      </article>
+    </section>
+
+    <form
+      method="post"
+      enctype="multipart/form-data"
+      class="external-panel"
+      novalidate
+    >
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="external-form-grid">
+
+        <div class="form-group">
+          <label for="{{ form.carrier_name.id_for_label }}">
+            {{ form.carrier_name.label }}
+          </label>
+
+          {{ form.carrier_name }}
+
+          {% for error in form.carrier_name.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.tracking_number.id_for_label }}">
+            {{ form.tracking_number.label }}
+          </label>
+
+          {{ form.tracking_number }}
+
+          {% for error in form.tracking_number.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group full-width">
+          <label for="{{ form.tracking_url.id_for_label }}">
+            {{ form.tracking_url.label }}
+          </label>
+
+          {{ form.tracking_url }}
+
+          {% for error in form.tracking_url.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.total_cost.id_for_label }}">
+            {{ form.total_cost.label }}
+          </label>
+
+          {{ form.total_cost }}
+
+          {% for error in form.total_cost.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.currency.id_for_label }}">
+            {{ form.currency.label }}
+          </label>
+
+          {{ form.currency }}
+
+          {% for error in form.currency.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group full-width">
+          <label for="{{ form.label_file.id_for_label }}">
+            {{ form.label_file.label }}
+          </label>
+
+          {{ form.label_file }}
+
+          {% if form.label_file.help_text %}
+            <span class="help-text">
+              {{ form.label_file.help_text }}
+            </span>
+          {% endif %}
+
+          {% for error in form.label_file.errors %}
+            <div class="field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+      </div>
+
+      <div class="external-warning">
+        Registrar la guía no despacha el pedido ni descuenta inventario.
+        El stock se consumirá únicamente cuando se ejecute el despacho.
+      </div>
+
+      <div class="external-actions">
+        <a
+          href="{% url 'shipping_hub:shipping_cubication' shipping_order.id %}"
+          class="external-button external-button-secondary"
+        >
+          Cancelar
+        </a>
+
+        <button
+          type="submit"
+          class="external-button external-button-primary"
+        >
+          Registrar guía
+        </button>
+      </div>
+    </form>
+
+  </div>
+</main>
+{% endblock %}

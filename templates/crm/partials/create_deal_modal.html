@@ -1,0 +1,99 @@
+<div class="modal-card">
+    <div class="modal-header-wms">
+        <div>
+            <h3>Nueva oportunidad</h3>
+            <p>Crea un lead o una venta potencial sin salir del CRM.</p>
+        </div>
+
+        <button class="modal-close" onclick="closeDealModal()">×</button>
+    </div>
+
+    <form
+        hx-post="{% url 'create_deal_modal' %}"
+        hx-target="#deal-modal-content"
+        hx-swap="innerHTML"
+    >
+        {% csrf_token %}
+
+        <div class="modal-body-wms">
+            <div class="deal-modal-hero">
+                <span>Modo rápido</span>
+                <strong>Lead + oportunidad</strong>
+            </div>
+
+            <div class="form-grid-wms">
+                <div class="form-group-wms form-group-full">
+                    <label>Título de oportunidad</label>
+                    {{ form.title }}
+                </div>
+
+                <div class="form-group-wms form-group-full">
+                    <label>Cliente existente</label>
+                    {{ form.customer }}
+                    <small class="form-help-wms">Si no existe, déjalo vacío y crea uno rápido abajo.</small>
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Nuevo cliente</label>
+                    {{ form.new_customer_name }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Teléfono</label>
+                    {{ form.new_customer_phone }}
+                </div>
+
+                <div class="form-group-wms form-group-full">
+                    <label>Correo</label>
+                    {{ form.new_customer_email }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Etapa</label>
+                    {{ form.stage }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Ejecutivo</label>
+                    {{ form.assigned_to }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Monto estimado</label>
+                    {{ form.amount }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Probabilidad %</label>
+                    {{ form.probability }}
+                </div>
+
+                <div class="form-group-wms">
+                    <label>Cierre esperado</label>
+                    {{ form.expected_close_date }}
+                </div>
+
+                <div class="form-group-wms form-group-full">
+                    <label>Notas</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+
+            {% if form.errors %}
+                <div class="form-errors-wms">
+                    Revisa los campos. Debes seleccionar un cliente existente o escribir un nuevo cliente.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="modal-actions-wms">
+            <button type="button" class="btn btn-sm btn-outline-light" onclick="closeDealModal()">
+                Cancelar
+            </button>
+
+            <button type="submit" class="btn btn-sm btn-primary">
+                Crear oportunidad
+            </button>
+        </div>
+    </form>
+</div>

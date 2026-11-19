@@ -1,0 +1,20 @@
+﻿{% extends "base.html" %}
+{% block title %}Etiqueta de reparto | PAKIVOX{% endblock %}
+{% block content %}
+<style>
+  .tools{max-width:720px;margin:24px auto;display:flex;gap:10px}.tools a,.tools button{padding:11px 16px;border-radius:9px;border:0;background:#7c3aed;color:#fff;text-decoration:none;font-weight:800;cursor:pointer}.label{width:100mm;height:150mm;margin:12px auto;background:#fff;color:#020617;padding:7mm;box-sizing:border-box;font-family:Arial,sans-serif;border:1px solid #cbd5e1}.brand{display:flex;justify-content:space-between;border-bottom:3px solid #111827;padding-bottom:4mm}.brand strong{font-size:24px}.route{font-size:12px;text-align:right}.destination{padding:5mm 0;border-bottom:2px solid #111827}.destination h1{font-size:23px;margin:0 0 3mm}.meta{display:grid;grid-template-columns:1fr 1fr;gap:4mm;padding:5mm 0}.meta div{border:1px solid #94a3b8;padding:3mm}.meta span{display:block;font-size:9px;font-weight:bold;color:#475569}.code{display:flex;align-items:center;gap:5mm;border-top:2px solid #111827;padding-top:5mm}.code img{width:32mm;height:32mm}.barcode{flex:1;text-align:center}.barcode svg{width:100%;height:52px}.package{text-align:center;font-size:28px;font-weight:900;margin-top:4mm}@media print{body *{visibility:hidden}.label,.label *{visibility:visible}.label{position:absolute;left:0;top:0;margin:0;border:0}.tools{display:none}@page{size:100mm 150mm;margin:0}}
+</style>
+<div class="tools"><a href="{% url 'shipping_hub:shipping_cubication' shipping_order.id %}">← Volver</a><button onclick="markAndPrint()">Imprimir etiqueta</button></div>
+<article class="label">
+  <header class="brand"><strong>PAKIVOX</strong><div class="route">{{ assignment.route.name }}<br>{{ assignment.route.scheduled_date|date:"d/m/Y" }}</div></header>
+  <section class="destination"><small>ENTREGAR A</small><h1>{{ shipping_order.order.customer }}</h1><div>{{ shipping_order.order.shipping_address|default:"Dirección registrada en el pedido" }}</div></section>
+  <section class="meta"><div><span>CHOFER</span>{{ assignment.route.driver.name }}</div><div><span>VEHÍCULO</span>{{ assignment.route.vehicle }} </div><div><span>PEDIDO / ENVÍO</span>#{{ shipping_order.order_id }} / #{{ shipping_order.id }}</div><div><span>PARADA</span>{{ assignment.stop_order }}</div></section>
+  <section class="code"><img src="data:image/png;base64,{{ qr_data }}" alt="QR interno"><div class="barcode"><svg id="wms-barcode"></svg><small>{{ barcode_value }}</small><div class="package">BULTO {{ package.package_number }} DE {{ package_total }}</div></div></section>
+</article>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+  if(window.JsBarcode){JsBarcode("#wms-barcode", "{{ barcode_value|escapejs }}", {format:"CODE128",displayValue:false,margin:0,height:48});}
+  function markAndPrint(){const u=new URL(window.location.href);if(u.searchParams.get('printed')!=='1'){u.searchParams.set('printed','1');window.location.href=u.toString();return;}window.print();}
+  if(new URL(window.location.href).searchParams.get('printed')==='1'){setTimeout(()=>window.print(),300);}
+</script>
+{% endblock %}

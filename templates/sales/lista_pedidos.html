@@ -1,0 +1,1758 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Pedidos | PAKIVOX{% endblock %}
+{% block page_title %}
+  {{ pipeline_title|default:"Pedidos" }}
+{% endblock %}
+
+{% block page_subtitle %}
+  {{ pipeline_subtitle|default:"Gestión comercial, operativa y rentable de pedidos" }}
+{% endblock %}
+
+{% block content %}
+{% if pipeline == "sin_pagar" %}
+<section class="collections-page">
+  <div class="collections-actions">
+    <div class="collections-note">
+      <span class="live-dot"></span>
+      Cartera actualizada con pedidos sin pago aprobado ni comprobante en revisión
+    </div>
+    <a href="{% url 'sales:crear_pedido' %}" class="new-order-btn">+ Nuevo pedido</a>
+  </div>
+
+  <div class="collection-kpis">
+    <article class="collection-kpi featured">
+      <span>Saldo por recuperar</span>
+      <strong>${{ portfolio_summary.total_balance|floatformat:2 }}</strong>
+      <small>Capital pendiente en {{ portfolio_summary.total_orders }} pedido{{ portfolio_summary.total_orders|pluralize }}</small>
+    </article>
+    <article class="collection-kpi">
+      <span>Pedidos pendientes</span>
+      <strong>{{ portfolio_summary.total_orders }}</strong>
+      <small>Sin pago aprobado</small>
+    </article>
+    <article class="collection-kpi warning">
+      <span>Más de 30 días</span>
+      <strong>{{ portfolio_summary.age_31_plus }}</strong>
+      <small>Atención prioritaria</small>
+    </article>
+    <article class="collection-kpi">
+      <span>Antigüedad promedio</span>
+      <strong>{{ portfolio_summary.average_age_days }} días</strong>
+      <small>Desde la creación del pedido</small>
+    </article>
+  </div>
+
+  <div class="aging-strip" aria-label="Antigüedad de la cartera">
+    <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if status %}status={{ status|urlencode }}&{% endif %}aging=0_7" class="aging-segment green {% if aging == '0_7' %}active{% endif %}">
+      <span>0–7 días</span><strong>{{ portfolio_summary.age_0_7 }}</strong>
+    </a>
+    <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if status %}status={{ status|urlencode }}&{% endif %}aging=8_15" class="aging-segment blue {% if aging == '8_15' %}active{% endif %}">
+      <span>8–15 días</span><strong>{{ portfolio_summary.age_8_15 }}</strong>
+    </a>
+    <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if status %}status={{ status|urlencode }}&{% endif %}aging=16_30" class="aging-segment amber {% if aging == '16_30' %}active{% endif %}">
+      <span>16–30 días</span><strong>{{ portfolio_summary.age_16_30 }}</strong>
+    </a>
+    <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if status %}status={{ status|urlencode }}&{% endif %}aging=31_plus" class="aging-segment red {% if aging == '31_plus' %}active{% endif %}">
+      <span>Más de 30 días</span><strong>{{ portfolio_summary.age_31_plus }}</strong>
+    </a>
+  </div>
+
+  <form method="get" class="collection-filters">
+    <label class="search-field">
+      <span>Buscar</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="Folio, cliente o teléfono">
+    </label>
+    <label>
+      <span>Estado</span>
+      <select name="status">
+        <option value="">Todos</option>
+        <option value="draft" {% if status == "draft" %}selected{% endif %}>Borrador</option>
+        <option value="pending_payment" {% if status == "pending_payment" %}selected{% endif %}>Pendiente de pago</option>
+        <option value="partial_paid" {% if status == "partial_paid" %}selected{% endif %}>Anticipo pagado</option>
+      </select>
+    </label>
+    <label>
+      <span>Antigüedad</span>
+      <select name="aging">
+        <option value="">Todas</option>
+        <option value="0_7" {% if aging == "0_7" %}selected{% endif %}>0–7 días</option>
+        <option value="8_15" {% if aging == "8_15" %}selected{% endif %}>8–15 días</option>
+        <option value="16_30" {% if aging == "16_30" %}selected{% endif %}>16–30 días</option>
+        <option value="31_plus" {% if aging == "31_plus" %}selected{% endif %}>Más de 30 días</option>
+      </select>
+    </label>
+    <button type="submit">Aplicar filtros</button>
+    {% if q or status or aging %}<a href="{% url 'sales:pedidos_sin_pagar' %}" class="clear-filters">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="collection-table-wrap">
+    <table class="collection-table">
+      <thead>
+        <tr>
+          <th>Pedido</th><th>Cliente</th><th>Saldo pendiente</th><th>Antigüedad</th>
+          <th>Última actualización</th><th>Prioridad</th><th class="action-heading">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><a class="folio-link" href="{% url 'sales:detalle_pedido' order.id %}">{{ order.folio }}</a><small>{{ order.get_status_display }}</small></td>
+          <td><strong>{{ order.customer.full_name }}</strong><small>{{ order.customer.business_name|default:order.customer.phone|default:"Sin teléfono" }}</small></td>
+          <td><strong class="money-due">${{ order.balance_due|floatformat:2 }}</strong><small>de ${{ order.total|floatformat:2 }}</small></td>
+          <td><strong>{{ order.age_days }} días</strong><small>Desde {{ order.created_at|date:"d/m/Y" }}</small></td>
+          <td><span>{{ order.updated_at|date:"d/m/Y" }}</span><small>{{ order.updated_at|date:"H:i" }}</small></td>
+          <td><span class="priority-pill {{ order.collection_priority }}">{{ order.collection_priority_label }}</span></td>
+          <td class="row-actions">
+            <a class="manage-btn" href="{% url 'sales:detalle_pedido' order.id %}">Gestionar cobro</a>
+            {% if order.customer.whatsapp or order.customer.phone %}
+              <a class="whatsapp-btn" href="{% url 'sales:abrir_chat_flotante_pedido' order.id %}" title="Abrir conversación de WhatsApp" aria-label="Abrir WhatsApp">WA</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="collection-empty"><strong>No hay pedidos pendientes</strong><p>La cartera seleccionada no tiene saldos por recuperar.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="collection-pagination" aria-label="Paginación">
+    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&status={{ status|urlencode }}&aging={{ aging|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&status={{ status|urlencode }}&aging={{ aging|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+
+<style>
+  .collections-page{display:grid;gap:18px;color:#e5edf8}.collections-actions{display:flex;justify-content:space-between;align-items:center;gap:16px}.collections-note{display:flex;align-items:center;gap:9px;color:#94a3b8;font-size:13px}.live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.1)}.new-order-btn,.manage-btn{text-decoration:none;font-weight:800;border-radius:10px}.new-order-btn{padding:11px 16px;background:#22c55e;color:#052e16}.collection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.collection-kpi{padding:18px;border-radius:14px;background:linear-gradient(145deg,#111c2f,#0b1322);border:1px solid rgba(148,163,184,.16);min-height:126px}.collection-kpi.featured{border-color:rgba(56,189,248,.42);box-shadow:inset 0 3px 0 #38bdf8}.collection-kpi.warning{box-shadow:inset 0 3px 0 #f59e0b}.collection-kpi span,.collection-kpi small{display:block;color:#94a3b8}.collection-kpi span{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}.collection-kpi strong{display:block;color:#f8fafc;font-size:28px;margin:12px 0 8px}.collection-kpi small{font-size:12px}.aging-strip{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:#0b1322}.aging-segment{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;color:#cbd5e1;text-decoration:none;border-right:1px solid rgba(148,163,184,.13);box-shadow:inset 0 -3px 0 var(--age-color)}.aging-segment:last-child{border-right:0}.aging-segment.green{--age-color:#22c55e}.aging-segment.blue{--age-color:#38bdf8}.aging-segment.amber{--age-color:#f59e0b}.aging-segment.red{--age-color:#ef4444}.aging-segment.active{background:rgba(56,189,248,.09)}.aging-segment strong{color:#fff;font-size:20px}.collection-filters{display:flex;align-items:end;gap:12px;padding:14px;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:#0b1322}.collection-filters label{display:grid;gap:6px}.collection-filters label>span{font-size:11px;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.collection-filters .search-field{flex:1}.collection-filters input,.collection-filters select{height:42px;background:#060d19;color:#e2e8f0;border:1px solid rgba(148,163,184,.22);border-radius:9px;padding:0 12px;min-width:170px}.collection-filters button{height:42px;border:0;border-radius:9px;background:#38bdf8;color:#082f49;font-weight:900;padding:0 17px;cursor:pointer}.clear-filters{height:42px;display:flex;align-items:center;color:#94a3b8;text-decoration:none;padding:0 8px}.collection-table-wrap{overflow:auto;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:#0b1322}.collection-table{width:100%;border-collapse:collapse;min-width:1050px}.collection-table th{padding:14px 16px;text-align:left;color:#7dd3fc;background:#0d1727;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.collection-table td{padding:16px;border-top:1px solid rgba(148,163,184,.12);color:#cbd5e1;vertical-align:middle}.collection-table tbody tr:hover{background:rgba(56,189,248,.035)}.collection-table td strong,.collection-table td small{display:block}.collection-table td small{color:#64748b;margin-top:4px;font-size:11px}.folio-link{color:#7dd3fc;font-weight:900;text-decoration:none}.money-due{color:#f8fafc;font-size:16px}.priority-pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900}.priority-pill.normal{color:#86efac;background:rgba(34,197,94,.13)}.priority-pill.high{color:#fcd34d;background:rgba(245,158,11,.14)}.priority-pill.critical{color:#fca5a5;background:rgba(239,68,68,.14)}.action-heading{text-align:right!important}.row-actions{display:flex;justify-content:flex-end;gap:8px}.manage-btn{padding:9px 12px;background:#0ea5e9;color:#082f49;white-space:nowrap}.whatsapp-btn{display:grid;place-items:center;width:38px;height:36px;border-radius:9px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:#86efac;text-decoration:none;font-size:11px;font-weight:900}.collection-empty{text-align:center;padding:46px 20px}.collection-empty strong{font-size:18px;color:#f8fafc}.collection-empty p{color:#64748b}.collection-pagination{display:flex;justify-content:flex-end;align-items:center;gap:12px;color:#94a3b8}.collection-pagination a{color:#7dd3fc;text-decoration:none;border:1px solid rgba(56,189,248,.25);border-radius:8px;padding:8px 12px}@media(max-width:1050px){.collection-kpis{grid-template-columns:repeat(2,1fr)}.collection-filters{flex-wrap:wrap}.collection-filters .search-field{flex-basis:100%}}@media(max-width:680px){.collections-actions{align-items:flex-start;flex-direction:column}.collection-kpis,.aging-strip{grid-template-columns:1fr}.aging-segment{border-right:0}.collection-filters{display:grid}.collection-filters input,.collection-filters select{width:100%}}
+</style>
+{% elif pipeline == "en_revision_pago" %}
+<section class="payment-review-page">
+  <div class="payment-review-topbar">
+    <div class="payment-review-live"><span></span> Cola financiera actualizada con pagos en estado “En revisión”</div>
+    <a href="{% url 'payments:lista_pagos' %}" class="payment-review-secondary">Ver todos los pagos</a>
+  </div>
+
+  <div class="payment-review-kpis">
+    <article class="payment-review-kpi featured">
+      <small>Importe pendiente</small>
+      <strong>${{ review_summary.pending_amount|floatformat:2 }}</strong>
+      <p>Dinero sujeto a validación</p>
+    </article>
+    <article class="payment-review-kpi">
+      <small>Comprobantes en espera</small>
+      <strong>{{ review_summary.payment_count }}</strong>
+      <p>En {{ review_summary.order_count }} pedido{{ review_summary.order_count|pluralize }}</p>
+    </article>
+    <article class="payment-review-kpi warning">
+      <small>Más de 24 horas</small>
+      <strong>{{ review_summary.overdue_count }}</strong>
+      <p>Casos que requieren prioridad</p>
+    </article>
+    <article class="payment-review-kpi">
+      <small>Espera promedio</small>
+      <strong>{{ review_summary.average_wait_hours }} h</strong>
+      <p>Desde el registro del pago</p>
+    </article>
+  </div>
+
+  <div class="payment-review-flow" aria-label="Flujo de validación de pago">
+    <div class="done"><b>1</b><span>Comprobante recibido<small>{{ review_summary.payment_count }} en revisión</small></span></div>
+    <i></i><div class="current"><b>2</b><span>Validación administrativa<small>{{ review_summary.missing_proof_count }} sin archivo</small></span></div>
+    <i></i><div><b>3</b><span>Pago aprobado<small>Decisión pendiente</small></span></div>
+    <i></i><div><b>4</b><span>Liberación a almacén<small>Después de aprobar</small></span></div>
+  </div>
+
+  <form method="get" class="payment-review-filters">
+    <label class="search-field"><span>Buscar</span><input type="search" name="q" value="{{ q }}" placeholder="Pedido, cliente, pago o transacción"></label>
+    <label><span>Prioridad</span><select name="priority">
+      <option value="">Todas</option>
+      <option value="urgent" {% if review_priority == "urgent" %}selected{% endif %}>Urgente · +24 h</option>
+      <option value="high" {% if review_priority == "high" %}selected{% endif %}>Alta · 8–24 h</option>
+      <option value="normal" {% if review_priority == "normal" %}selected{% endif %}>Normal · 0–8 h</option>
+    </select></label>
+    <label><span>Comprobante</span><select name="proof">
+      <option value="">Todos</option>
+      <option value="with_proof" {% if proof_status == "with_proof" %}selected{% endif %}>Con archivo</option>
+      <option value="without_proof" {% if proof_status == "without_proof" %}selected{% endif %}>Sin archivo</option>
+    </select></label>
+    <button type="submit">Aplicar filtros</button>
+    {% if q or review_priority or proof_status %}<a href="{% url 'sales:pedidos_en_revision_pago' %}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="payment-review-table-wrap">
+    <table class="payment-review-table">
+      <thead><tr><th>Pedido / pago</th><th>Cliente</th><th>Importe por validar</th><th>Espera</th><th>Validación</th><th>Registrado por</th><th>Prioridad</th><th></th></tr></thead>
+      <tbody>
+      {% for order in orders %}
+        <tr>
+          <td><a href="{% url 'payments:detalle_pago' order.review_payment.id %}">{{ order.folio }}</a><small>{{ order.review_payment.folio }}{% if order.review_payment_count > 1 %} · {{ order.review_payment_count }} pagos{% endif %}</small></td>
+          <td><strong>{{ order.customer.full_name }}</strong><small>{{ order.customer.business_name|default:order.customer.phone|default:"Cliente" }}</small></td>
+          <td><strong class="review-money">${{ order.review_amount|floatformat:2 }}</strong><small>{{ order.review_payment.get_payment_method_display }}</small></td>
+          <td><strong>{{ order.review_wait_hours }} h</strong><small>Desde {{ order.review_submitted_at|date:"d/m/Y H:i" }}</small></td>
+          <td><span class="review-signal {{ order.review_signal }}">{{ order.review_signal_label }}</span></td>
+          <td><strong>{{ order.review_payment.registered_by.get_full_name|default:order.review_payment.registered_by.username|default:"Sistema" }}</strong><small>Registro del pago</small></td>
+          <td><span class="review-priority {{ order.review_priority }}">{{ order.review_priority_label }}</span></td>
+          <td class="payment-review-actions">
+            <a class="review-payment-btn" href="{% url 'payments:detalle_pago' order.review_payment.id %}">{% if review_summary.can_approve %}Revisar pago{% else %}Ver pago{% endif %}</a>
+            {% if review_summary.can_open_chat %}{% if order.customer.whatsapp or order.customer.phone %}<a class="review-wa-btn" href="{% url 'payments:abrir_chat_flotante_pago' order.id %}" title="Abrir conversación de WhatsApp" aria-label="Abrir WhatsApp">WA</a>{% endif %}{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="payment-review-empty"><strong>No hay pagos en revisión</strong><p>Los comprobantes nuevos aparecerán aquí cuando requieran validación.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <aside class="payment-review-note">
+    <div><strong>Control de hoy</strong><span>{{ review_summary.overdue_count }} con más de 24 h · {{ review_summary.missing_proof_count }} sin comprobante adjunto</span></div>
+    <p>La aprobación o el rechazo se realiza dentro del detalle y conserva las validaciones y la auditoría actuales.</p>
+  </aside>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="payment-review-pagination">
+    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&priority={{ review_priority|urlencode }}&proof={{ proof_status|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&priority={{ review_priority|urlencode }}&proof={{ proof_status|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+
+<style>
+.payment-review-page{display:grid;gap:18px;color:#dbe7f5}.payment-review-topbar{display:flex;justify-content:space-between;align-items:center;gap:14px}.payment-review-live{display:flex;align-items:center;gap:9px;color:#94a3b8;font-size:13px}.payment-review-live>span{width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 5px rgba(245,158,11,.1)}.payment-review-secondary{text-decoration:none;color:#7dd3fc;border:1px solid rgba(56,189,248,.28);border-radius:9px;padding:10px 14px;font-weight:800}.payment-review-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.payment-review-kpi{min-height:120px;padding:18px;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:linear-gradient(145deg,#111c2f,#0a1220)}.payment-review-kpi.featured{border-color:rgba(56,189,248,.4);box-shadow:inset 0 3px 0 #38bdf8}.payment-review-kpi.warning{box-shadow:inset 0 3px 0 #f59e0b}.payment-review-kpi small{color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:800}.payment-review-kpi strong{display:block;margin:11px 0 7px;color:#f8fafc;font-size:28px}.payment-review-kpi p{margin:0;color:#64748b;font-size:12px}.payment-review-flow{display:flex;align-items:center;padding:16px 20px;border:1px solid rgba(148,163,184,.15);border-radius:13px;background:#0b1322}.payment-review-flow>div{display:flex;align-items:center;gap:10px;min-width:175px}.payment-review-flow b{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#172337;color:#94a3b8}.payment-review-flow .done b{background:#22c55e;color:#052e16}.payment-review-flow .current b{background:#f59e0b;color:#451a03}.payment-review-flow span{font-weight:800;color:#dbe7f5}.payment-review-flow small{display:block;margin-top:3px;color:#64748b;font-weight:500}.payment-review-flow i{height:1px;flex:1;background:#263349;margin:0 12px}.payment-review-filters{display:flex;align-items:end;gap:10px;padding:14px;border:1px solid rgba(148,163,184,.15);border-radius:12px;background:#0b1322}.payment-review-filters label{display:grid;gap:6px}.payment-review-filters .search-field{flex:1}.payment-review-filters label>span{font-size:11px;text-transform:uppercase;color:#94a3b8;font-weight:800}.payment-review-filters input,.payment-review-filters select{height:42px;min-width:170px;border:1px solid rgba(148,163,184,.22);border-radius:9px;background:#060d19;color:#e2e8f0;padding:0 12px}.payment-review-filters button{height:42px;border:0;border-radius:9px;padding:0 18px;background:#38bdf8;color:#082f49;font-weight:900;cursor:pointer}.payment-review-filters>a{height:42px;display:flex;align-items:center;padding:0 8px;color:#94a3b8;text-decoration:none}.payment-review-table-wrap{overflow:auto;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:#0b1322}.payment-review-table{width:100%;border-collapse:collapse;min-width:1250px}.payment-review-table th{padding:14px 15px;text-align:left;color:#7dd3fc;background:#0d1727;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.payment-review-table td{padding:16px 15px;border-top:1px solid rgba(148,163,184,.11);vertical-align:middle;color:#cbd5e1}.payment-review-table tbody tr:hover{background:rgba(56,189,248,.035)}.payment-review-table td>a{color:#7dd3fc;font-weight:900;text-decoration:none}.payment-review-table td strong,.payment-review-table td small{display:block}.payment-review-table td small{margin-top:4px;color:#64748b;font-size:11px}.review-money{color:#f8fafc;font-size:16px}.review-signal,.review-priority{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}.review-signal.ready,.review-priority.normal{color:#86efac;background:rgba(34,197,94,.13)}.review-signal.missing,.review-priority.high{color:#fcd34d;background:rgba(245,158,11,.14)}.review-priority.urgent{color:#fca5a5;background:rgba(239,68,68,.14)}.payment-review-actions{display:flex;justify-content:flex-end;gap:8px}.review-payment-btn{padding:9px 12px;border-radius:9px;background:#0ea5e9;color:#082f49!important;white-space:nowrap}.review-wa-btn{display:grid!important;place-items:center;width:38px;height:36px;border-radius:9px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:#86efac!important;font-size:11px}.payment-review-empty{text-align:center;padding:46px 20px}.payment-review-empty strong{font-size:18px;color:#f8fafc}.payment-review-empty p{color:#64748b}.payment-review-note{display:flex;justify-content:space-between;gap:20px;padding:16px 18px;border:1px solid rgba(245,158,11,.2);border-radius:12px;background:rgba(245,158,11,.045)}.payment-review-note strong,.payment-review-note span{display:block}.payment-review-note strong{color:#fcd34d}.payment-review-note span,.payment-review-note p{margin:4px 0 0;color:#94a3b8;font-size:12px}.payment-review-pagination{display:flex;justify-content:flex-end;align-items:center;gap:12px;color:#94a3b8}.payment-review-pagination a{padding:8px 12px;border:1px solid rgba(56,189,248,.25);border-radius:8px;color:#7dd3fc;text-decoration:none}@media(max-width:1100px){.payment-review-kpis{grid-template-columns:repeat(2,1fr)}.payment-review-flow{overflow:auto}.payment-review-filters{flex-wrap:wrap}.payment-review-filters .search-field{flex-basis:100%}}@media(max-width:680px){.payment-review-topbar,.payment-review-note{align-items:flex-start;flex-direction:column}.payment-review-kpis{grid-template-columns:1fr}.payment-review-filters{display:grid}.payment-review-filters input,.payment-review-filters select{width:100%}.payment-review-flow{align-items:flex-start;flex-direction:column;gap:13px}.payment-review-flow i{width:1px;height:18px;margin:0 15px}}
+</style>
+{% elif pipeline == "aprobados" %}
+<section class="approved-page">
+  <div class="approved-topbar">
+    <div class="approved-live"><span></span> Cola operativa actualizada con ventas pagadas y sin picking activo</div>
+    <a href="{% url 'warehouse:lista_picking' %}" class="approved-secondary">Ver picking</a>
+  </div>
+
+  <div class="approved-kpis">
+    <article class="approved-kpi featured"><small>Pedidos listos</small><strong>{{ approved_summary.total_orders }}</strong><p>Pagados y pendientes de preparación</p></article>
+    <article class="approved-kpi"><small>Valor aprobado</small><strong>${{ approved_summary.approved_value|floatformat:2 }}</strong><p>Ventas liberadas a operación</p></article>
+    <article class="approved-kpi"><small>Unidades por surtir</small><strong>{{ approved_summary.commercial_units }}</strong><p>Unidades comerciales del pedido</p></article>
+    <article class="approved-kpi warning"><small>Espera promedio</small><strong>{{ approved_summary.average_wait_hours }} h</strong><p>En la página visible</p></article>
+  </div>
+
+  <div class="approved-flow" aria-label="Flujo operativo">
+    <div class="done"><b>1</b><span>Pago aprobado<small>{{ approved_summary.total_orders }} pedidos</small></span></div>
+    <i></i><div class="current"><b>2</b><span>Liberado a almacén<small>{{ approved_summary.stock_ready }} con stock visible</small></span></div>
+    <i></i><div><b>3</b><span>Picking<small>Pendiente de iniciar</small></span></div>
+    <i></i><div><b>4</b><span>Packing<small>Siguiente etapa</small></span></div>
+  </div>
+
+  <form method="get" class="approved-filters">
+    <label><span>Buscar pedido</span><input type="search" name="q" value="{{ q }}" placeholder="Folio, cliente o teléfono"></label>
+    <button type="submit">Buscar</button>
+    {% if q %}<a href="{% url 'sales:pedidos_aprobados' %}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="approved-table-wrap">
+    <table class="approved-table">
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Valor aprobado</th><th>Unidades</th><th>Espera</th><th>Inventario</th><th>Prioridad</th><th></th></tr></thead>
+      <tbody>
+      {% for order in orders %}
+        <tr>
+          <td><a href="{% url 'sales:detalle_pedido' order.id %}">{{ order.folio }}</a><small>{{ order.approved_at|date:"d/m/Y H:i" }}</small></td>
+          <td><strong>{{ order.customer.full_name }}</strong><small>{{ order.customer.business_name|default:"Cliente" }}</small></td>
+          <td><strong>${{ order.total|floatformat:2 }}</strong><small>Saldo ${{ order.balance_due|floatformat:2 }}</small></td>
+          <td><strong>{{ order.commercial_units }}</strong><small>Unidad{{ order.commercial_units|pluralize:"es" }} comercial{{ order.commercial_units|pluralize:"es" }}</small></td>
+          <td><strong>{{ order.wait_hours }} h</strong><small>Desde aprobación</small></td>
+          <td>{% if order.stock_ready %}<span class="stock-pill ready">Disponible</span>{% else %}<span class="stock-pill review">Revisar stock</span>{% endif %}</td>
+          <td><span class="operation-pill {{ order.operation_priority }}">{{ order.operation_priority_label }}</span></td>
+          <td class="approved-actions">
+            {% if approved_summary.can_start_picking and order.stock_ready %}
+              <form method="post" action="{% url 'warehouse:generar_picking' order.id %}">{% csrf_token %}<button class="start-btn" type="submit" data-submit-once>Iniciar preparación</button></form>
+            {% else %}
+              <a class="review-btn" href="{% url 'sales:detalle_pedido' order.id %}">Revisar pedido</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="approved-empty"><strong>No hay pedidos por liberar</strong><p>Los pedidos pagados aparecerán aquí antes de iniciar Picking.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="approved-pagination">
+    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+
+<style>
+.approved-page{display:grid;gap:18px;color:#dbe7f5}.approved-topbar{display:flex;justify-content:space-between;align-items:center;gap:14px}.approved-live{display:flex;align-items:center;gap:9px;color:#94a3b8;font-size:13px}.approved-live>span{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.1)}.approved-secondary{text-decoration:none;color:#7dd3fc;border:1px solid rgba(56,189,248,.28);border-radius:9px;padding:10px 14px;font-weight:800}.approved-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.approved-kpi{min-height:120px;padding:18px;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:linear-gradient(145deg,#111c2f,#0a1220)}.approved-kpi.featured{box-shadow:inset 0 3px 0 #22c55e}.approved-kpi.warning{box-shadow:inset 0 3px 0 #f59e0b}.approved-kpi small{text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;font-weight:800}.approved-kpi strong{display:block;margin:11px 0 7px;color:#f8fafc;font-size:28px}.approved-kpi p{margin:0;color:#64748b;font-size:12px}.approved-flow{display:flex;align-items:center;padding:16px 20px;border:1px solid rgba(148,163,184,.15);border-radius:13px;background:#0b1322}.approved-flow>div{display:flex;align-items:center;gap:10px;min-width:170px}.approved-flow b{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#172337;color:#94a3b8}.approved-flow .done b{background:#22c55e;color:#052e16}.approved-flow .current b{background:#38bdf8;color:#082f49}.approved-flow span{font-weight:800;color:#dbe7f5}.approved-flow small{display:block;margin-top:3px;color:#64748b;font-weight:500}.approved-flow i{height:1px;flex:1;background:#263349;margin:0 12px}.approved-filters{display:flex;align-items:end;gap:10px;padding:14px;border:1px solid rgba(148,163,184,.15);border-radius:12px;background:#0b1322}.approved-filters label{display:grid;gap:6px;flex:1}.approved-filters label span{font-size:11px;text-transform:uppercase;color:#94a3b8;font-weight:800}.approved-filters input{height:42px;border:1px solid rgba(148,163,184,.22);border-radius:9px;background:#060d19;color:#e2e8f0;padding:0 12px}.approved-filters button{height:42px;border:0;border-radius:9px;padding:0 18px;background:#38bdf8;color:#082f49;font-weight:900}.approved-filters>a{height:42px;display:flex;align-items:center;padding:0 8px;color:#94a3b8;text-decoration:none}.approved-table-wrap{overflow:auto;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:#0b1322}.approved-table{width:100%;border-collapse:collapse;min-width:1120px}.approved-table th{padding:14px 15px;text-align:left;color:#7dd3fc;background:#0d1727;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.approved-table td{padding:16px 15px;border-top:1px solid rgba(148,163,184,.11);vertical-align:middle;color:#cbd5e1}.approved-table tbody tr:hover{background:rgba(56,189,248,.035)}.approved-table td>a{color:#7dd3fc;font-weight:900;text-decoration:none}.approved-table td strong,.approved-table td small{display:block}.approved-table td small{margin-top:4px;color:#64748b;font-size:11px}.stock-pill,.operation-pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900}.stock-pill.ready,.operation-pill.normal{color:#86efac;background:rgba(34,197,94,.13)}.stock-pill.review,.operation-pill.high{color:#fcd34d;background:rgba(245,158,11,.14)}.operation-pill.critical{color:#fca5a5;background:rgba(239,68,68,.14)}.approved-actions{text-align:right}.start-btn,.review-btn{display:inline-flex!important;padding:9px 12px;border-radius:9px;font-weight:900;white-space:nowrap}.start-btn{background:#22c55e;color:#052e16!important}.review-btn{background:rgba(56,189,248,.13);border:1px solid rgba(56,189,248,.27);color:#7dd3fc!important}.approved-empty{text-align:center;padding:44px 20px}.approved-empty strong{font-size:18px;color:#f8fafc}.approved-empty p{color:#64748b}.approved-pagination{display:flex;justify-content:flex-end;align-items:center;gap:12px;color:#94a3b8}.approved-pagination a{padding:8px 12px;border:1px solid rgba(56,189,248,.25);border-radius:8px;color:#7dd3fc;text-decoration:none}@media(max-width:1050px){.approved-kpis{grid-template-columns:repeat(2,1fr)}.approved-flow{overflow:auto}}@media(max-width:680px){.approved-topbar{align-items:flex-start;flex-direction:column}.approved-kpis{grid-template-columns:1fr}.approved-filters{display:grid}.approved-flow{align-items:flex-start;flex-direction:column;gap:13px}.approved-flow i{width:1px;height:18px;margin:0 15px}}
+</style>
+{% else %}
+<section class="orders-page">
+  <div class="orders-toolbar">
+    <div>
+      <span class="eyebrow">Ventas</span>
+      <h1>{{ pipeline_title|default:"Pedidos" }}</h1>
+      <p>{{ pipeline_subtitle|default:"Gestión comercial, operativa y rentable de pedidos" }}</p>
+    </div>
+
+    <a href="{% url 'sales:crear_pedido' %}" class="primary-btn">
+      Nuevo pedido
+    </a>
+  </div>
+  <form
+  method="get"
+  class="orders-filters"
+  id="ordersLiveSearchForm"
+  autocomplete="off"
+>
+  <div class="orders-live-search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+
+    <input
+      type="search"
+      name="q"
+      id="ordersLiveSearchInput"
+      value="{{ q }}"
+      placeholder="Buscar folio, cliente o teléfono..."
+      aria-label="Buscar pedidos"
+      spellcheck="false"
+    >
+
+    <span
+      class="orders-search-loader"
+      id="ordersSearchLoader"
+      aria-hidden="true"
+    ></span>
+
+    <button
+      type="button"
+      class="orders-search-clear"
+      id="ordersSearchClear"
+      aria-label="Limpiar búsqueda"
+      {% if not q %}hidden{% endif %}
+    >
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+    <select
+    name="status"
+    id="ordersStatusFilter"
+    aria-label="Filtrar por estado"
+  >
+    <option value="">Todos los estados</option>
+    <option value="draft" {% if status == "draft" %}selected{% endif %}>Borrador</option>
+    <option value="pending" {% if status == "pending" %}selected{% endif %}>Pendiente</option>
+    <option value="pending_payment" {% if status == "pending_payment" %}selected{% endif %}>Pendiente de pago</option>
+    <option value="partial_paid" {% if status == "partial_paid" %}selected{% endif %}>Pago parcial</option>
+    <option value="paid" {% if status == "paid" %}selected{% endif %}>Pagado</option>
+    <option value="picking" {% if status == "picking" %}selected{% endif %}>Picking</option>
+    <option value="packed" {% if status == "packed" %}selected{% endif %}>Empacado</option>
+    <option value="shipped" {% if status == "shipped" %}selected{% endif %}>Enviado</option>
+    <option value="delivered" {% if status == "delivered" %}selected{% endif %}>Entregado</option>
+    <option value="cancelled" {% if status == "cancelled" %}selected{% endif %}>Cancelado</option>
+  </select>
+
+  {% if can_supervise_orders %}
+    <select
+      name="salesperson"
+      id="ordersSalespersonFilter"
+      aria-label="Filtrar por vendedor"
+    >
+      <option value="">Todos los vendedores</option>
+      {% for person in salespeople %}
+        <option value="{{ person.id }}" {% if salesperson_id == person.id|stringformat:"s" %}selected{% endif %}>
+          {{ person.get_full_name|default:person.email }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <input
+      type="date"
+      name="date_from"
+      id="ordersDateFrom"
+      value="{{ date_from }}"
+      aria-label="Desde"
+      title="Desde"
+    >
+
+    <input
+      type="date"
+      name="date_to"
+      id="ordersDateTo"
+      value="{{ date_to }}"
+      aria-label="Hasta"
+      title="Hasta"
+    >
+  {% endif %}
+
+  <button type="submit" class="orders-filter-fallback">
+    Filtrar
+  </button>
+</form>
+<div
+  class="orders-live-search-status"
+  id="ordersLiveSearchStatus"
+  aria-live="polite"
+></div>
+  <div class="orders-table">
+    <div class="table-head">
+      <span>Folio</span>
+      <span>Cliente</span>
+      <span>Estado</span>
+      <span>Total</span>
+      <span>Costo</span>
+      <span>Utilidad</span>
+      <span>Margen</span>
+      <span>Pagado</span>
+      <span>Saldo</span>
+      <span>Fecha</span>
+      <span></span>
+    </div>
+
+    {% for order in orders %}
+      <article class="table-row">
+        <div>
+          <strong>{{ order.folio }}</strong>
+          <small>{{ order.company.name }}</small>
+        </div>
+
+        <div>
+          {% if order.customer %}
+            {{ order.customer.full_name }}
+          {% else %}
+            Sin cliente
+          {% endif %}
+        </div>
+
+        <div>
+          <span class="status-pill {{ order.status }}">
+            {{ order.get_status_display }}
+          </span>
+        </div>
+
+        <div>
+          <strong>${{ order.total|floatformat:2 }}</strong>
+          <small>Venta</small>
+        </div>
+
+        <div>
+          ${{ order.total_cost|floatformat:2 }}
+        </div>
+
+        <div>
+          {% if order.gross_profit >= 0 %}
+            <strong class="profit-positive">
+              ${{ order.gross_profit|floatformat:2 }}
+            </strong>
+          {% else %}
+            <strong class="profit-negative">
+              ${{ order.gross_profit|floatformat:2 }}
+            </strong>
+          {% endif %}
+        </div>
+
+        <div>
+          {% if order.margin_percent >= 30 %}
+            <span class="margin-pill good">
+              {{ order.margin_percent|floatformat:2 }}%
+            </span>
+          {% elif order.margin_percent >= 15 %}
+            <span class="margin-pill warning">
+              {{ order.margin_percent|floatformat:2 }}%
+            </span>
+          {% else %}
+            <span class="margin-pill danger">
+              {{ order.margin_percent|floatformat:2 }}%
+            </span>
+          {% endif %}
+        </div>
+
+        <div>${{ order.amount_paid|floatformat:2 }}</div>
+
+        <div>
+          {% if order.balance_due > 0 %}
+            <strong class="balance-due">
+              ${{ order.balance_due|floatformat:2 }}
+            </strong>
+          {% else %}
+            <strong class="balance-ok">
+              ${{ order.balance_due|floatformat:2 }}
+            </strong>
+          {% endif %}
+        </div>
+
+        <div>{{ order.created_at|date:"d/m/Y H:i" }}</div>
+
+        <div class="actions">
+          <a href="{% url 'sales:detalle_pedido' order.id %}">
+            Ver pedido
+          </a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state">
+        <h3>No hay pedidos</h3>
+        <p>Crea tu primer pedido para iniciar el flujo de ventas, pagos, rentabilidad y warehouse.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+  .orders-page {
+    display: grid;
+    gap: 20px;
+  }
+
+  .orders-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .eyebrow {
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+    font-weight: 800;
+  }
+
+  .orders-toolbar h2 {
+    color: #f8fafc;
+    margin: 6px 0 0;
+  }
+
+  .primary-btn {
+    text-decoration: none;
+    background: #22c55e;
+    color: #052e16;
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .primary-btn:hover {
+    background: #86efac;
+    color: #052e16;
+  }
+
+  .orders-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .orders-filters input,
+.orders-filters select,
+.orders-filter-fallback {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  min-height: 44px;
+}
+  .orders-filters input {
+  flex: 1 1 320px;
+  width: 100%;
+  min-width: 0;
+}
+.orders-filters select {
+  flex: 0 1 210px;
+  min-width: 0;
+}
+  .orders-filters button {
+    border: 0;
+    border-radius: 8px;
+    background: #38bdf8;
+    color: #020617;
+    padding: 10px 14px;
+    font-weight: 800;
+    min-height: 42px;
+    cursor: pointer;
+  }
+
+  .orders-filters button:hover {
+    background: #7dd3fc;
+  }
+
+  .orders-table {
+    display: grid;
+    gap: 10px;
+  }
+
+  .table-head,
+  .table-row {
+    display: grid;
+    grid-template-columns:
+      1fr
+      1.25fr
+      .95fr
+      .85fr
+      .85fr
+      .9fr
+      .75fr
+      .85fr
+      .85fr
+      1fr
+      auto;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .table-head {
+    color: #38bdf8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 0 16px;
+  }
+
+  .table-row {
+    background: #111827;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 10px;
+    padding: 16px;
+    color: #cbd5e1;
+  }
+
+  .table-row:hover {
+    border-color: rgba(56, 189, 248, .35);
+    background: #0f172a;
+  }
+
+  .table-row strong {
+    color: #f8fafc;
+    display: block;
+  }
+
+  .table-row small {
+    color: #94a3b8;
+    display: block;
+    margin-top: 3px;
+  }
+
+  .status-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .status-pill.draft {
+    background: #334155;
+    color: #e5e7eb;
+  }
+
+  .status-pill.pending_payment,
+  .status-pill.partial_paid {
+    background: #facc15;
+    color: #422006;
+  }
+
+  .status-pill.paid,
+  .status-pill.delivered {
+    background: #22c55e;
+    color: #052e16;
+  }
+
+  .status-pill.picking,
+  .status-pill.packed,
+  .status-pill.shipped {
+    background: #38bdf8;
+    color: #082f49;
+  }
+
+  .status-pill.cancelled {
+    background: #ef4444;
+    color: #450a0a;
+  }
+
+  .profit-positive {
+    color: #22c55e !important;
+  }
+
+  .profit-negative {
+    color: #ef4444 !important;
+  }
+
+  .balance-due {
+    color: #f59e0b !important;
+  }
+
+  .balance-ok {
+    color: #22c55e !important;
+  }
+
+  .margin-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .margin-pill.good {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+  }
+
+  .margin-pill.warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fde68a;
+  }
+
+  .margin-pill.danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+  }
+
+  .actions a {
+    display: inline-block;
+    text-decoration: none;
+    background: #38bdf8;
+    color: #020617;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .actions a:hover {
+    background: #7dd3fc;
+  }
+
+  .empty-state {
+    background: #111827;
+    border: 1px dashed rgba(148, 163, 184, .35);
+    border-radius: 10px;
+    padding: 24px;
+    color: #cbd5e1;
+  }
+
+  .empty-state h3 {
+    color: #f8fafc;
+    margin: 0 0 8px;
+  }
+
+  .empty-state p {
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1450px) {
+    .table-head,
+    .table-row {
+      grid-template-columns:
+        1fr
+        1.2fr
+        .9fr
+        .8fr
+        .8fr
+        .85fr
+        .7fr
+        .8fr
+        .8fr
+        auto;
+    }
+
+    .table-head span:nth-child(10),
+    .table-row > div:nth-child(10) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1250px) {
+    .table-head,
+    .table-row {
+      grid-template-columns:
+        1fr
+        1.2fr
+        .9fr
+        .8fr
+        .85fr
+        .7fr
+        .8fr
+        auto;
+    }
+
+    .table-head span:nth-child(5),
+    .table-row > div:nth-child(5),
+    .table-head span:nth-child(8),
+    .table-row > div:nth-child(8),
+    .table-head span:nth-child(9),
+    .table-row > div:nth-child(9) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1100px) {
+    .table-head {
+      display: none;
+    }
+
+    .table-row {
+      grid-template-columns: 1fr;
+    }
+
+    .table-row > div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .actions a {
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 650px) {
+    .orders-toolbar {
+      display: grid;
+    }
+
+    .orders-filters {
+      display: grid;
+    }
+
+    .orders-filters input,
+    .orders-filters select,
+    .orders-filters button {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+  /* =========================================================
+   PAKIVOX · TODOS LOS PEDIDOS RESPONSIVE
+   1024 / 768 / 412 / 390 / 375
+   ========================================================= */
+
+.orders-page,
+.orders-page * {
+  box-sizing: border-box;
+}
+
+.orders-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.orders-toolbar,
+.orders-filters,
+.orders-table,
+.table-row {
+  min-width: 0;
+}
+
+
+/* =========================================
+   TABLET
+   ========================================= */
+
+@media (max-width: 1024px) {
+
+  .orders-toolbar {
+    align-items: flex-start;
+  }
+
+  .orders-filters {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(180px, .4fr)
+      auto;
+
+    width: 100%;
+  }
+
+  .orders-filters input,
+  .orders-filters select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .table-row {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 14px 18px;
+  }
+
+  .table-row > div {
+    min-width: 0;
+  }
+
+  .table-row .actions {
+    grid-column: 1 / -1;
+  }
+
+  .table-row .actions a {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 680px) {
+
+  .orders-page {
+    gap: 14px;
+    overflow-x: hidden;
+  }
+
+
+  /* Encabezado */
+
+  .orders-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    width: 100%;
+    gap: 16px;
+
+    align-items: stretch;
+  }
+
+  .orders-toolbar > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .orders-toolbar h1,
+  .orders-toolbar h2,
+  .orders-toolbar p {
+    max-width: 100%;
+    white-space: normal;
+
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .primary-btn {
+    display: flex;
+
+    width: 100%;
+    min-height: 44px;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+  }
+
+
+  /* Filtros */
+
+  .orders-filters {
+    display: grid;
+
+    grid-template-columns: 1fr;
+
+    width: 100%;
+    max-width: 100%;
+
+    gap: 9px;
+
+    margin: 6px 0 2px;
+  }
+
+  .orders-filters input,
+  .orders-filters select,
+  .orders-filters button {
+    display: block;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    min-height: 44px;
+  }
+
+  .orders-filters button {
+    padding: 11px 14px;
+  }
+
+
+  /* Quitamos encabezado desktop */
+
+  .table-head {
+    display: none !important;
+  }
+
+
+  /* Cada pedido se convierte en tarjeta móvil */
+
+  .orders-table {
+    display: grid;
+
+    grid-template-columns: 1fr;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    gap: 10px;
+  }
+
+  .table-row {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    gap: 14px 10px;
+
+    padding: 14px;
+
+    overflow: hidden;
+  }
+
+  .table-row > div {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    white-space: normal;
+
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+
+  /* Folio / empresa */
+
+  .table-row > div:nth-child(1) {
+    grid-column: 1 / -1;
+
+    padding-bottom: 10px;
+
+    border-bottom:
+      1px solid rgba(148, 163, 184, .12);
+  }
+
+  .table-row > div:nth-child(1) strong {
+    font-size: 14px;
+  }
+
+
+  /* Cliente */
+
+  .table-row > div:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+
+  /* Estado */
+
+  .table-row > div:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .status-pill {
+    display: inline-flex;
+
+    width: auto;
+    max-width: 100%;
+
+    padding: 6px 10px;
+
+    white-space: normal;
+
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+
+  /* Venta */
+  .table-row > div:nth-child(4) {
+    grid-column: 1;
+  }
+
+
+  /* Costo */
+  .table-row > div:nth-child(5) {
+    grid-column: 2;
+  }
+
+
+  /* Utilidad */
+  .table-row > div:nth-child(6) {
+    grid-column: 1;
+  }
+
+
+  /* Margen */
+  .table-row > div:nth-child(7) {
+    grid-column: 2;
+  }
+
+  .margin-pill {
+    width: 100%;
+    max-width: 100%;
+
+    white-space: normal;
+  }
+
+
+  /* Pagado */
+  .table-row > div:nth-child(8) {
+    grid-column: 1;
+  }
+
+
+  /* Saldo */
+  .table-row > div:nth-child(9) {
+    grid-column: 2;
+  }
+
+
+  /* Fecha */
+
+  .table-row > div:nth-child(10) {
+    grid-column: 1 / -1;
+
+    padding-top: 10px;
+
+    color: #94a3b8;
+    font-size: 11px;
+
+    border-top:
+      1px solid rgba(148, 163, 184, .10);
+  }
+
+
+  /* Acción */
+
+  .table-row > div:nth-child(11),
+  .table-row .actions {
+    grid-column: 1 / -1;
+
+    width: 100%;
+  }
+
+  .actions a {
+    display: flex;
+
+    width: 100%;
+    min-height: 42px;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+  }
+}
+
+
+/* =========================================
+   412 / 390 / 375
+   ========================================= */
+
+@media (max-width: 420px) {
+
+  .orders-page {
+    gap: 12px;
+  }
+
+  .orders-toolbar h1 {
+    font-size: 25px;
+    line-height: 1.1;
+  }
+
+  .orders-toolbar p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .table-row {
+    padding: 13px;
+
+    gap: 12px 9px;
+
+    border-radius: 12px;
+  }
+
+  .table-row strong {
+    overflow-wrap: break-word;
+  }
+
+  .status-pill {
+    font-size: 11px;
+  }
+
+  .margin-pill {
+    font-size: 11px;
+  }
+}
+/* =========================================================
+   PAKIVOX · LIVE SEARCH PEDIDOS
+   ========================================================= */
+
+.orders-live-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  flex: 1 1 320px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+.orders-live-search > i {
+  position: absolute;
+  left: 14px;
+
+  color: #64748b;
+  font-size: 14px;
+
+  pointer-events: none;
+}
+
+.orders-live-search input {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  padding-left: 40px !important;
+  padding-right: 76px !important;
+}
+
+.orders-live-search input:focus {
+  border-color: rgba(56, 189, 248, .65);
+
+  box-shadow:
+    0 0 0 3px rgba(56, 189, 248, .08);
+
+  outline: none;
+}
+.orders-filters .orders-search-clear {
+  position: absolute !important;
+
+  top: 50% !important;
+  right: 10px !important;
+
+  transform: translateY(-50%) !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: 0 !important;
+  border-radius: 8px !important;
+
+  background: rgba(148, 163, 184, .10) !important;
+  color: #94a3b8 !important;
+
+  line-height: 1 !important;
+
+  cursor: pointer !important;
+
+  z-index: 3 !important;
+
+  flex: 0 0 30px !important;
+}
+
+.orders-filters .orders-search-clear:hover {
+  background: rgba(148, 163, 184, .18) !important;
+  color: #f8fafc !important;
+}
+
+.orders-filters .orders-search-clear i {
+  margin: 0 !important;
+  padding: 0 !important;
+
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+.orders-search-clear:hover {
+  background: rgba(148, 163, 184, .18);
+  color: #f8fafc;
+}
+
+.orders-search-clear[hidden] {
+  display: none !important;
+}
+
+
+/* Loader */
+
+.orders-search-loader {
+  position: absolute;
+  right: 48px;
+
+  display: none;
+
+  width: 16px;
+  height: 16px;
+
+  border: 2px solid rgba(56, 189, 248, .25);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+
+  animation:
+    pakivox-orders-search-spin .65s linear infinite;
+}
+
+.orders-search-loader.is-active {
+  display: block;
+}
+
+@keyframes pakivox-orders-search-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* Estado accesible debajo */
+
+.orders-live-search-status {
+  min-height: 14px;
+
+  margin-top: -8px;
+
+  color: #64748b;
+  font-size: 10px;
+}
+
+
+/* Transición suave al actualizar resultados */
+
+.orders-table {
+  transition:
+    opacity .14s ease,
+    transform .14s ease;
+}
+
+.orders-table.is-searching {
+  opacity: .48;
+  transform: translateY(2px);
+
+  pointer-events: none;
+}
+
+
+/* Desktop: el botón sigue como fallback */
+
+.orders-filter-fallback {
+  flex: 0 0 auto;
+}
+
+
+/* Mobile */
+
+@media (max-width: 680px) {
+
+  .orders-live-search {
+    width: 100%;
+    max-width: 100%;
+
+    flex: none;
+  }
+
+  .orders-live-search input {
+    width: 100% !important;
+  }
+
+  .orders-live-search-status {
+    margin-top: -5px;
+  }
+}
+.orders-filters input[type="date"] {
+  flex: 0 1 165px;
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  .orders-filters input[type="date"] {
+    width: 100%;
+  }
+}
+
+
+</style>
+<script id="pakivox-orders-live-search">
+(() => {
+  "use strict";
+
+  const form = document.getElementById("ordersLiveSearchForm");
+  const input = document.getElementById("ordersLiveSearchInput");
+  const status = document.getElementById("ordersStatusFilter");
+  const clearButton = document.getElementById("ordersSearchClear");
+  const loader = document.getElementById("ordersSearchLoader");
+  const liveStatus = document.getElementById("ordersLiveSearchStatus");
+
+  if (!form || !input || !status) {
+    return;
+  }
+
+  let debounceTimer = null;
+  let activeController = null;
+  let requestSequence = 0;
+
+  const DEBOUNCE_MS = 350;
+
+
+  function setLoading(loading) {
+    const table = document.querySelector(".orders-table");
+
+    loader?.classList.toggle("is-active", loading);
+    table?.classList.toggle("is-searching", loading);
+
+    form.setAttribute(
+      "aria-busy",
+      loading ? "true" : "false"
+    );
+  }
+
+
+  function updateClearButton() {
+    if (!clearButton) {
+      return;
+    }
+
+    clearButton.hidden = input.value.trim() === "";
+  }
+
+
+    function buildUrl() {
+    const url = new URL(
+      window.location.href
+    );
+
+    const query = input.value.trim();
+    const selectedStatus = status.value;
+    const salespersonSelect = document.getElementById("ordersSalespersonFilter");
+    const dateFromInput = document.getElementById("ordersDateFrom");
+    const dateToInput = document.getElementById("ordersDateTo");
+
+    if (query) {
+      url.searchParams.set("q", query);
+    } else {
+      url.searchParams.delete("q");
+    }
+
+    if (selectedStatus) {
+      url.searchParams.set(
+        "status",
+        selectedStatus
+      );
+    } else {
+      url.searchParams.delete("status");
+    }
+
+    if (salespersonSelect && salespersonSelect.value) {
+      url.searchParams.set("salesperson", salespersonSelect.value);
+    } else {
+      url.searchParams.delete("salesperson");
+    }
+
+    if (dateFromInput && dateFromInput.value) {
+      url.searchParams.set("date_from", dateFromInput.value);
+    } else {
+      url.searchParams.delete("date_from");
+    }
+
+    if (dateToInput && dateToInput.value) {
+      url.searchParams.set("date_to", dateToInput.value);
+    } else {
+      url.searchParams.delete("date_to");
+    }
+
+    /*
+     * Si posteriormente existe paginación,
+     * una búsqueda nueva siempre empieza
+     * desde la primera página.
+     */
+    url.searchParams.delete("page");
+
+    return url;
+  }
+
+  async function refreshOrders() {
+    const sequence = ++requestSequence;
+
+    if (activeController) {
+      activeController.abort();
+    }
+
+    activeController = new AbortController();
+
+    const url = buildUrl();
+
+    setLoading(true);
+
+    if (liveStatus) {
+      liveStatus.textContent =
+        "Buscando pedidos…";
+    }
+
+    try {
+      const response = await fetch(
+        url.toString(),
+        {
+          method: "GET",
+
+          headers: {
+            "X-Requested-With":
+              "XMLHttpRequest"
+          },
+
+          credentials: "same-origin",
+
+          signal:
+            activeController.signal
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status}`
+        );
+      }
+
+      const html =
+        await response.text();
+
+      /*
+       * Evitamos ejecutar scripts provenientes
+       * de la respuesta.
+       */
+      const parser = new DOMParser();
+
+      const documentResult =
+        parser.parseFromString(
+          html,
+          "text/html"
+        );
+
+      const newOrdersTable =
+        documentResult.querySelector(
+          ".orders-table"
+        );
+
+      const currentOrdersTable =
+        document.querySelector(
+          ".orders-table"
+        );
+
+      if (
+        sequence !== requestSequence
+      ) {
+        return;
+      }
+
+      if (
+        !newOrdersTable ||
+        !currentOrdersTable
+      ) {
+        throw new Error(
+          "No se encontró el contenedor de pedidos."
+        );
+      }
+
+      currentOrdersTable.replaceWith(
+        newOrdersTable
+      );
+
+      /*
+       * Actualizamos la URL sin recargar
+       * toda la interfaz.
+       */
+      window.history.replaceState(
+        {},
+        "",
+        url.pathname +
+        url.search +
+        url.hash
+      );
+
+      const visibleOrders =
+        newOrdersTable.querySelectorAll(
+          ".table-row"
+        ).length;
+
+      if (liveStatus) {
+        if (
+          input.value.trim() ||
+          status.value
+        ) {
+          liveStatus.textContent =
+            visibleOrders === 1
+              ? "1 pedido encontrado"
+              : `${visibleOrders} pedidos encontrados`;
+        } else {
+          liveStatus.textContent = "";
+        }
+      }
+
+    } catch (error) {
+
+      if (
+        error.name === "AbortError"
+      ) {
+        return;
+      }
+
+      console.error(
+        "Error en búsqueda de pedidos:",
+        error
+      );
+
+      if (liveStatus) {
+        liveStatus.textContent =
+          "No fue posible actualizar la búsqueda.";
+      }
+
+    } finally {
+
+      if (
+        sequence === requestSequence
+      ) {
+        setLoading(false);
+      }
+    }
+  }
+
+
+  function scheduleSearch() {
+    window.clearTimeout(
+      debounceTimer
+    );
+
+    updateClearButton();
+
+    debounceTimer =
+      window.setTimeout(
+        refreshOrders,
+        DEBOUNCE_MS
+      );
+  }
+
+
+  /*
+   * Búsqueda automática mientras escribe.
+   */
+
+  input.addEventListener(
+    "input",
+    scheduleSearch
+  );
+
+
+  /*
+   * Estado se aplica inmediatamente.
+   */
+
+  status.addEventListener(
+    "change",
+    () => {
+      window.clearTimeout(
+        debounceTimer
+      );
+
+      refreshOrders();
+    }
+  );
+    /*
+   * Filtros de supervisor (vendedor y fechas), si existen en el DOM.
+   */
+
+  const salespersonSelect = document.getElementById("ordersSalespersonFilter");
+  const dateFromInput = document.getElementById("ordersDateFrom");
+  const dateToInput = document.getElementById("ordersDateTo");
+
+  salespersonSelect?.addEventListener("change", () => {
+    window.clearTimeout(debounceTimer);
+    refreshOrders();
+  });
+
+  dateFromInput?.addEventListener("change", () => {
+    window.clearTimeout(debounceTimer);
+    refreshOrders();
+  });
+
+  dateToInput?.addEventListener("change", () => {
+    window.clearTimeout(debounceTimer);
+    refreshOrders();
+  });
+
+
+  /*
+   * X limpia y devuelve todos los pedidos.
+   */
+
+  clearButton?.addEventListener(
+    "click",
+    () => {
+      input.value = "";
+
+      updateClearButton();
+
+      input.focus();
+
+      refreshOrders();
+    }
+  );
+
+
+  /*
+   * Enter sigue funcionando normalmente,
+   * pero evitamos recargar la página.
+   */
+
+  form.addEventListener(
+    "submit",
+    event => {
+      event.preventDefault();
+
+      window.clearTimeout(
+        debounceTimer
+      );
+
+      refreshOrders();
+    }
+  );
+
+
+  updateClearButton();
+})();
+</script>
+{% endif %}
+{% endblock %}
